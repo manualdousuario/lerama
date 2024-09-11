@@ -22,7 +22,8 @@ RUN sed -i "s|'localhost'|'${DB_HOST}'|g" /var/www/html/config/appConfig.php \
     && sed -i "s|''|'${DB_PASSWORD}'|g" /var/www/html/config/appConfig.php \
     && sed -i "s|'lerama'|'${DB_NAME}'|g" /var/www/html/config/appConfig.php \
     && sed -i "s|'https://lerama.test'|'${SITE_URL}'|g" /var/www/html/config/appConfig.php \
-    && sed -i "s|'Lerama'|'${SITE_NAME}'|g" /var/www/html/config/appConfig.php
+    && sed -i "s|'Lerama'|'${SITE_NAME}'|g" /var/www/html/config/appConfig.php \
+    && sed -i "s|'admin_pass'|'${ADMIN_PASSWORD}'|g" /var/www/html/config/appConfig.php
 
 EXPOSE 80
 

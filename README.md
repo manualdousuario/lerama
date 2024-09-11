@@ -7,14 +7,6 @@ O Lerama é um agregador de feeds ATOM e RSS2.0 feito como alternativa ao [OpenO
 
 ## Docker
 
-Primeiro vamos gerar um arquivo de configuração dos feeds, é um array com informações do sites que terão dados coletados:
-
-`curl -o ./lerama/config/feedsConfig.php https://raw.githubusercontent.com/manualdousuario/lerama/main/feedsConfig.php.sample`
-
-Se um site é removido da lista, ficará como *inativo* para o sistema, mas nenhum registro vai ser apagado.
-Se trocar o nome, essa informação será atualizada.
-Ao adicionar ou remover, a proxima rotina irá atualizar automaticamente os dados.
-
 Apos instalar o docker, vamos criar um *compose*:
 
 `curl -o ./docker-compose.yml https://raw.githubusercontent.com/manualdousuario/lerama/main/docker-compose.yml`
@@ -35,8 +27,7 @@ services:
       DB_NAME: BANCO_DE_DADOS
       SITE_URL: https://lerama.xyz
       SITE_NAME: Lerama
-    volumes:
-      - ./config/feeds_config.php:/var/www/html/config/feeds_config.php
+      ADMIN_PASSWORD: p@ssw0rd
     depends_on:
       - db
 services:

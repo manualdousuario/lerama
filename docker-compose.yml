@@ -11,8 +11,7 @@ services:
       DB_NAME: BANCO_DE_DADOS
       SITE_URL: https://lerama.xyz
       SITE_NAME: Lerama
-    volumes:
-      - ./config/feeds_config.php:/var/www/html/config/feeds_config.php
+      ADMIN_PASSWORD: p@ssw0rd
     depends_on:
       - db
 services:

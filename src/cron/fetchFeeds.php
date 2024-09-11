@@ -10,13 +10,12 @@ use Src\Database;
 use Src\FeedFetcher;
 
 $appConfig = require __DIR__ . '/../config/appConfig.php';
-$feedsConfig = require __DIR__ . '/../config/feedsConfig.php';
 
 echo "Processando rotinas (".date("d.m.y").").\n";
 
 try {
     $db = Database::getInstance($appConfig['database']);
-    $feed_fetcher = new FeedFetcher($db, $feedsConfig);
+    $feed_fetcher = new FeedFetcher($db);
 
     $feed_fetcher->fetchFeeds();
     echo "Feeds processados.\n";

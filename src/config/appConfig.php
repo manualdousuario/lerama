@@ -7,6 +7,7 @@ return [
         'dbname' => getenv('DB_NAME') ?: 'lerama',
         'charset' => 'utf8mb4'
     ],
+    'admin_password' => getenv('ADMIN_PASSWORD') ?: 'admin_pass',
     'site' => [
         'url' => getenv('SITE_URL') ?: 'https://lerama.test',
         'name' => getenv('SITE_NAME') ?: 'Lerama'
