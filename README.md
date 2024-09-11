@@ -89,6 +89,8 @@ Após executar o SQL, você pode verificar se as tabelas foram criadas com suces
 
 ## Informações adicionais
 
-Recomendo que utilize o [NGINX Proxy Manager](https://bsky.app/profile/altendorfme.com) a frente do projeto, isso dará mais proteção e camadas de cache.
+Recomendo que utilize o [NGINX Proxy Manager](https://nginxproxymanager.com/) como webservice a frente dessa imagem, isso dará mais proteção e camadas de cache.
+
+As rotinas de coleta de dados irão rodar a cada 3 horas
 
 Uma instalação pública está disponivel em [PC do Manual](https://lerama.pcdomanual.com/) 
