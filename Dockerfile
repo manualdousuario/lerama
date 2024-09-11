@@ -13,7 +13,10 @@ RUN chown -R www-data:www-data /var/www/html \
 COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
-RUN echo "0 */3 * * * /usr/local/bin/php /var/www/html/cron/fetchFeeds.php" >> /etc/crontab
+COPY crontab /etc/cron.d/lerama
+RUN chmod 0644 /etc/cron.d/lerama
+RUN crontab /etc/cron.d/lerama
+RUN touch /var/log/lerama.log
 
 RUN sed -i "s|'localhost'|'${DB_HOST}'|g" /var/www/html/config/appConfig.php \
     && sed -i "s|'root'|'${DB_USERNAME}'|g" /var/www/html/config/appConfig.php \

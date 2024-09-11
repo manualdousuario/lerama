@@ -30,6 +30,13 @@ sleep 3
 
 check_php_fpm
 
+sleep 3
+
+echo "Iniciando rotinas..."
+cron
+
+sleep 3
+
 echo "Testando configuração do webservice..."
 nginx -t
 if [ $? -ne 0 ]; then
