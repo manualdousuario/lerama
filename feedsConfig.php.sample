@@ -1,0 +1,8 @@
+<?php
+return [
+    [
+        'feed_url' => 'https://blog.ghed.in/feed.xml',
+        'url' => 'https://blog.ghed.in',
+        'name' => 'Excertos'
+    ],
+];
