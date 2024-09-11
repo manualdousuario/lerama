@@ -1,7 +1,7 @@
 services:
   lerama:
     container_name: lerama
-    image: ghcr.io/altendorfme/lerama/lerama:latest
+    image: ghcr.io/manualdousuario/lerama/lerama:latest
     ports:
       - "80:80"
     environment:

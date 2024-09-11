@@ -64,16 +64,16 @@ include __DIR__ . '/header.php';
         <div class="card mb-3" style="border-color: <?php echo $color ?>;">
             <div class="card-body">
                 <h5 class="card-title">
-                    <a href="<?php echo htmlspecialchars($article['link']) ?>" target="_blank" class="text-decoration-none">
+                    <a href="<?php echo htmlspecialchars($article['link']) ?>" target="_blank" class="text-decoration-none link-primary ">
                         <?php echo htmlspecialchars($article['title']) ?>
                     </a>
                 </h5>
                 <p class="card-text">
                     <small class="text-muted">
                         <?php if(empty($article['author'])) { ?>
-                            Em <?php echo date('d/m/Y', strtotime($article['publication_date'])) ?> | <a href="<?php echo htmlspecialchars($site['url']) ?>" target="_blank"><?php echo htmlspecialchars($site['name']) ?></a>
+                            Em <?php echo date('d/m/Y', strtotime($article['publication_date'])) ?> | <a href="<?php echo htmlspecialchars($site['url']) ?>"  target="_blank" class="link-secondary"><?php echo htmlspecialchars($site['name']) ?></a>
                         <?php } else { ?>
-                            Por <?php echo htmlspecialchars($article['author'] ?? 'Unknown') ?> em <?php echo date('d/m/Y', strtotime($article['publication_date'])) ?> | <a href="<?php echo htmlspecialchars($site['url']) ?>" target="_blank"><?php echo htmlspecialchars($site['name']) ?></a>
+                            Por <?php echo htmlspecialchars($article['author'] ?? 'Unknown') ?> em <?php echo date('d/m/Y', strtotime($article['publication_date'])) ?> | <a href="<?php echo htmlspecialchars($site['url']) ?>" target="_blank" class="link-secondary"><?php echo htmlspecialchars($site['name']) ?></a>
                         <?php } ?>
                     </small>
                 </p>
@@ -91,7 +91,7 @@ include __DIR__ . '/header.php';
     if ($totalPages > 1):
     ?>
         <nav>
-            <ul class="pagination">
+            <ul class="pagination pagination-dark">
                 <?php if ($page > 1): ?>
                     <li class="page-item">
                         <a class="page-link" href="?q=<?php echo urlencode($query) ?>&order=<?php echo $orderBy ?>&page=<?php echo $page - 1 ?>">«</a>
