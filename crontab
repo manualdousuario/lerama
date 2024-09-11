@@ -1,1 +1,1 @@
-0 */3 * * * "/usr/local/bin/php /var/www/html/cron/fetchFeeds.php" >> /etc/crontab/lerama.log 2>&1
+0 */3 * * * /usr/local/bin/php /var/www/html/cron/fetchFeeds.php >> /var/log/lerama.log

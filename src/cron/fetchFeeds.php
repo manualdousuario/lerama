@@ -1,6 +1,6 @@
 <?php
 if (php_sapi_name() !== 'cli') {
-    die('This script can only be run from the command line.');
+    die('Este script só pode ser executado a partir da linha de comando.');
 }
 
 require_once __DIR__ . '/../class/Database.php';
@@ -11,6 +11,8 @@ use Src\FeedFetcher;
 
 $appConfig = require __DIR__ . '/../config/appConfig.php';
 $feedsConfig = require __DIR__ . '/../config/feedsConfig.php';
+
+echo "Processando rotinas (".date("d.m.y").").\n";
 
 try {
     $db = Database::getInstance($appConfig['database']);
