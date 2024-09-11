@@ -15,7 +15,6 @@ RUN chmod +x /usr/local/bin/start.sh
 
 COPY crontab /etc/cron.d/lerama
 RUN chmod 0644 /etc/cron.d/lerama
-RUN crontab /etc/cron.d/lerama
 RUN touch /var/log/lerama.log
 
 RUN sed -i "s|'localhost'|'${DB_HOST}'|g" /var/www/html/config/appConfig.php \
