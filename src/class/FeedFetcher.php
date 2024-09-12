@@ -23,6 +23,7 @@ class FeedFetcher
 
         foreach ($sites as $site) {
             try {
+                echo '- ' . $site['feed_url'].PHP_EOL;
                 $feedContent = @file_get_contents($site['feed_url']);
                 if ($feedContent === false) {
                     $this->handleFeedError($site);

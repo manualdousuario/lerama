@@ -51,38 +51,42 @@ include __DIR__ . '/header.php';
         <h5>Últimos artigos</h5>
     <?php endif; ?>
 
-    <?php foreach ($results as $article): ?>
-        <?php
-            $relevanceScore = $article['relevance_score'] ?? null;
-            $scaledRelevance = $relevanceScore ? $search->scaleRelevance($relevanceScore) : null;
-            $color = $scaledRelevance ? $search->getRelevanceColor($scaledRelevance) : '#808080';
+    <div class="row">
+        <?php foreach ($results as $article): ?>
+            <?php
+                $relevanceScore = $article['relevance_score'] ?? null;
+                $scaledRelevance = $relevanceScore ? $search->scaleRelevance($relevanceScore) : null;
+                $color = $scaledRelevance ? $search->getRelevanceColor($scaledRelevance) : '#808080';
 
-            $siteStmt = $db->prepare("SELECT name, url FROM sites WHERE id = :site_id");
-            $siteStmt->execute(['site_id' => $article['site_id']]);
-            $site = $siteStmt->fetch(PDO::FETCH_ASSOC);
-        ?>
-        <div class="card mb-3" style="border-color: <?php echo $color ?>;">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <a href="<?php echo htmlspecialchars($article['link']) ?>" target="_blank" class="text-decoration-none link-primary ">
-                        <?php echo htmlspecialchars($article['title']) ?>
-                    </a>
-                </h5>
-                <p class="card-text">
-                    <small class="text-muted">
-                        <?php if(empty($article['author'])) { ?>
-                            Em <?php echo date('d/m/Y', strtotime($article['publication_date'])) ?> | <a href="<?php echo htmlspecialchars($site['url']) ?>"  target="_blank" class="link-secondary"><?php echo htmlspecialchars($site['name']) ?></a>
-                        <?php } else { ?>
-                            Por <?php echo htmlspecialchars($article['author'] ?? 'Unknown') ?> em <?php echo date('d/m/Y', strtotime($article['publication_date'])) ?> | <a href="<?php echo htmlspecialchars($site['url']) ?>" target="_blank" class="link-secondary"><?php echo htmlspecialchars($site['name']) ?></a>
-                        <?php } ?>
-                    </small>
-                </p>
-                <?php if ($scaledRelevance): ?>
-                    <span class="badge" style="background-color: <?php echo $color ?>;">Relevancia: <?php echo $scaledRelevance ?></span>
-                <?php endif; ?>
+                $siteStmt = $db->prepare("SELECT name, url FROM sites WHERE id = :site_id");
+                $siteStmt->execute(['site_id' => $article['site_id']]);
+                $site = $siteStmt->fetch(PDO::FETCH_ASSOC);
+            ?>
+            <div class="col-12 col-md-6">
+                <div class="card mb-3" style="border-color: <?php echo $color ?>;">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <a href="<?php echo htmlspecialchars($article['link']) ?>" target="_blank" class="text-decoration-none link-primary ">
+                                <?php echo htmlspecialchars($article['title']) ?>
+                            </a>
+                        </h5>
+                        <p class="card-text">
+                            <small class="text-muted">
+                                <?php if(empty($article['author'])) { ?>
+                                    Em <?php echo date('d/m/Y', strtotime($article['publication_date'])) ?> | <a href="<?php echo htmlspecialchars($site['url']) ?>"  target="_blank" class="link-secondary"><?php echo htmlspecialchars($site['name']) ?></a>
+                                <?php } else { ?>
+                                    Por <?php echo htmlspecialchars($article['author'] ?? 'Unknown') ?> em <?php echo date('d/m/Y', strtotime($article['publication_date'])) ?> | <a href="<?php echo htmlspecialchars($site['url']) ?>" target="_blank" class="link-secondary"><?php echo htmlspecialchars($site['name']) ?></a>
+                                <?php } ?>
+                            </small>
+                        </p>
+                        <?php if ($scaledRelevance): ?>
+                            <span class="badge" style="background-color: <?php echo $color ?>;">Relevancia: <?php echo $scaledRelevance ?></span>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
-        </div>
-    <?php endforeach; ?>
+        <?php endforeach; ?>
+    </div>
 
     <?php
     $totalPages = ceil($totalResults / 10);
@@ -90,7 +94,7 @@ include __DIR__ . '/header.php';
 
     if ($totalPages > 1):
     ?>
-        <nav>
+        <nav class="d-flex justify-content-center">
             <ul class="pagination pagination-dark">
                 <?php if ($page > 1): ?>
                     <li class="page-item">
@@ -114,7 +118,7 @@ include __DIR__ . '/header.php';
                             <a class="page-link" href="?q=<?php echo urlencode($query) ?>&order=<?php echo $orderBy ?>&page=1">1</a>
                         </li>
                         <?php if ($startPage > 2): ?>
-                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                            <li class="page-item disabled"><span class="page-link">..</span></li>
                         <?php endif;
                     endif;
 
@@ -125,7 +129,7 @@ include __DIR__ . '/header.php';
                     <?php endfor;
 
                     if ($endPage < $totalPages - 1): ?>
-                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        <li class="page-item disabled"><span class="page-link">..</span></li>
                     <?php endif;
 
                     if ($endPage < $totalPages): ?>

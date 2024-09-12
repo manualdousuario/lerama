@@ -17,11 +17,15 @@ $appConfig = require __DIR__ . '/config/appConfig.php';
     <meta name="msapplication-TileColor" content="#ff9a00">
     <meta name="theme-color" content="#ffffff">
     <link href="//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="//cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="/"><?php echo htmlspecialchars($appConfig['site']['name']) ?></a>
+            <a class="navbar-brand fs-4" href="<?php echo htmlspecialchars($appConfig['site']['url']); ?>">
+                <i class="bi bi-journal-bookmark-fill"></i>
+                <?php echo htmlspecialchars($appConfig['site']['name']); ?>
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Abrir menu">
                 <span class="navbar-toggler-icon"></span>
             </button>
