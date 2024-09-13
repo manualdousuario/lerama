@@ -13,7 +13,7 @@ RUN chown -R www-data:www-data /var/www/html \
 COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
-RUN echo "0 * * * * /usr/local/bin/php /var/www/html/cron/fetchFeeds.php >> /var/log/cron.log 2>&1" >> /etc/crontab
+RUN echo "* * * * * /usr/local/bin/php /var/www/html/cron/fetchFeeds.php >> /var/log/cron.log 2>&1" >> /etc/crontab
 
 RUN sed -i "s|'localhost'|'${DB_HOST}'|g" /var/www/html/config/appConfig.php \
     && sed -i "s|'root'|'${DB_USERNAME}'|g" /var/www/html/config/appConfig.php \

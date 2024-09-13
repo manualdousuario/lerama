@@ -81,7 +81,7 @@ class FeedFetcher
     private function processAtomFeed($feed, $site)
     {
         foreach ($feed->entry as $entry) {
-            $uniqueId = md5($entry->id . $entry->updated);
+            $uniqueId = md5((string)$entry->guid);
 
             $existsStmt = $this->db->prepare("SELECT id FROM articles WHERE unique_identifier = :unique_id");
             $existsStmt->execute(['unique_id' => $uniqueId]);
