@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y nginx cron nano procps \
     && docker-php-ext-install pdo_mysql
 	
 COPY default.conf /etc/nginx/sites-available/default
-
+COPY docker-php-env.ini /usr/local/etc/php/conf.d/
 COPY src/ /var/www/html/
 
 COPY start.sh /usr/local/bin/start.sh
