@@ -55,7 +55,7 @@ class FeedFetcher
     private function processRssFeed($feed, $site)
     {
         foreach ($feed->channel->item as $item) {
-            $uniqueId = md5((string)$item->guid);
+            $uniqueId = md5((string)$item->link);
 
             $existsStmt = $this->db->prepare("SELECT id FROM articles WHERE unique_identifier = :unique_id");
             $existsStmt->execute(['unique_id' => $uniqueId]);
@@ -81,7 +81,7 @@ class FeedFetcher
     private function processAtomFeed($feed, $site)
     {
         foreach ($feed->entry as $entry) {
-            $uniqueId = md5((string)$entry->guid);
+            $uniqueId = md5((string)$entry->link['href']);
 
             $existsStmt = $this->db->prepare("SELECT id FROM articles WHERE unique_identifier = :unique_id");
             $existsStmt->execute(['unique_id' => $uniqueId]);
