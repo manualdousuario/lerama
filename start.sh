@@ -1,5 +1,8 @@
 #!/bin/bash
 
+echo "Iniciando rotinas."
+service cron restart
+
 check_nginx() {
     if ! pgrep nginx > /dev/null; then
         echo "Falha ao iniciar webservice."
