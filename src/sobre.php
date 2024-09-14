@@ -1,5 +1,5 @@
 <?php
-$appConfig = require __DIR__ . '/config/appConfig.php';
+$appConfig = require __DIR__ . '/config.php';
 
 include __DIR__ . '/header.php';
 ?>

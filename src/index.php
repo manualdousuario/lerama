@@ -5,7 +5,7 @@ require_once __DIR__ . '/class/ArticleSearch.php';
 use Src\Database;
 use Src\ArticleSearch;
 
-$appConfig = require __DIR__ . '/config/appConfig.php';
+$appConfig = require __DIR__ . '/config.php';
 
 $db = Database::getInstance($appConfig['database']);
 $search = new ArticleSearch($db);

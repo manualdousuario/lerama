@@ -9,7 +9,7 @@ require_once __DIR__ . '/../class/FeedFetcher.php';
 use Src\Database;
 use Src\FeedFetcher;
 
-$appConfig = require __DIR__ . '/../config/appConfig.php';
+$appConfig = require __DIR__ . '/../config.php';
 
 echo "Processando rotinas [".date("Y-m-d H:i:s")."]".PHP_EOL;
 

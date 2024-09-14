@@ -1,6 +1,6 @@
 <?php
 $currentPage = basename($_SERVER['PHP_SELF'], ".php");
-$appConfig = require __DIR__ . '/config/appConfig.php';
+$appConfig = require __DIR__ . '/config.php';
 ?>
 
 <!DOCTYPE html>

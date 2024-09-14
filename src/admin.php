@@ -3,7 +3,7 @@ require_once __DIR__ . '/class/Database.php';
 
 use Src\Database;
 
-$appConfig = require __DIR__ . '/config/appConfig.php';
+$appConfig = require __DIR__ . '/config.php';
 
 session_start();
 
