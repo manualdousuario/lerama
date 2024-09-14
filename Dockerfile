@@ -18,7 +18,7 @@ COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
 RUN touch /var/log/lerama.log
-RUN echo '* * * * * root php "/var/www/html/cron/fetchFeeds.php" >> /var/log/lerama.log 2>&1' >> /etc/crontab
+RUN echo '0 * * * * root php "/var/www/html/cron/fetchFeeds.php" >> /var/log/lerama.log 2>&1' >> /etc/crontab
 
 RUN chown -R www-data:www-data /var/www/html && chmod -R 755 /var/www/html
 

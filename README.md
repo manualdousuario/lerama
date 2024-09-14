@@ -46,6 +46,7 @@ services:
 ```
 
 Atualize as informações dos environments e em seguida pode rodar `docker compose up -d`
+Todos as tags de environment são obrigatorias.
 
 Antes de começar, precisamos criar as tabelas do banco de dados.
 
@@ -82,6 +83,6 @@ Após executar o SQL, você pode verificar se as tabelas foram criadas com suces
 
 Recomendo que utilize o [NGINX Proxy Manager](https://nginxproxymanager.com/) como webservice a frente dessa imagem, isso dará mais proteção e camadas de cache.
 
-As rotinas de coleta de dados irão rodar a cada 3 horas
+As rotinas de coleta de dados irão rodar a cada hora e o log pode ser visto em `/var/log/lorema.log`
 
 Uma instalação pública está disponivel em [PC do Manual](https://lerama.pcdomanual.com/) 
