@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 
 # Função para logs de sucesso
 log_success() {
-    echo -e "${GREEN}[✓] $1${NC}" | tee -a /dev/stdout
+    echo -e "${GREEN}[✓] $1${NC}"
 }
 
 # Função para logs de erro
@@ -28,10 +28,10 @@ log_error() {
 
 # Função para logs de informação
 log_info() {
-    echo -e "${YELLOW}[i] $1${NC}" | tee -a /dev/stdout
+    echo -e "${YELLOW}[i] $1${NC}"
 }
 
-echo -e "\n${YELLOW}=== Iniciando Container Sintoniza ===${NC}\n" | tee -a /dev/stdout
+echo -e "\n${YELLOW}=== Iniciando Container Sintoniza ===${NC}\n"
 
 # === Validação de Variáveis de Ambiente ===
 log_info "Validando variáveis de ambiente..."
@@ -118,7 +118,7 @@ EOF
 log_success "Sistema de logs configurado"
 
 # === Inicialização dos Serviços ===
-echo -e "\n${YELLOW}=== Iniciando serviços ===${NC}\n" | tee -a /dev/stdout
+echo -e "\n${YELLOW}=== Iniciando serviços ===${NC}\n"
 
 # Iniciando Cron com redirecionamento de logs
 log_info "Iniciando serviço Cron..."
@@ -169,7 +169,7 @@ fi
 log_info "Iniciando Nginx..."
 exec nginx -g "daemon off;" 2>&1 | logger -t nginx
 
-echo -e "\n${GREEN}=== Container Sintoniza inicializado ===${NC}\n" | tee -a /dev/stdout
+echo -e "\n${GREEN}=== Container Sintoniza inicializado ===${NC}\n"
 
 wait -n
 
