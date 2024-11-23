@@ -5,6 +5,13 @@ RUN apt-get update && apt-get install -y nginx cron nano procps unzip git \
 	
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
+# Configura o PHP-FPM para enviar logs para o coletor de logs do Docker
+RUN ln -sf /dev/stdout /var/log/php-fpm.access.log \
+    && ln -sf /dev/stderr /var/log/php-fpm.error.log
+
+# Configura o log de erros do PHP
+RUN echo "error_log = /dev/stderr" >> /usr/local/etc/php/php.ini
+
 COPY default.conf /etc/nginx/sites-available/default
 
 RUN mkdir -p /app
@@ -19,10 +26,15 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 RUN mkdir -p /app/logs
 
-RUN touch /app/logs/cron.log
-RUN echo '0 * * * * root php "/app/cron/fetchFeeds.php" >> /app/logs/cron.log 2>&1' >> /etc/crontab
+# Configura o cron para usar o logger para coleta de logs do Docker
+RUN touch /app/logs/cron.log && ln -sf /dev/stdout /app/logs/cron.log
+RUN echo '0 * * * * root php "/app/cron/fetchFeeds.php" 2>&1 | logger -t cron-fetchfeeds' >> /etc/crontab
 
 RUN chown -R www-data:www-data /app && chmod -R 755 /app
+
+# Garante que os logs do nginx sejam direcionados para o coletor de logs do Docker
+RUN ln -sf /dev/stdout /var/log/nginx/access.log \
+    && ln -sf /dev/stderr /var/log/nginx/error.log
 
 EXPOSE 80
 

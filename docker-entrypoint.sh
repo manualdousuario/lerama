@@ -17,21 +17,21 @@ NC='\033[0m' # No Color
 
 # Função para logs de sucesso
 log_success() {
-    echo -e "${GREEN}[✓] $1${NC}"
+    echo -e "${GREEN}[✓] $1${NC}" | tee -a /dev/stdout
 }
 
 # Função para logs de erro
 log_error() {
-    echo -e "${RED}[✗] $1${NC}"
+    echo -e "${RED}[✗] $1${NC}" | tee -a /dev/stderr
     exit 1
 }
 
 # Função para logs de informação
 log_info() {
-    echo -e "${YELLOW}[i] $1${NC}"
+    echo -e "${YELLOW}[i] $1${NC}" | tee -a /dev/stdout
 }
 
-echo -e "\n${YELLOW}=== Iniciando Container Sintoniza ===${NC}\n"
+echo -e "\n${YELLOW}=== Iniciando Container Sintoniza ===${NC}\n" | tee -a /dev/stdout
 
 # === Validação de Variáveis de Ambiente ===
 log_info "Validando variáveis de ambiente..."
@@ -73,12 +73,56 @@ echo "ADMIN_PASSWORD=${ADMIN_PASSWORD}" >> /app/.env
 
 log_success "Variáveis de ambiente configuradas"
 
-# === Inicialização dos Serviços ===
-echo -e "\n${YELLOW}=== Iniciando serviços ===${NC}\n"
+# === Configuração de Logs ===
+log_info "Configurando sistema de logs..."
 
-# Iniciando Cron
+# Ensure log directories exist with proper permissions
+mkdir -p /var/log/nginx
+mkdir -p /var/log/php-fpm
+chown -R www-data:www-data /var/log/nginx /var/log/php-fpm
+
+# Configure logrotate for nginx
+cat > /etc/logrotate.d/nginx << EOF
+/var/log/nginx/*.log {
+    daily
+    missingok
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+    create 0640 www-data adm
+    sharedscripts
+    postrotate
+        [ ! -f /var/run/nginx.pid ] || kill -USR1 \`cat /var/run/nginx.pid\`
+    endscript
+}
+EOF
+
+# Configure logrotate for PHP-FPM
+cat > /etc/logrotate.d/php-fpm << EOF
+/var/log/php-fpm/*.log {
+    daily
+    missingok
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+    create 0640 www-data adm
+    sharedscripts
+    postrotate
+        [ ! -f /var/run/php-fpm.pid ] || kill -USR1 \`cat /var/run/php-fpm.pid\`
+    endscript
+}
+EOF
+
+log_success "Sistema de logs configurado"
+
+# === Inicialização dos Serviços ===
+echo -e "\n${YELLOW}=== Iniciando serviços ===${NC}\n" | tee -a /dev/stdout
+
+# Iniciando Cron com redirecionamento de logs
 log_info "Iniciando serviço Cron..."
-service cron restart
+service cron restart 2>&1 | logger -t cron
 log_success "Serviço Cron iniciado"
 
 # Funções de verificação de serviços
@@ -106,28 +150,26 @@ if [ ! -d /var/run/php ]; then
     log_success "Diretório PHP-FPM criado"
 fi
 
-# Iniciando PHP-FPM
+# Iniciando PHP-FPM com redirecionamento de logs
 log_info "Iniciando PHP-FPM..."
-php-fpm &
+php-fpm --allow-to-run-as-root 2>&1 | logger -t php-fpm &
 sleep 3
 check_php_fpm
 
 # Verificando configuração Nginx
 log_info "Verificando configuração do Nginx..."
-nginx -t
+nginx -t 2>&1 | logger -t nginx-config
 if [ $? -ne 0 ]; then
     log_error "Configuração do Nginx inválida"
 else
     log_success "Configuração do Nginx válida"
 fi
 
-# Iniciando Nginx
+# Iniciando Nginx em primeiro plano com redirecionamento de logs
 log_info "Iniciando Nginx..."
-nginx -g "daemon off;" &
-sleep 3
-check_nginx
+exec nginx -g "daemon off;" 2>&1 | logger -t nginx
 
-echo -e "\n${GREEN}=== Container Sintoniza inicializado ===${NC}\n"
+echo -e "\n${GREEN}=== Container Sintoniza inicializado ===${NC}\n" | tee -a /dev/stdout
 
 wait -n
 
