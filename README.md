@@ -1,19 +1,40 @@
+# 📰 Lerama
 
-# Lerama
+[![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg)](https://github.com/manualdousuario/lerama/blob/master/README.md)
 
 O Lerama é um agregador de feeds ATOM e RSS2.0 feito como alternativa ao [OpenOrb](https://git.sr.ht/~lown/openorb) para o [PC do Manual](https://pcdomanual.com/).
 
-*Essa é a primeira vez que faço uma integração completa de um projeto com imagens Docker, toda melhoria, correção, ajuste e PR`s são bem vindas!*
+## ✨ Recursos
 
-## Docker
+- Agregação automática de feeds ATOM e RSS2.0
+- Coleta automática de dados a cada hora
+- Sistema de detecção e gestão de erros
+- Busca em texto completo dos artigos
+- Interface limpa e otimizada
+- Suporte a múltiplos sites
+- Sistema de cache eficiente
+- Banco de dados MariaDB para armazenamento robusto
 
-Apos instalar o docker, vamos criar um *compose*:
+## 🐳 Docker
 
-`curl -o ./docker-compose.yml https://raw.githubusercontent.com/manualdousuario/lerama/main/docker-compose.yml`
+### Antes de começar
 
-`nano docker-compose.yml`
+Só precisa ter instalado:
+- Docker e docker compose
 
+### Produção
+
+1. Baixe o arquivo de configuração:
+```bash
+curl -o ./docker-compose.yml https://raw.githubusercontent.com/manualdousuario/lerama/main/docker-compose.yml
 ```
+
+2. Configure o ambiente:
+```bash
+nano docker-compose.yml
+```
+
+```yaml
 services:
   lerama:
     container_name: lerama
@@ -30,7 +51,6 @@ services:
       ADMIN_PASSWORD: p@ssw0rd
     depends_on:
       - db
-services:
   db:
     image: mariadb:10.11
     container_name: db
@@ -45,14 +65,19 @@ services:
       - ./mariadb/data:/var/lib/mysql
 ```
 
-Atualize as informações dos environments e em seguida pode rodar `docker compose up -d`
-Todos as tags de environment são obrigatorias.
+### Configuração do Banco de Dados
 
-Antes de começar, precisamos criar as tabelas do banco de dados.
-
-`docker exec -it db mysql -u USUARIO -pSENHA BANCO_DE_DADOS`
-
+1. Inicie os containers:
+```bash
+docker compose up -d
 ```
+
+2. Acesse o MySQL e crie as tabelas:
+```bash
+docker exec -it db mysql -u USUARIO -pSENHA BANCO_DE_DADOS
+```
+
+```sql
 CREATE TABLE IF NOT EXISTS sites (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -77,12 +102,29 @@ CREATE TABLE IF NOT EXISTS articles (
 CREATE FULLTEXT INDEX idx_title_fulltext ON articles (title);
 ```
 
-Após executar o SQL, você pode verificar se as tabelas foram criadas com sucesso: `SHOW TABLES`;
+Verifique se as tabelas foram criadas: `SHOW TABLES;`
 
-## Informações adicionais
+## ⚙️ Recomendações
 
-Recomendo que utilize o [NGINX Proxy Manager](https://nginxproxymanager.com/) como webservice a frente dessa imagem, isso dará mais proteção e camadas de cache.
+- Utilize o [NGINX Proxy Manager](https://nginxproxymanager.com/) como webservice para maior proteção e camadas de cache
+- Configure corretamente todas as variáveis de ambiente antes de iniciar
+- Mantenha backups regulares do banco de dados
 
-As rotinas de coleta de dados irão rodar a cada hora e o log pode ser visto em `/var/log/lorema.log`
+## 🛠️ Manutenção
 
-Uma instalação pública está disponivel em [PC do Manual](https://lerama.pcdomanual.com/) 
+### Logs
+
+Para acompanhar a execução:
+```bash
+tail -f /var/log/lorema.log
+```
+
+### Coleta de Dados
+
+A coleta de feeds é executada automaticamente a cada hora. Você pode monitorar o processo através dos logs.
+
+---
+
+Feito com ❤️! Se tiver dúvidas, sugestões ou encontrar problemas, abra uma issue que a gente ajuda! 😉
+
+Instância pública disponível em [lerama.pcdomanual.com](https://lerama.pcdomanual.com/)
