@@ -17,6 +17,8 @@ RUN composer install --no-interaction --optimize-autoloader
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
+RUN mkdir -p /app/logs
+
 RUN touch /app/logs/cron.log
 RUN echo '0 * * * * root php "/app/cron/fetchFeeds.php" >> /app/logs/cron.log 2>&1' >> /etc/crontab
 

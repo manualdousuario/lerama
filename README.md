@@ -17,7 +17,7 @@ Apos instalar o docker, vamos criar um *compose*:
 services:
   lerama:
     container_name: lerama
-    image: ghcr.io/manualdousuario/lerama/lerama:latest
+    image: ghcr.io/manualdousuario/lerama:latest
     ports:
       - "80:80"
     environment:
