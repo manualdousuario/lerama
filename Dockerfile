@@ -6,22 +6,22 @@ RUN apt-get update && apt-get install -y nginx cron nano procps unzip git \
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 COPY default.conf /etc/nginx/sites-available/default
-COPY src/ /var/www/html/
 
-WORKDIR /var/www/html
+RUN mkdir -p /app
+COPY app/ /app/
+
+WORKDIR /app
 RUN composer install --no-interaction --optimize-autoloader
 
-COPY env.sh /usr/local/bin/env.sh
-RUN chmod +x /usr/local/bin/env.sh
+# Copia e configura permissões do script de inicialização
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-COPY start.sh /usr/local/bin/start.sh
-RUN chmod +x /usr/local/bin/start.sh
+RUN touch /app/logs/cron.log
+RUN echo '0 * * * * root php "/app/cron/fetchFeeds.php" >> /app/logs/cron.log 2>&1' >> /etc/crontab
 
-RUN touch /var/log/lerama.log
-RUN echo '0 * * * * root php "/var/www/html/cron/fetchFeeds.php" >> /var/log/lerama.log 2>&1' >> /etc/crontab
-
-RUN chown -R www-data:www-data /var/www/html && chmod -R 755 /var/www/html
+RUN chown -R www-data:www-data /app && chmod -R 755 /app
 
 EXPOSE 80
 
-CMD ["/bin/bash", "-c", "/usr/local/bin/env.sh && /usr/local/bin/start.sh"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
