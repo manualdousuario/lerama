@@ -1,130 +1,280 @@
-# 📰 Lerama
+# Lerama Feed Aggregator
 
-[![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg)](https://github.com/manualdousuario/lerama/blob/master/README.md)
+A PHP-based feed aggregator application that supports multiple feed formats including RSS, Atom, RDF, CSV, JSON, and XML.
 
-O Lerama é um agregador de feeds ATOM e RSS2.0 feito como alternativa ao [OpenOrb](https://git.sr.ht/~lown/openorb) para o [PC do Manual](https://pcdomanual.com/).
+## Features
 
-## ✨ Recursos
+- Collect and aggregate content from various feed formats
+- Web interface to browse aggregated content
+- Admin panel to manage feeds and content
+- CLI command for feed processing
+- JSON and RSS API endpoints
+- Search functionality
+- Responsive design with TailwindCSS
+- Automatic feed type detection
 
-- Agregação automática de feeds ATOM e RSS2.0
-- Coleta automática de dados a cada hora
-- Sistema de detecção e gestão de erros
-- Busca em texto completo dos artigos
-- Interface limpa e otimizada
-- Suporte a múltiplos sites
-- Sistema de cache eficiente
-- Banco de dados MariaDB para armazenamento robusto
+## Requirements
 
-## 🐳 Docker
+- PHP 8.4 or higher
+- MariaDB/MySQL
+- Composer
 
-### Antes de começar
+## Installation
 
-Só precisa ter instalado:
-- Docker e docker compose
+1. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/lerama.git
+   cd lerama
+   ```
 
-### Produção
+2. Install dependencies:
+   ```
+   composer install
+   ```
 
-1. Baixe o arquivo de configuração:
-```bash
-curl -o ./docker-compose.yml https://raw.githubusercontent.com/manualdousuario/lerama/main/docker-compose.yml
+3. Create a `.env` file:
+   ```
+   cp .env.example .env
+   ```
+
+4. Update the `.env` file with your database credentials and other settings.
+
+5. Create the database and tables (choose one method):
+   
+   **Method 1:** Using the setup script:
+   ```
+   php setup-database.php
+   ```
+   
+   **Method 2:** Manually with MySQL:
+   ```
+   mysql -u username -p < database/schema.sql
+   ```
+
+6. Make the CLI command executable (Linux/macOS only):
+   ```
+   chmod +x bin/lerama
+   ```
+   
+   On Windows, you can run the CLI command using:
+   ```
+   php bin/lerama
+   ```
+
+## Deployment
+
+You can use the provided deployment script to simplify the installation and setup process (Linux/macOS):
+
+```
+chmod +x deploy.sh
+./deploy.sh --help
 ```
 
-2. Configure o ambiente:
-```bash
-nano docker-compose.yml
+For Windows users, you can use the provided batch script:
+
+```
+deploy.bat --help
 ```
 
-```yaml
-services:
-  lerama:
-    container_name: lerama
-    image: ghcr.io/manualdousuario/lerama:latest
-    ports:
-      - "80:80"
-    environment:
-      DB_HOST: mariadb
-      DB_USERNAME: USUARIO
-      DB_PASSWORD: SENHA
-      DB_NAME: BANCO_DE_DADOS
-      SITE_URL: https://lerama.xyz
-      SITE_NAME: Lerama
-      ADMIN_PASSWORD: p@ssw0rd
-    depends_on:
-      - db
-  db:
-    image: mariadb:10.11
-    container_name: db
-    environment:
-      MYSQL_ROOT_PASSWORD: SENHA_ROOT
-      MYSQL_DATABASE: BANCO_DE_DADOS
-      MYSQL_USER: USUARIO
-      MYSQL_PASSWORD: SENHA
-    ports:
-      - 3306:3306
-    volumes:
-      - ./mariadb/data:/var/lib/mysql
+This batch script provides similar functionality to the bash script but is designed for Windows systems.
+
+Available options:
+
+- `--install`: Install dependencies and set up the application
+- `--update`: Update the application (git pull and composer update)
+- `--setup-nginx`: Set up NGINX configuration
+- `--setup-cron`: Set up cron jobs
+- `--setup-database`: Set up the database
+- `--docker`: Deploy using Docker
+
+Examples:
+
+```
+./deploy.sh --install
+./deploy.sh --setup-nginx
+./deploy.sh --docker
 ```
 
-### Configuração do Banco de Dados
+You can also run multiple options together:
 
-1. Inicie os containers:
-```bash
-docker compose up -d
+```
+./deploy.sh --install --setup-database --setup-cron
 ```
 
-2. Acesse o MySQL e crie as tabelas:
-```bash
-docker exec -it db mysql -u USUARIO -pSENHA BANCO_DE_DADOS
+## Usage
+
+```
+   chmod +x bin/lerama
+   ```
+
+## Usage
+
+### Web Interface
+
+You can use either PHP's built-in development server or NGINX to serve the application.
+
+#### Using PHP's built-in server (for development)
+
+```
+php -S localhost:8000 -t public
 ```
 
-```sql
-CREATE TABLE IF NOT EXISTS sites (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    url VARCHAR(255) NOT NULL,
-    feed_url VARCHAR(255) NOT NULL,
-    status ENUM('active', 'inactive') DEFAULT 'active',
-    error_count INT DEFAULT 0,
-    last_error_check TIMESTAMP NULL DEFAULT NULL
-);
+Then visit `http://localhost:8000` in your browser.
 
-CREATE TABLE IF NOT EXISTS articles (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    site_id INT NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    author VARCHAR(255),
-    publication_date DATETIME NOT NULL,
-    link VARCHAR(255) NOT NULL,
-    unique_identifier VARCHAR(255) NOT NULL,
-    FOREIGN KEY (site_id) REFERENCES sites(id)
-);
+#### Using NGINX (recommended for production)
 
-CREATE FULLTEXT INDEX idx_title_fulltext ON articles (title);
+1. Copy the provided `nginx.conf` file to your NGINX configuration directory:
+   ```
+   sudo cp nginx.conf /etc/nginx/sites-available/lerama
+   ```
+
+2. Create a symbolic link to enable the site:
+   ```
+   sudo ln -s /etc/nginx/sites-available/lerama /etc/nginx/sites-enabled/
+   ```
+
+3. Edit the configuration file to update the server_name and root path:
+   ```
+   sudo nano /etc/nginx/sites-available/lerama
+   ```
+
+4. Test the NGINX configuration:
+   ```
+   sudo nginx -t
+   ```
+
+5. Restart NGINX:
+   ```
+   sudo systemctl restart nginx
+   ```
+
+6. Make sure PHP-FPM is installed and running:
+   ```
+   sudo apt install php8.4-fpm
+   sudo systemctl start php8.4-fpm
+   sudo systemctl enable php8.4-fpm
+   ```
+
+7. Visit your domain in the browser.
+
+### CLI Command
+
+Process all feeds:
+
+```
+./bin/lerama --process
 ```
 
-Verifique se as tabelas foram criadas: `SHOW TABLES;`
+Process a specific feed by ID:
 
-## ⚙️ Recomendações
-
-- Utilize o [NGINX Proxy Manager](https://nginxproxymanager.com/) como webservice para maior proteção e camadas de cache
-- Configure corretamente todas as variáveis de ambiente antes de iniciar
-- Mantenha backups regulares do banco de dados
-
-## 🛠️ Manutenção
-
-### Logs
-
-Para acompanhar a execução:
-```bash
-tail -f /var/log/lorema.log
+```
+./bin/lerama --process --feed=1
 ```
 
-### Coleta de Dados
+Show help:
 
-A coleta de feeds é executada automaticamente a cada hora. Você pode monitorar o processo através dos logs.
+```
+./bin/lerama --help
+```
 
----
+### Automating Feed Processing with Cron
 
-Feito com ❤️! Se tiver dúvidas, sugestões ou encontrar problemas, abra uma issue que a gente ajuda! 😉
+A crontab file is provided to help you set up automated feed processing:
 
-Instância pública disponível em [lerama.pcdomanual.com](https://lerama.pcdomanual.com/)
+1. Edit the crontab file to update the paths:
+   ```
+   nano crontab
+   ```
+
+2. Install the cron jobs (as root or with sudo):
+   ```
+   cp crontab /etc/cron.d/lerama
+   chmod 644 /etc/cron.d/lerama
+   ```
+
+3. Verify the cron job is installed:
+   ```
+   crontab -l
+   ```
+
+The default configuration processes all feeds every hour and cleans up old items daily.
+
+## Feed Formats Supported
+
+- RSS 1.0 and 2.0
+- Atom
+- RDF
+- CSV
+- JSON
+- XML
+
+## Directory Structure
+
+- `bin/` - CLI commands
+- `config/` - Configuration files
+- `database/` - Database schema and migrations
+- `public/` - Public-facing files (web entry point)
+- `src/` - Application source code
+  - `Commands/` - CLI command classes
+  - `Controllers/` - Web controllers
+  - `Middleware/` - HTTP middleware
+- `templates/` - View templates
+  - `admin/` - Admin panel templates
+
+## Docker Deployment
+
+The application can be easily deployed using Docker and Docker Compose.
+
+### Prerequisites
+
+- Docker
+- Docker Compose
+
+### Deployment Steps
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/lerama.git
+   cd lerama
+   ```
+
+2. Create a `.env` file:
+   ```
+   cp .env.example .env
+   ```
+
+3. Update the `.env` file with your settings. For Docker deployment, set:
+   ```
+   DB_HOST=db
+   DB_USER=lerama
+   DB_PASS=your_password
+   DB_NAME=lerama
+   DB_PORT=3306
+   ```
+
+4. Build and start the containers:
+   ```
+   docker-compose up -d
+   ```
+
+5. Access the application:
+   - Web interface: http://localhost:8080
+   - phpMyAdmin: http://localhost:8081
+
+### Running CLI Commands in Docker
+
+To run the feed processor in Docker:
+
+```
+docker-compose exec app php bin/lerama --process
+```
+
+### Stopping the Containers
+
+```
+docker-compose down
+```
+
+## License
+
+MIT

@@ -1,41 +1,50 @@
-FROM php:8.0-fpm
+FROM php:8.4-fpm
 
-RUN apt-get update && apt-get install -y nginx cron nano procps unzip \
-    && docker-php-ext-install pdo_mysql
-	
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip \
+    nginx \
+    supervisor
 
-# Configura o PHP-FPM para enviar logs para o coletor de logs do Docker
-RUN ln -sf /dev/stdout /var/log/php-fpm.access.log \
-    && ln -sf /dev/stderr /var/log/php-fpm.error.log
+# Clear cache
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Configura o log de erros do PHP
-RUN echo "error_log = /dev/stderr" >> /usr/local/etc/php/php.ini
+# Install PHP extensions
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
-COPY default.conf /etc/nginx/sites-available/default
+# Get latest Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-RUN mkdir -p /app
-COPY app/ /app/
+# Set working directory
+WORKDIR /var/www
 
-WORKDIR /app
-RUN composer install --no-interaction --optimize-autoloader
+# Copy application files
+COPY . /var/www/
 
-# Copia e configura permissões do script de inicialização
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/sites-available/default
+RUN sed -i 's|server_name lerama.local|server_name localhost|' /etc/nginx/sites-available/default
+RUN sed -i 's|/path/to/lerama/public|/var/www/public|' /etc/nginx/sites-available/default
+RUN sed -i 's|unix:/var/run/php/php8.4-fpm.sock|127.0.0.1:9000|' /etc/nginx/sites-available/default
 
-RUN mkdir -p /app/logs
+# Copy supervisor configuration
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Configura o cron para usar o logger para coleta de logs do Docker
-RUN touch /app/logs/cron.log && ln -sf /dev/stdout /app/logs/cron.log
-RUN echo '0 * * * * root php "/app/cron/fetchFeeds.php" 2>&1 | logger -t cron-fetchfeeds' >> /etc/crontab
+# Install dependencies
+RUN composer install --no-interaction --no-dev --optimize-autoloader
 
-RUN chown -R www-data:www-data /app && chmod -R 755 /app
+# Set permissions
+RUN chown -R www-data:www-data /var/www
+RUN chmod -R 755 /var/www/storage
 
-# Garante que os logs do nginx sejam direcionados para o coletor de logs do Docker
-RUN ln -sf /dev/stdout /var/log/nginx/access.log \
-    && ln -sf /dev/stderr /var/log/nginx/error.log
-
+# Expose port 80
 EXPOSE 80
 
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+# Start supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

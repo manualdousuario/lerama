@@ -1,0 +1,584 @@
+<?php
+declare(strict_types=1);
+
+namespace Lerama\Controllers;
+
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Laminas\Diactoros\Response\HtmlResponse;
+use Laminas\Diactoros\Response\JsonResponse;
+use Laminas\Diactoros\Response\RedirectResponse;
+use Laminas\Diactoros\Response\EmptyResponse;
+use League\Plates\Engine;
+use Lerama\Services\FeedTypeDetector;
+use DB;
+
+class AdminController
+{
+    private Engine $templates;
+
+    public function __construct()
+    {
+        $this->templates = new Engine(__DIR__ . '/../../templates');
+    }
+
+    public function loginForm(ServerRequestInterface $request): ResponseInterface
+    {
+        // Check if already logged in
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
+            return new RedirectResponse('/admin');
+        }
+        
+        // Render login form
+        $html = $this->templates->render('admin/login', [
+            'title' => 'Admin Login'
+        ]);
+        
+        return new HtmlResponse($html);
+    }
+
+    public function login(ServerRequestInterface $request): ResponseInterface
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        $params = (array)$request->getParsedBody();
+        $username = $params['username'] ?? '';
+        $password = $params['password'] ?? '';
+        
+        // Validate credentials
+        if ($username === $_ENV['ADMIN_USERNAME'] && $password === $_ENV['ADMIN_PASSWORD']) {
+            $_SESSION['admin_logged_in'] = true;
+            return new RedirectResponse('/admin');
+        }
+        
+        // Invalid credentials
+        $html = $this->templates->render('admin/login', [
+            'title' => 'Admin Login',
+            'error' => 'Invalid username or password'
+        ]);
+        
+        return new HtmlResponse($html);
+    }
+
+    public function logout(ServerRequestInterface $request): ResponseInterface
+    {
+        // Session is already started by AuthMiddleware
+        session_destroy();
+        
+        return new RedirectResponse('/admin/login');
+    }
+
+    public function index(ServerRequestInterface $request): ResponseInterface
+    {
+        // Get query parameters for pagination and filtering
+        $params = $request->getQueryParams();
+        $page = isset($params['page']) ? max(1, (int)$params['page']) : 1;
+        $perPage = 20;
+        $offset = ($page - 1) * $perPage;
+        $search = $params['search'] ?? '';
+        $feedId = isset($params['feed']) ? (int)$params['feed'] : null;
+        
+        // Build the query
+        $query = "SELECT fi.*, f.title as feed_title 
+                 FROM feed_items fi 
+                 JOIN feeds f ON fi.feed_id = f.id";
+        $countQuery = "SELECT COUNT(*) FROM feed_items fi JOIN feeds f ON fi.feed_id = f.id";
+        $queryParams = [];
+        $whereAdded = false;
+        
+        // Add search condition if provided
+        if (!empty($search)) {
+            $query .= " WHERE MATCH(fi.title, fi.content) AGAINST (%s IN BOOLEAN MODE)";
+            $countQuery .= " WHERE MATCH(fi.title, fi.content) AGAINST (%s IN BOOLEAN MODE)";
+            $queryParams[] = $search;
+            $whereAdded = true;
+        }
+        
+        // Add feed filter if provided
+        if ($feedId) {
+            if ($whereAdded) {
+                $query .= " AND fi.feed_id = %i";
+                $countQuery .= " AND fi.feed_id = %i";
+            } else {
+                $query .= " WHERE fi.feed_id = %i";
+                $countQuery .= " WHERE fi.feed_id = %i";
+                $whereAdded = true;
+            }
+            $queryParams[] = $feedId;
+        }
+        
+        // Finalize query with order and limit
+        $query .= " ORDER BY fi.published_at DESC LIMIT %i, %i";
+        $finalQueryParams = [...$queryParams, $offset, $perPage];
+        
+        // Execute the queries
+        $items = DB::query($query, ...$finalQueryParams);
+        $totalCount = DB::queryFirstField($countQuery, ...$queryParams);
+        $totalPages = ceil($totalCount / $perPage);
+        
+        // Get all feeds for the filter dropdown
+        $feeds = DB::query("SELECT id, title FROM feeds ORDER BY title");
+        
+        // Render the template
+        $html = $this->templates->render('admin/items', [
+            'items' => $items,
+            'feeds' => $feeds,
+            'search' => $search,
+            'selectedFeed' => $feedId,
+            'pagination' => [
+                'current' => $page,
+                'total' => $totalPages,
+                'baseUrl' => '/admin?' . http_build_query(array_filter([
+                    'search' => $search,
+                    'feed' => $feedId
+                ]))
+            ],
+            'title' => 'Manage Feed Items'
+        ]);
+        
+        return new HtmlResponse($html);
+    }
+
+    public function feeds(ServerRequestInterface $request): ResponseInterface
+    {
+        // Get all feeds with their status
+        $feeds = DB::query("
+            SELECT f.*, 
+                  (SELECT COUNT(*) FROM feed_items WHERE feed_id = f.id) as item_count,
+                  (SELECT MAX(published_at) FROM feed_items WHERE feed_id = f.id) as latest_item_date
+            FROM feeds f
+            ORDER BY f.title
+        ");
+        
+        // Render the template
+        $html = $this->templates->render('admin/feeds', [
+            'feeds' => $feeds,
+            'title' => 'Manage Feeds'
+        ]);
+        
+        return new HtmlResponse($html);
+    }
+    
+    /**
+     * Display the form to add a new feed
+     */
+    public function newFeedForm(ServerRequestInterface $request): ResponseInterface
+    {
+        // Check if this is a form submission
+        if ($request->getMethod() === 'POST') {
+            $params = (array)$request->getParsedBody();
+            $title = $params['title'] ?? '';
+            $feedUrl = $params['feed_url'] ?? '';
+            $siteUrl = $params['site_url'] ?? '';
+            $language = $params['language'] ?? 'en';
+            $feedType = $params['feed_type'] ?? '';
+            
+            // Validate input
+            $errors = [];
+            if (empty($title)) {
+                $errors['title'] = 'Title is required';
+            }
+            if (empty($feedUrl)) {
+                $errors['feed_url'] = 'Feed URL is required';
+            } elseif (!filter_var($feedUrl, FILTER_VALIDATE_URL)) {
+                $errors['feed_url'] = 'Feed URL must be a valid URL';
+            }
+            if (empty($siteUrl)) {
+                $errors['site_url'] = 'Site URL is required';
+            } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
+                $errors['site_url'] = 'Site URL must be a valid URL';
+            }
+            
+            if (!in_array($language, ['en', 'pt-BR', 'es'])) {
+                $errors['language'] = 'Invalid language selected';
+            } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
+                $errors['site_url'] = 'Site URL must be a valid URL';
+            }
+            
+            // If there are no errors, create the feed
+            if (empty($errors)) {
+                try {
+                    // Auto-detect feed type if not provided
+                    if (empty($feedType)) {
+                        $detector = new FeedTypeDetector();
+                        $detectedType = $detector->detectType($feedUrl);
+                        
+                        if ($detectedType) {
+                            $feedType = $detectedType;
+                        } else {
+                            // Default to RSS2 if detection fails
+                            $feedType = 'rss2';
+                        }
+                    }
+                    
+                    // Insert the new feed
+                    DB::insert('feeds', [
+                        'title' => $title,
+                        'feed_url' => $feedUrl,
+                        'site_url' => $siteUrl,
+                        'feed_type' => $feedType,
+                        'language' => $language,
+                        'status' => 'online'
+                    ]);
+                    
+                    // Redirect to feeds list
+                    return new RedirectResponse('/admin/feeds');
+                } catch (\Exception $e) {
+                    $errors['general'] = 'Error creating feed: ' . $e->getMessage();
+                }
+            }
+            
+            // If we got here, there were errors, re-render the form with errors
+            $html = $this->templates->render('admin/feed-form', [
+                'title' => 'Add New Feed',
+                'isEdit' => false,
+                'feed' => [
+                    'title' => $title,
+                    'feed_url' => $feedUrl,
+                    'site_url' => $siteUrl,
+                    'feed_type' => $feedType,
+                    'language' => $language
+                ],
+                'errors' => $errors
+            ]);
+            
+            return new HtmlResponse($html);
+        }
+        
+        // Render the empty form
+        $html = $this->templates->render('admin/feed-form', [
+            'title' => 'Add New Feed',
+            'isEdit' => false,
+            'feed' => null,
+            'errors' => []
+        ]);
+        
+        return new HtmlResponse($html);
+    }
+    
+    /**
+     * Display the form to edit a feed
+     */
+    public function editFeedForm(ServerRequestInterface $request, array $args): ResponseInterface
+    {
+        $id = (int)$args['id'];
+        
+        // Check if feed exists
+        $feed = DB::queryFirstRow("SELECT * FROM feeds WHERE id = %i", $id);
+        if (!$feed) {
+            return new RedirectResponse('/admin/feeds');
+        }
+        
+        // Check if this is a form submission
+        if ($request->getMethod() === 'POST') {
+            $params = (array)$request->getParsedBody();
+            $title = $params['title'] ?? '';
+            $feedUrl = $params['feed_url'] ?? '';
+            $siteUrl = $params['site_url'] ?? '';
+            $feedType = $params['feed_type'] ?? '';
+            $language = $params['language'] ?? $feed['language'];
+            $status = $params['status'] ?? $feed['status'];
+            
+            // Validate input
+            $errors = [];
+            if (empty($title)) {
+                $errors['title'] = 'Title is required';
+            }
+            if (empty($feedUrl)) {
+                $errors['feed_url'] = 'Feed URL is required';
+            } elseif (!filter_var($feedUrl, FILTER_VALIDATE_URL)) {
+                $errors['feed_url'] = 'Feed URL must be a valid URL';
+            }
+            if (empty($siteUrl)) {
+                $errors['site_url'] = 'Site URL is required';
+            } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
+                $errors['site_url'] = 'Site URL must be a valid URL';
+            }
+            
+            if (!in_array($language, ['en', 'pt-BR', 'es'])) {
+                $errors['language'] = 'Invalid language selected';
+            } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
+                $errors['site_url'] = 'Site URL must be a valid URL';
+            }
+            
+            // If there are no errors, update the feed
+            if (empty($errors)) {
+                try {
+                    $updateData = [
+                        'title' => $title,
+                        'feed_url' => $feedUrl,
+                        'site_url' => $siteUrl,
+                        'language' => $language,
+                        'status' => $status
+                    ];
+                    
+                    // Only update feed_type if provided
+                    if (!empty($feedType)) {
+                        $updateData['feed_type'] = $feedType;
+                    }
+                    
+                    // Update the feed
+                    DB::update('feeds', $updateData, 'id=%i', $id);
+                    
+                    // Redirect to feeds list
+                    return new RedirectResponse('/admin/feeds');
+                } catch (\Exception $e) {
+                    $errors['general'] = 'Error updating feed: ' . $e->getMessage();
+                }
+            }
+            
+            // If we got here, there were errors, re-render the form with errors
+            $html = $this->templates->render('admin/feed-form', [
+                'title' => 'Edit Feed',
+                'isEdit' => true,
+                'feed' => [
+                    'id' => $id,
+                    'title' => $title,
+                    'feed_url' => $feedUrl,
+                    'site_url' => $siteUrl,
+                    'feed_type' => $feedType,
+                    'language' => $language,
+                    'status' => $status
+                ],
+                'errors' => $errors
+            ]);
+            
+            return new HtmlResponse($html);
+        }
+        
+        // Render the form with feed data
+        $html = $this->templates->render('admin/feed-form', [
+            'title' => 'Edit Feed',
+            'isEdit' => true,
+            'feed' => $feed,
+            'errors' => []
+        ]);
+        
+        return new HtmlResponse($html);
+    }
+
+    public function createFeed(ServerRequestInterface $request): ResponseInterface
+    {
+        $params = (array)$request->getParsedBody();
+        $title = $params['title'] ?? '';
+        $feedUrl = $params['feed_url'] ?? '';
+        $siteUrl = $params['site_url'] ?? '';
+        $feedType = $params['feed_type'] ?? '';
+        
+        // Validate input
+        $errors = [];
+        if (empty($title)) {
+            $errors['title'] = 'Title is required';
+        }
+        if (empty($feedUrl)) {
+            $errors['feed_url'] = 'Feed URL is required';
+        } elseif (!filter_var($feedUrl, FILTER_VALIDATE_URL)) {
+            $errors['feed_url'] = 'Feed URL must be a valid URL';
+        }
+        if (empty($siteUrl)) {
+            $errors['site_url'] = 'Site URL is required';
+        } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
+            $errors['site_url'] = 'Site URL must be a valid URL';
+        }
+        
+        if (!empty($errors)) {
+            return new JsonResponse([
+                'success' => false,
+                'errors' => $errors
+            ], 400);
+        }
+        
+        try {
+            // Auto-detect feed type if not provided
+            if (empty($feedType)) {
+                $detector = new FeedTypeDetector();
+                $detectedType = $detector->detectType($feedUrl);
+                
+                if ($detectedType) {
+                    $feedType = $detectedType;
+                } else {
+                    // Default to RSS2 if detection fails
+                    $feedType = 'rss2';
+                }
+            }
+            
+            // Insert the new feed
+            DB::insert('feeds', [
+                'title' => $title,
+                'feed_url' => $feedUrl,
+                'site_url' => $siteUrl,
+                'feed_type' => $feedType,
+                'status' => 'online'
+            ]);
+            
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Feed created successfully'
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Error creating feed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateFeed(ServerRequestInterface $request, array $args): ResponseInterface
+    {
+        $id = (int)$args['id'];
+        $params = (array)$request->getParsedBody();
+        
+        // Check if feed exists
+        $feed = DB::queryFirstRow("SELECT * FROM feeds WHERE id = %i", $id);
+        if (!$feed) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Feed not found'
+            ], 404);
+        }
+        
+        // Validate input
+        $errors = [];
+        $updateData = [];
+        
+        if (isset($params['title'])) {
+            if (empty($params['title'])) {
+                $errors['title'] = 'Title cannot be empty';
+            } else {
+                $updateData['title'] = $params['title'];
+            }
+        }
+        
+        if (isset($params['feed_url'])) {
+            if (empty($params['feed_url'])) {
+                $errors['feed_url'] = 'Feed URL cannot be empty';
+            } elseif (!filter_var($params['feed_url'], FILTER_VALIDATE_URL)) {
+                $errors['feed_url'] = 'Feed URL must be a valid URL';
+            } else {
+                $updateData['feed_url'] = $params['feed_url'];
+            }
+        }
+        
+        if (isset($params['site_url'])) {
+            if (empty($params['site_url'])) {
+                $errors['site_url'] = 'Site URL cannot be empty';
+            } elseif (!filter_var($params['site_url'], FILTER_VALIDATE_URL)) {
+                $errors['site_url'] = 'Site URL must be a valid URL';
+            } else {
+                $updateData['site_url'] = $params['site_url'];
+            }
+        }
+        
+        if (isset($params['feed_type'])) {
+            $updateData['feed_type'] = $params['feed_type'];
+        }
+        
+        if (isset($params['status'])) {
+            $updateData['status'] = $params['status'];
+        }
+        
+        if (!empty($errors)) {
+            return new JsonResponse([
+                'success' => false,
+                'errors' => $errors
+            ], 400);
+        }
+        
+        if (empty($updateData)) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'No fields to update'
+            ], 400);
+        }
+        
+        try {
+            // Update the feed
+            DB::update('feeds', $updateData, 'id=%i', $id);
+            
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Feed updated successfully'
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Error updating feed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function deleteFeed(ServerRequestInterface $request, array $args): ResponseInterface
+    {
+        $id = (int)$args['id'];
+        
+        // Check if feed exists
+        $feed = DB::queryFirstRow("SELECT * FROM feeds WHERE id = %i", $id);
+        if (!$feed) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Feed not found'
+            ], 404);
+        }
+        
+        try {
+            // Delete the feed (cascade will delete items)
+            DB::delete('feeds', 'id=%i', $id);
+            
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Feed deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Error deleting feed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateItem(ServerRequestInterface $request, array $args): ResponseInterface
+    {
+        $id = (int)$args['id'];
+        $params = (array)$request->getParsedBody();
+        
+        // Check if item exists
+        $item = DB::queryFirstRow("SELECT * FROM feed_items WHERE id = %i", $id);
+        if (!$item) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Item not found'
+            ], 404);
+        }
+        
+        // Update visibility
+        if (isset($params['is_visible'])) {
+            $isVisible = (bool)$params['is_visible'];
+            
+            try {
+                DB::update('feed_items', [
+                    'is_visible' => $isVisible ? 1 : 0
+                ], 'id=%i', $id);
+                
+                return new JsonResponse([
+                    'success' => true,
+                    'message' => 'Item updated successfully'
+                ]);
+            } catch (\Exception $e) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Error updating item: ' . $e->getMessage()
+                ], 500);
+            }
+        }
+        
+        return new JsonResponse([
+            'success' => false,
+            'message' => 'No fields to update'
+        ], 400);
+    }
+}

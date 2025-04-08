@@ -1,0 +1,164 @@
+<?php
+declare(strict_types=1);
+
+namespace Lerama\Controllers;
+
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Laminas\Diactoros\Response\HtmlResponse;
+use Laminas\Diactoros\Response\JsonResponse;
+use Laminas\Diactoros\Response\XmlResponse;
+use League\Plates\Engine;
+use DB;
+
+class FeedController
+{
+    private Engine $templates;
+
+    public function __construct()
+    {
+        $this->templates = new Engine(__DIR__ . '/../../templates');
+    }
+
+    public function index(ServerRequestInterface $request): ResponseInterface
+    {
+        // Get all feeds with their status and image
+        $feeds = DB::query("
+            SELECT f.*,
+                  (SELECT COUNT(*) FROM feed_items WHERE feed_id = f.id) as item_count,
+                  (SELECT MAX(published_at) FROM feed_items WHERE feed_id = f.id) as latest_item_date
+            FROM feeds f
+            ORDER BY f.title
+        ");
+        
+        // Render the template
+        $html = $this->templates->render('feeds', [
+            'feeds' => $feeds,
+            'title' => 'Feed Sources'
+        ]);
+        
+        return new HtmlResponse($html);
+    }
+
+    public function json(ServerRequestInterface $request): ResponseInterface
+    {
+        // Get query parameters for pagination
+        $params = $request->getQueryParams();
+        $page = isset($params['page']) ? max(1, (int)$params['page']) : 1;
+        $perPage = isset($params['per_page']) ? min(100, max(1, (int)$params['per_page'])) : 20;
+        $offset = ($page - 1) * $perPage;
+        
+        // Get total count for pagination
+        $totalCount = DB::queryFirstField("SELECT COUNT(*) FROM feed_items WHERE is_visible = 1");
+        $totalPages = ceil($totalCount / $perPage);
+        
+        // Get items with pagination
+        $items = DB::query("
+            SELECT fi.id, fi.title, fi.author, fi.content, fi.url, fi.image_url, fi.published_at,
+                   f.title as feed_title, f.site_url as feed_site_url
+            FROM feed_items fi
+            JOIN feeds f ON fi.feed_id = f.id
+            WHERE fi.is_visible = 1
+            ORDER BY fi.published_at DESC
+            LIMIT %i, %i
+        ", $offset, $perPage);
+        
+        // Format items for JSON output
+        $formattedItems = [];
+        foreach ($items as $item) {
+            $formattedItems[] = [
+                'id' => $item['id'],
+                'title' => $item['title'],
+                'author' => $item['author'],
+                'content' => $item['content'],
+                'url' => $item['url'],
+                'image_url' => $item['image_url'],
+                'published_at' => $item['published_at'],
+                'feed' => [
+                    'title' => $item['feed_title'],
+                    'site_url' => $item['feed_site_url']
+                ]
+            ];
+        }
+        
+        // Create response with pagination metadata
+        $response = [
+            'items' => $formattedItems,
+            'pagination' => [
+                'total_items' => $totalCount,
+                'total_pages' => $totalPages,
+                'current_page' => $page,
+                'per_page' => $perPage
+            ]
+        ];
+        
+        return new JsonResponse($response);
+    }
+
+    public function xml(ServerRequestInterface $request): ResponseInterface
+    {
+        // Get query parameters for pagination
+        $params = $request->getQueryParams();
+        $page = isset($params['page']) ? max(1, (int)$params['page']) : 1;
+        $perPage = isset($params['per_page']) ? min(100, max(1, (int)$params['per_page'])) : 20;
+        $offset = ($page - 1) * $perPage;
+        
+        // Get items with pagination
+        $items = DB::query("
+            SELECT fi.id, fi.title, fi.author, fi.content, fi.url, fi.image_url, fi.published_at,
+                   f.title as feed_title, f.site_url as feed_site_url
+            FROM feed_items fi
+            JOIN feeds f ON fi.feed_id = f.id
+            WHERE fi.is_visible = 1
+            ORDER BY fi.published_at DESC
+            LIMIT %i, %i
+        ", $offset, $perPage);
+        
+        // Create RSS 2.0 XML
+        $xml = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"></rss>');
+        
+        // Add channel information
+        $channel = $xml->addChild('channel');
+        $channel->addChild('title', $_ENV['APP_NAME'] . ' Feed');
+        $channel->addChild('link', $_ENV['APP_URL']);
+        $channel->addChild('description', 'Aggregated feed from multiple sources');
+        $channel->addChild('language', 'en-us');
+        $channel->addChild('pubDate', date('r'));
+        
+        // Add items
+        foreach ($items as $item) {
+            $xmlItem = $channel->addChild('item');
+            $xmlItem->addChild('title', htmlspecialchars($item['title']));
+            
+            if (!empty($item['author'])) {
+                $xmlItem->addChild('author', htmlspecialchars($item['author']));
+            }
+            
+            $xmlItem->addChild('link', htmlspecialchars($item['url']));
+            $xmlItem->addChild('guid', htmlspecialchars($item['url']));
+            $xmlItem->addChild('pubDate', date('r', strtotime($item['published_at'])));
+            
+            // Add image if available
+            if (!empty($item['image_url'])) {
+                $enclosure = $xmlItem->addChild('enclosure');
+                $enclosure->addAttribute('url', htmlspecialchars($item['image_url']));
+                $enclosure->addAttribute('type', 'image/jpeg');
+            }
+            
+            // Add content as CDATA
+            $description = $xmlItem->addChild('description');
+            $node = dom_import_simplexml($description);
+            $owner = $node->ownerDocument;
+            $node->appendChild($owner->createCDATASection($item['content']));
+            
+            // Add source information
+            $source = $xmlItem->addChild('source', htmlspecialchars($item['feed_title']));
+            $source->addAttribute('url', htmlspecialchars($item['feed_site_url']));
+        }
+        
+        // Return XML response
+        $xmlString = $xml->asXML();
+        
+        return new XmlResponse($xmlString);
+    }
+}

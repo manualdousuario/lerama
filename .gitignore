@@ -1,3 +1,28 @@
-vendor/
+# Composer dependencies
+/vendor/
 composer.lock
+
+# Environment variables
 .env
+
+# IDE files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+/logs/
+*.log
+
+# Cache
+/cache/

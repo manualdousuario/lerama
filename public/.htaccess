@@ -1,0 +1,16 @@
+# Enable rewrite engine
+RewriteEngine On
+
+# If the requested file or directory exists, serve it directly
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# If the request is for a file in the storage directory that doesn't exist,
+# redirect to the actual storage directory
+RewriteCond %{REQUEST_URI} ^/storage/(.*)$
+RewriteCond %{DOCUMENT_ROOT}/../storage/%1 -f
+RewriteRule ^storage/(.*)$ ../storage/$1 [L]
+
+# Otherwise, route all requests to index.php
+RewriteRule ^ index.php [L]
