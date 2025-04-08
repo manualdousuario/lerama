@@ -7,9 +7,9 @@
         <div>
             <h3 class="fs-5 fw-medium mb-0 mt-1">
                 <i class="bi bi-grid me-1"></i>
-                Latest Feed Items
+                Últimos Itens de Feed
             </h3>
-            <p class="text-secondary small mb-0">Browse the latest content from all feeds</p>
+            <p class="text-secondary small mb-0">Navegue pelo conteúdo mais recente de todos os feeds</p>
         </div>
         <div>
             <form action="<?= isset($pagination) && $pagination['current'] > 1 ? $pagination['baseUrl'] . $pagination['current'] : '/' ?>" method="GET" class="d-flex gap-2">
@@ -17,7 +17,7 @@
                     <select name="feed" class="form-select">
                         <option value="">
                             <i class="bi bi-collection me-1"></i>
-                            All Feeds
+                            Todos os Feeds
                         </option>
                         <?php foreach ($feeds as $feed): ?>
                             <option value="<?= $feed['id'] ?>" <?= $selectedFeed == $feed['id'] ? 'selected' : '' ?>>
@@ -27,10 +27,10 @@
                     </select>
                 </div>
                 <div class="input-group">
-                    <input type="text" name="search" value="<?= $this->e($search) ?>" class="form-control" placeholder="Search...">
+                    <input type="text" name="search" value="<?= $this->e($search) ?>" class="form-control" placeholder="Pesquisar...">
                     <button type="submit" class="btn btn-primary d-flex align-items-center">
                         <i class="bi bi-search me-1"></i>
-                        Search
+                        Pesquisar
                     </button>
                 </div>
             </form>
@@ -41,51 +41,43 @@
         <div class="card-body text-center p-4">
             <p class="text-secondary">
                 <i class="bi bi-exclamation-circle me-1"></i>
-                No items found. Try adjusting your search or filter.
+                Nenhum item encontrado. Tente ajustar sua pesquisa ou filtro.
             </p>
         </div>
     <?php else: ?>
         <ul class="list-group list-group-flush">
             <?php foreach ($items as $item): ?>
-                <li class="list-group-item p-3 hover-bg-light">
+                <li class="list-group-item p-3 hover-bg-light d-flex">
                     <?php if(!empty($item['image_url'])) : ?>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <img src="<?= $this->e($item['image_url']) ?>" width="120" height="60" />
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="me-3">
+                            <img class="rounded-2" src="<?= $this->e($thumbnailService->getThumbnail($item['image_url'], 120, 60)) ?>" width="120" height="60" />
+                        </div>
+                    <?php endif; ?>
+                    <div class="flex-fill">
                         <h4 class="fs-5 fw-medium text-primary mb-0">
                             <a href="<?= $this->e($item['url']) ?>" target="_blank" class="text-decoration-none hover-underline">
                                 <?= $this->e($item['title']) ?>
                             </a>
                         </h4>
-                        <div>
-                            <span class="badge bg-primary rounded-pill">
-                                <?= $this->e($item['feed_title']) ?>
-                            </span>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-                    <div class="d-flex justify-content-between mt-2">
-                        <div>
-                            <?php if (!empty($item['author'])): ?>
-                                <p class="d-flex align-items-center small text-secondary mb-0">
-                                    <i class="bi bi-person me-1 text-secondary"></i>
-                                    <?= $this->e($item['author']) ?>
-                                </p>
-                            <?php endif; ?>
-                        </div>
-                        <div class="d-flex align-items-center small text-secondary">
-                            <i class="bi bi-calendar me-1 text-secondary"></i>
-                            <p class="mb-0">
-                                <?= date('F j, Y', strtotime($item['published_at'])) ?>
+                        <?php if (!empty($item['author'])): ?>
+                            <p class="d-flex align-items-center small mb-0">
+                                <i class="bi bi-person me-1"></i>
+                                <?= $this->e($item['author']) ?>
+                                <i class="ms-2 bi bi-calendar me-1"></i>
+                                <?= date('j \d\e F \d\e Y', strtotime($item['published_at'])) ?>
                             </p>
-                        </div>
+                        <?php endif; ?>
+                        <?php if (!empty($item['content'])): ?>
+                            <div class="mt-2 small">
+                                <?= strip_tags(substr($item['content'], 0, 300)) ?>...
+                            </div>
+                        <?php endif; ?>
                     </div>
-                    <?php if (!empty($item['content'])): ?>
-                        <div class="mt-2 small text-secondary text-truncate">
-                            <?= strip_tags(substr($item['content'], 0, 300)) ?>...
-                        </div>
-                    <?php endif; ?>
+                    <div>
+                        <a href="<?= $this->e($item['site_url']) ?>" class="badge bg-primary rounded-pill text-truncate">
+                            <?= $this->e($item['feed_title']) ?>
+                        </a>
+                    </div>
                 </li>
             <?php endforeach; ?>
         </ul>
@@ -96,14 +88,14 @@
                 <?php if ($pagination['current'] > 1): ?>
                     <a href="<?= $pagination['baseUrl'] . ($pagination['current'] - 1) . ($search || $selectedFeed ? '?' : '') . http_build_query(array_filter(['search' => $search, 'feed' => $selectedFeed])) ?>" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
                         <i class="bi bi-chevron-left me-1"></i>
-                        Previous
+                        Anterior
                     </a>
                 <?php else: ?>
                     <div></div>
                 <?php endif; ?>
                 <?php if ($pagination['current'] < $pagination['total']): ?>
                     <a href="<?= $pagination['baseUrl'] . ($pagination['current'] + 1) . ($search || $selectedFeed ? '?' : '') . http_build_query(array_filter(['search' => $search, 'feed' => $selectedFeed])) ?>" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
-                        Next
+                        Próximo
                         <i class="bi bi-chevron-right ms-1"></i>
                     </a>
                 <?php else: ?>
@@ -112,8 +104,8 @@
             </div>
             <div class="d-none d-sm-flex justify-content-between align-items-center w-100">
                 <div>
-                    <p class="small text-secondary mb-0">
-                        Showing page <span class="fw-medium"><?= $pagination['current'] ?></span> of <span class="fw-medium"><?= $pagination['total'] ?></span>
+                    <p class="small mb-0">
+                        Mostrando página <span class="fw-medium"><?= $pagination['current'] ?></span> de <span class="fw-medium"><?= $pagination['total'] ?></span>
                     </p>
                 </div>
                 <div>

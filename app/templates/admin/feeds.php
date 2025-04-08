@@ -7,14 +7,14 @@
         <div>
             <h3 class="fs-5 fw-medium mb-0 mt-1">
                 <i class="bi bi-grid me-1"></i>
-                Manage Feeds
+                Gerenciar Feeds
             </h3>
-            <p class="text-secondary small mb-0">Add, edit, or remove feed sources</p>
+            <p class="text-secondary small mb-0">Adicionar, editar ou remover fontes de feed</p>
         </div>
         <div>
             <a href="/admin/feeds/new" class="btn btn-primary d-inline-flex align-items-center">
                 <i class="bi bi-plus-lg me-1"></i>
-                Add New Feed
+                Adicionar Novo Feed
             </a>
         </div>
     </div>
@@ -23,7 +23,7 @@
         <div class="card-body text-center p-4">
             <p class="text-secondary mb-0 mt-1">
                 <i class="bi bi-exclamation-circle me-1"></i>
-                No feeds found. Add your first feed using the button above.
+                Nenhum feed encontrado. Adicione seu primeiro feed usando o botão acima.
             </p>
         </div>
     <?php else: ?>
@@ -33,12 +33,12 @@
                     <thead>
                         <tr>
                             <th scope="col" class="small text-uppercase">Feed</th>
-                            <th scope="col" class="small text-uppercase">Type</th>
-                            <th scope="col" class="small text-uppercase">Language</th>
+                            <th scope="col" class="small text-uppercase">Tipo</th>
+                            <th scope="col" class="small text-uppercase">Idioma</th>
                             <th scope="col" class="small text-uppercase">Status</th>
-                            <th scope="col" class="small text-uppercase">Last Checked</th>
-                            <th scope="col" class="small text-uppercase">Last Updated</th>
-                            <th scope="col" class="small text-uppercase">Items</th>
+                            <th scope="col" class="small text-uppercase">Última Verificação</th>
+                            <th scope="col" class="small text-uppercase">Última Atualização</th>
+                            <th scope="col" class="small text-uppercase">Itens</th>
                             <th scope="col"></th>
                         </tr>
                     </thead>
@@ -65,9 +65,9 @@
                                 <td class="align-middle">
                                     <?php
                                         $languages = [
-                                            'en' => 'English',
-                                            'pt-BR' => 'Portuguese-Brasil',
-                                            'es' => 'Spanish'
+                                            'en' => 'Inglês',
+                                            'pt-BR' => 'Português-Brasil',
+                                            'es' => 'Espanhol'
                                         ];
                                         echo $this->e($languages[$feed['language']] ?? $feed['language']);
                                     ?>
@@ -76,14 +76,14 @@
                                     <select class="form-select form-select-sm status-select" data-feed-id="<?= $feed['id'] ?>" data-original-value="<?= $feed['status'] ?>">
                                         <option value="online" <?= $feed['status'] === 'online' ? 'selected' : '' ?>>Online</option>
                                         <option value="offline" <?= $feed['status'] === 'offline' ? 'selected' : '' ?>>Offline</option>
-                                        <option value="paused" <?= $feed['status'] === 'paused' ? 'selected' : '' ?>>Paused</option>
+                                        <option value="paused" <?= $feed['status'] === 'paused' ? 'selected' : '' ?>>Pausado</option>
                                     </select>
                                 </td>
                                 <td class="align-middle small text-secondary">
-                                    <?= $feed['last_checked'] ? date('M j, Y H:i', strtotime($feed['last_checked'])) : 'Never' ?>
+                                    <?= $feed['last_checked'] ? date('j M Y H:i', strtotime($feed['last_checked'])) : 'Nunca' ?>
                                 </td>
                                 <td class="align-middle small text-secondary">
-                                    <?= $feed['last_updated'] ? date('M j, Y H:i', strtotime($feed['last_updated'])) : 'Never' ?>
+                                    <?= $feed['last_updated'] ? date('j M Y H:i', strtotime($feed['last_updated'])) : 'Nunca' ?>
                                 </td>
                                 <td class="align-middle small text-secondary">
                                     <?= $feed['item_count'] ?? 0 ?>
@@ -110,7 +110,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modal-title">Delete Feed</h5>
+                <h5 class="modal-title" id="modal-title">Excluir Feed</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -122,7 +122,7 @@
                     </div>
                     <div>
                         <p class="mb-0">
-                            Are you sure you want to delete this feed? All feed items will also be deleted. This action cannot be undone.
+                            Tem certeza que deseja excluir este feed? Todos os itens do feed também serão excluídos. Esta ação não pode ser desfeita.
                         </p>
                     </div>
                 </div>
@@ -130,11 +130,11 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="cancel-delete" data-bs-dismiss="modal">
                     <i class="bi bi-x-lg me-1"></i>
-                    Cancel
+                    Cancelar
                 </button>
                 <button type="button" class="btn btn-danger" id="confirm-delete">
                     <i class="bi bi-trash me-1"></i>
-                    Delete
+                    Excluir
                 </button>
             </div>
         </div>
@@ -184,12 +184,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.location.reload();
                 }
             } else {
-                alert('Error deleting feed: ' + data.message);
+                alert('Erro ao excluir feed: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while deleting the feed.');
+            alert('Ocorreu um erro ao excluir o feed.');
         });
     });
     
@@ -217,14 +217,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     // Revert to original value
                     this.value = originalValue;
-                    alert('Error updating feed status: ' + data.message);
+                    alert('Erro ao atualizar status do feed: ' + data.message);
                 }
             })
             .catch(error => {
                 // Revert to original value
                 this.value = originalValue;
                 console.error('Error:', error);
-                alert('An error occurred while updating the feed status.');
+                alert('Ocorreu um erro ao atualizar o status do feed.');
             });
         });
     });

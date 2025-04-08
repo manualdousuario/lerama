@@ -12,8 +12,7 @@
         "laminas/laminas-diactoros": "^2.24",
         "laminas/laminas-httphandlerrunner": "^2.5",
         "league/plates": "^3.5",
-        "guzzlehttp/guzzle": "^7.9",
-        "phpthumb/phpthumb": "^2.3"
+        "guzzlehttp/guzzle": "^7.9"
     },
     "autoload": {
         "psr-4": {

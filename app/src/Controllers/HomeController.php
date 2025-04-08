@@ -9,14 +9,17 @@ use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use League\Plates\Engine;
 use DB;
+use Lerama\Services\ThumbnailService;
 
 class HomeController
 {
     private Engine $templates;
+    private ThumbnailService $thumbnailService;
 
     public function __construct()
     {
         $this->templates = new Engine(__DIR__ . '/../../templates');
+        $this->thumbnailService = new ThumbnailService();
     }
 
     public function index(ServerRequestInterface $request, array $args = []): ResponseInterface
@@ -90,7 +93,8 @@ class HomeController
                 'total' => $totalPages,
                 'baseUrl' => '/page/'
             ],
-            'title' => 'Latest Feed Items'
+            'title' => 'Latest Feed Items',
+            'thumbnailService' => $this->thumbnailService
         ]);
         
         return new HtmlResponse($html);

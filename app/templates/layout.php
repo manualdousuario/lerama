@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
+<html lang="pt-BR" data-bs-theme="light">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $this->e($title ?? 'Lerama Feed Aggregator') ?></title>
+    <title><?= $this->e($title ?? 'Lerama Agregador de Feeds') ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
@@ -20,7 +20,7 @@
                 <nav class="d-flex">
                     <a href="/" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'home' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
                         <i class="bi bi-house-door me-1"></i>
-                        Home
+                        Início
                     </a>
                     <a href="/feeds" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'feeds' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
                         <i class="bi bi-journal-text me-1"></i>
@@ -33,11 +33,11 @@
                         </a>
                         <a href="/admin/feeds" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'admin-feeds' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
                             <i class="bi bi-grid me-1"></i>
-                            Manage Feeds
+                            Gerenciar Feeds
                         </a>
                         <a href="/admin/logout" class="d-inline-flex align-items-center px-2 py-2 me-3 text-secondary text-decoration-none hover-text-white">
                             <i class="bi bi-box-arrow-right me-1"></i>
-                            Logout
+                            Sair
                         </a>
                     <?php else: ?>
                         <a href="/admin/login" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'login' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
@@ -94,7 +94,7 @@
                 darkIcon.classList.remove('d-none');
             }
 
-            // Toggle dark mode
+            // Alternar modo escuro
             darkModeToggle.addEventListener('click', function() {
                 if (html.getAttribute('data-bs-theme') === 'dark') {
                     html.setAttribute('data-bs-theme', 'light');

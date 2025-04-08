@@ -6,14 +6,14 @@
     <div class="card-header">
         <h3 class="fs-5 fw-medium mb-0 mt-1">
             <i class="bi bi-journal-text me-1"></i>
-            Feed Sources
+            Fontes de Feed
         </h3>
-        <p class="text-secondary small mb-0">List of all feed sources and their status</p>
+        <p class="text-secondary small mb-0">Lista de todas as fontes de feed e seus status</p>
     </div>
     
     <?php if (empty($feeds)): ?>
         <div class="card-body text-center p-4">
-            <p class="text-secondary mb-0">No feeds found.</p>
+            <p class="text-secondary mb-0">Nenhum feed encontrado.</p>
         </div>
     <?php else: ?>
         <div class="card-body p-0">
@@ -30,7 +30,7 @@
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-book me-1"></i>
-                                    Type
+                                    Tipo
                                 </div>
                             </th>
                             <th scope="col" class="small text-uppercase">
@@ -42,19 +42,19 @@
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-clock-history me-1"></i>
-                                    Last Checked
+                                    Última Verificação
                                 </div>
                             </th>
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-arrow-repeat me-1"></i>
-                                    Last Updated
+                                    Última Atualização
                                 </div>
                             </th>
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-collection me-1"></i>
-                                    Items
+                                    Itens
                                 </div>
                             </th>
                         </tr>
@@ -97,15 +97,15 @@
                                     <?php else: ?>
                                         <span class="badge bg-warning text-dark">
                                             <i class="bi bi-pause-circle me-1"></i>
-                                            Paused
+                                            Pausado
                                         </span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="align-middle small text-secondary">
-                                    <?= $feed['last_checked'] ? date('M j, Y H:i', strtotime($feed['last_checked'])) : 'Never' ?>
+                                    <?= $feed['last_checked'] ? date('M j, Y H:i', strtotime($feed['last_checked'])) : 'Nunca' ?>
                                 </td>
                                 <td class="align-middle small text-secondary">
-                                    <?= $feed['last_updated'] ? date('M j, Y H:i', strtotime($feed['last_updated'])) : 'Never' ?>
+                                    <?= $feed['last_updated'] ? date('M j, Y H:i', strtotime($feed['last_updated'])) : 'Nunca' ?>
                                 </td>
                                 <td class="align-middle small text-secondary">
                                     <?= $feed['item_count'] ?? 0 ?>

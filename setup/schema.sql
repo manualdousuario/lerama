@@ -1,19 +1,3 @@
-/*
- Navicat Premium Data Transfer
-
- Source Server         : Flyenv
- Source Server Type    : MariaDB
- Source Server Version : 110801 (11.8.1-MariaDB-log)
- Source Host           : localhost:3306
- Source Schema         : lerama
-
- Target Server Type    : MariaDB
- Target Server Version : 110801 (11.8.1-MariaDB-log)
- File Encoding         : 65001
-
- Date: 08/04/2025 10:57:18
-*/
-
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 

@@ -1,50 +1,54 @@
-FROM php:8.4-fpm
+FROM php:8.3-fpm AS base
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
+    nginx \
+    nano \
+    procps \
+    psmisc \
     git \
-    curl \
-    libpng-dev \
+    htop \
+    nano \
+    cron \
+    openssl \
     libonig-dev \
     libxml2-dev \
-    zip \
-    unzip \
-    nginx \
-    supervisor
+    libssl-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libgmp-dev \
+    libzip-dev \
+    && docker-php-ext-configure gd --with-jpeg --with-freetype \
+    && docker-php-ext-install pdo_mysql sockets gd zip gmp bcmath \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+FROM base AS builder
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Get latest Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY app/ /app/
 
-# Set working directory
-WORKDIR /var/www
+WORKDIR /app
 
-# Copy application files
-COPY . /var/www/
+RUN composer config platform.php-64bit 8.3
+RUN composer install --no-interaction --optimize-autoloader
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/sites-available/default
-RUN sed -i 's|server_name lerama.local|server_name localhost|' /etc/nginx/sites-available/default
-RUN sed -i 's|/path/to/lerama/public|/var/www/public|' /etc/nginx/sites-available/default
-RUN sed -i 's|unix:/var/run/php/php8.4-fpm.sock|127.0.0.1:9000|' /etc/nginx/sites-available/default
+FROM base
 
-# Copy supervisor configuration
-COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY --from=builder /usr/local/bin/composer /usr/local/bin/composer
+COPY --from=builder /app /app
 
-# Install dependencies
-RUN composer install --no-interaction --no-dev --optimize-autoloader
+COPY default.conf /etc/nginx/sites-available/default
+COPY setup/ /setup/
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www
-RUN chmod -R 755 /var/www/storage
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Expose port 80
-EXPOSE 80
+RUN chown -R www-data:www-data /app \
+    && chmod -R 755 /app
 
-# Start supervisor
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+ENV TZ=UTC
+
+EXPOSE 8077
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

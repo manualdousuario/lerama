@@ -7,15 +7,15 @@
         <div>
             <h3 class="fs-5 fw-medium mb-0 mt-1">
                 <i class="bi bi-collection me-1"></i>
-                Manage Feed Items
+                Gerenciar Itens de Feed
             </h3>
-            <p class="text-secondary small mb-0">View and manage feed items</p>
+            <p class="text-secondary small mb-0">Visualizar e gerenciar itens de feed</p>
         </div>
         <div>
             <form action="/admin" method="GET" class="d-flex gap-2">
                 <div>
                     <select name="feed" class="form-select">
-                        <option value="">All Feeds</option>
+                        <option value="">Todos os Feeds</option>
                         <?php foreach ($feeds as $feed): ?>
                             <option value="<?= $feed['id'] ?>" <?= $selectedFeed == $feed['id'] ? 'selected' : '' ?>>
                                 <?= $this->e($feed['title']) ?>
@@ -24,10 +24,10 @@
                     </select>
                 </div>
                 <div class="input-group">
-                    <input type="text" name="search" value="<?= $this->e($search) ?>" class="form-control" placeholder="Search...">
+                    <input type="text" name="search" value="<?= $this->e($search) ?>" class="form-control" placeholder="Pesquisar...">
                     <button type="submit" class="btn btn-primary d-flex align-items-center">
                         <i class="bi bi-search me-1"></i>
-                        Search
+                        Pesquisar
                     </button>
                 </div>
             </form>
@@ -38,7 +38,7 @@
         <div class="card-body text-center p-4">
             <p class="text-secondary mb-0">
                 <i class="bi bi-exclamation-circle me-1"></i>
-                No items found. Try adjusting your search or filter.
+                Nenhum item encontrado. Tente ajustar sua pesquisa ou filtro.
             </p>
         </div>
     <?php else: ?>
@@ -50,7 +50,7 @@
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-file-text me-1"></i>
-                                    Title
+                                    Título
                                 </div>
                             </th>
                             <th scope="col" class="small text-uppercase">
@@ -62,13 +62,13 @@
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-person me-1"></i>
-                                    Author
+                                    Autor
                                 </div>
                             </th>
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-calendar me-1"></i>
-                                    Date
+                                    Data
                                 </div>
                             </th>
                             <th scope="col"></th>
@@ -87,10 +87,10 @@
                                     <?= $this->e($item['feed_title']) ?>
                                 </td>
                                 <td class="align-middle">
-                                    <?= $this->e($item['author'] ?? 'Unknown') ?>
+                                    <?= $this->e($item['author'] ?? 'Desconhecido') ?>
                                 </td>
                                 <td class="small text-secondary align-middle">
-                                    <?= date('M j, Y', strtotime($item['published_at'])) ?>
+                                    <?= date('j M Y', strtotime($item['published_at'])) ?>
                                 </td>
                                 <td class="align-middle text-end">
                                     <button 
@@ -117,14 +117,14 @@
                     <?php if ($pagination['current'] > 1): ?>
                         <a href="<?= $pagination['baseUrl'] ?>&page=<?= $pagination['current'] - 1 ?>" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
                             <i class="bi bi-chevron-left me-1"></i>
-                            Previous
+                            Anterior
                         </a>
                     <?php else: ?>
                         <div></div>
                     <?php endif; ?>
                     <?php if ($pagination['current'] < $pagination['total']): ?>
                         <a href="<?= $pagination['baseUrl'] ?>&page=<?= $pagination['current'] + 1 ?>" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
-                            Next
+                            Próximo
                             <i class="bi bi-chevron-right ms-1"></i>
                         </a>
                     <?php else: ?>
@@ -134,7 +134,7 @@
                 <div class="d-none d-sm-flex justify-content-between align-items-center w-100">
                     <div>
                         <p class="small text-secondary mb-0">
-                            Showing page <span class="fw-medium"><?= $pagination['current'] ?></span> of <span class="fw-medium"><?= $pagination['total'] ?></span>
+                            Mostrando página <span class="fw-medium"><?= $pagination['current'] ?></span> de <span class="fw-medium"><?= $pagination['total'] ?></span>
                         </p>
                     </div>
                     <div>
@@ -210,9 +210,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success) {
                     // Update button text and icon
                     if (newVisible) {
-                        this.innerHTML = '<i class="bi bi-eye-slash me-1"></i> Hide';
+                        this.innerHTML = '<i class="bi bi-eye-slash me-1"></i> Ocultar';
                     } else {
-                        this.innerHTML = '<i class="bi bi-eye me-1"></i> Show';
+                        this.innerHTML = '<i class="bi bi-eye me-1"></i> Mostrar';
                     }
                     this.dataset.visible = newVisible ? '1' : '0';
                     
@@ -221,21 +221,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     const badge = row.querySelector('td:nth-child(5) span');
                     
                     if (newVisible) {
-                        badge.innerHTML = '<i class="bi bi-eye me-1"></i> Visible';
+                        badge.innerHTML = '<i class="bi bi-eye me-1"></i> Visível';
                         badge.classList.remove('bg-danger');
                         badge.classList.add('bg-success');
                     } else {
-                        badge.innerHTML = '<i class="bi bi-eye-slash me-1"></i> Hidden';
+                        badge.innerHTML = '<i class="bi bi-eye-slash me-1"></i> Oculto';
                         badge.classList.remove('bg-success');
                         badge.classList.add('bg-danger');
                     }
                 } else {
-                    alert('Error updating item: ' + data.message);
+                    alert('Erro ao atualizar item: ' + data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred while updating the item.');
+                alert('Ocorreu um erro ao atualizar o item.');
             });
         });
     });

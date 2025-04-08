@@ -7,13 +7,13 @@
         <h3 class="fs-5 fw-medium mb-0 mt-1">
             <?php if ($isEdit): ?>
                 <i class="bi bi-pencil me-1"></i>
-                Edit Feed
+                Editar Feed
             <?php else: ?>
                 <i class="bi bi-plus-lg me-1"></i>
-                Add New Feed
+                Adicionar Novo Feed
             <?php endif; ?>
         </h3>
-        <p class="text-secondary small mb-0"><?= $isEdit ? 'Update feed details' : 'Add a new feed source' ?></p>
+        <p class="text-secondary small mb-0"><?= $isEdit ? 'Atualizar detalhes do feed' : 'Adicionar uma nova fonte de feed' ?></p>
     </div>
     
     <div class="card-body">
@@ -34,7 +34,7 @@
             <div>
                 <div class="mb-3">
                     <label for="title" class="form-label">
-                        Title
+                        Título
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
@@ -49,7 +49,7 @@
                 
                 <div class="mb-3">
                     <label for="feed_url" class="form-label">
-                        Feed URL
+                        URL do Feed
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
@@ -64,7 +64,7 @@
                 
                 <div class="mb-3">
                     <label for="site_url" class="form-label">
-                        Site URL
+                        URL do Site
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
@@ -79,16 +79,16 @@
                 
                 <div class="mb-3">
                     <label for="language" class="form-label">
-                        Language
+                        Idioma
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
                             <i class="bi bi-translate"></i>
                         </span>
                         <select name="language" id="language" class="form-select" required>
-                            <option value="en" <?= $isEdit && $feed['language'] === 'en' ? 'selected' : '' ?>>English</option>
-                            <option value="pt-BR" <?= $isEdit && $feed['language'] === 'pt-BR' ? 'selected' : '' ?>>Portuguese (Brazil)</option>
-                            <option value="es" <?= $isEdit && $feed['language'] === 'es' ? 'selected' : '' ?>>Spanish</option>
+                            <option value="en" <?= $isEdit && $feed['language'] === 'en' ? 'selected' : '' ?>>Inglês</option>
+                            <option value="pt-BR" <?= $isEdit && $feed['language'] === 'pt-BR' ? 'selected' : '' ?>>Português (Brasil)</option>
+                            <option value="es" <?= $isEdit && $feed['language'] === 'es' ? 'selected' : '' ?>>Espanhol</option>
                         </select>
                     </div>
                     <?php if (isset($errors['language'])): ?>
@@ -98,14 +98,14 @@
                 
                 <div class="mb-3">
                     <label for="feed_type" class="form-label">
-                        Feed Type (Optional - Auto-detected)
+                        Tipo de Feed (Opcional - Auto-detectado)
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
                             <i class="bi bi-book"></i>
                         </span>
                         <select name="feed_type" id="feed_type" class="form-select">
-                            <option value="">Auto-detect feed type</option>
+                            <option value="">Auto-detectar tipo de feed</option>
                             <option value="rss1" <?= $isEdit && $feed['feed_type'] === 'rss1' ? 'selected' : '' ?>>RSS 1.0</option>
                             <option value="rss2" <?= $isEdit && $feed['feed_type'] === 'rss2' ? 'selected' : '' ?>>RSS 2.0</option>
                             <option value="atom" <?= $isEdit && $feed['feed_type'] === 'atom' ? 'selected' : '' ?>>Atom</option>
@@ -115,7 +115,7 @@
                             <option value="xml" <?= $isEdit && $feed['feed_type'] === 'xml' ? 'selected' : '' ?>>XML</option>
                         </select>
                     </div>
-                    <div class="form-text text-secondary">If not selected, the system will automatically detect the feed type.</div>
+                    <div class="form-text text-secondary">Se não for selecionado, o sistema detectará automaticamente o tipo de feed.</div>
                     <?php if (isset($errors['feed_type'])): ?>
                         <div class="form-text text-danger"><?= $this->e($errors['feed_type']) ?></div>
                     <?php endif; ?>
@@ -133,7 +133,7 @@
                         <select name="status" id="status" class="form-select">
                             <option value="online" <?= $feed['status'] === 'online' ? 'selected' : '' ?>>Online</option>
                             <option value="offline" <?= $feed['status'] === 'offline' ? 'selected' : '' ?>>Offline</option>
-                            <option value="paused" <?= $feed['status'] === 'paused' ? 'selected' : '' ?>>Paused</option>
+                            <option value="paused" <?= $feed['status'] === 'paused' ? 'selected' : '' ?>>Pausado</option>
                         </select>
                     </div>
                 </div>
@@ -142,15 +142,15 @@
                 <div class="d-flex justify-content-end gap-2 mt-4">
                     <a href="/admin/feeds" class="btn btn-secondary">
                         <i class="bi bi-x-lg me-1"></i>
-                        Cancel
+                        Cancelar
                     </a>
                     <button type="submit" class="btn btn-primary">
                         <?php if ($isEdit): ?>
                             <i class="bi bi-arrow-repeat me-1"></i>
-                            Update Feed
+                            Atualizar Feed
                         <?php else: ?>
                             <i class="bi bi-plus-lg me-1"></i>
-                            Add Feed
+                            Adicionar Feed
                         <?php endif; ?>
                     </button>
                 </div>
@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Show loading state when form is submitted
     feedForm.addEventListener('submit', function() {
         const submitButton = feedForm.querySelector('button[type="submit"]');
-        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Salvando...';
         submitButton.disabled = true;
     });
 });

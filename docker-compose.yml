@@ -1,59 +1,24 @@
-version: '3'
-
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: lerama-app
-    restart: unless-stopped
-    ports:
-      - "8080:80"
-    volumes:
-      - .:/var/www
-      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
-    networks:
-      - lerama-network
-    depends_on:
-      - db
-
-  db:
-    image: mariadb:10.6
-    container_name: lerama-db
-    restart: unless-stopped
+  lerama:
+    image: ghcr.io/altendorfme/lerama:latest
+    container_name: lerama
     environment:
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_ROOT_PASSWORD: ${DB_PASS}
-      MYSQL_PASSWORD: ${DB_PASS}
-      MYSQL_USER: ${DB_USER}
-      SERVICE_TAGS: dev
-      SERVICE_NAME: mysql
-    volumes:
-      - lerama-db-data:/var/lib/mysql
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
-    networks:
-      - lerama-network
-
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: lerama-phpmyadmin
-    restart: unless-stopped
+      TZ: ${TZ:-UTC}
+      APP_URL: https://lerama.lab
+      MYSQL_HOST: localhost
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: lerama
+      MYSQL_USERNAME: root
+      MYSQL_PASSWORD: root
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin
     ports:
-      - "8081:80"
-    environment:
-      PMA_HOST: db
-      MYSQL_ROOT_PASSWORD: ${DB_PASS}
-      PMA_PORT: 3306
-      PMA_ARBITRARY: 1
+      - 80:80
+    volumes:
+      - ./lerama/storage:/app/storage
+    restart: unless-stopped
     networks:
-      - lerama-network
-    depends_on:
-      - db
-
+      - lerama
 networks:
-  lerama-network:
+  lerama:
     driver: bridge
-
-volumes:
-  lerama-db-data:
-    driver: local
