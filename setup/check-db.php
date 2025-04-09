@@ -18,14 +18,14 @@ function parseEnvFile($filePath) {
     return $env;
 }
 
-// Function to check if a table exists
 function tableExists($conn, $tableName) {
-    $stmt = $conn->prepare("SHOW TABLES LIKE :tableName");
-    $stmt->execute(['tableName' => $tableName]);
-    return $stmt->rowCount() > 0;
+    $escapedTableName = $conn->quote($tableName);
+    $escapedTableName = substr($escapedTableName, 1, -1);
+    
+    $result = $conn->query("SHOW TABLES LIKE '{$escapedTableName}'");
+    return $result->rowCount() > 0;
 }
 
-// Function to execute SQL file
 function executeSqlFile($conn, $filePath) {
     $sql = file_get_contents($filePath);
     $queries = explode(';', $sql);
@@ -70,7 +70,6 @@ try {
         throw new Exception("Database configuration is incomplete in .env file");
     }
 
-    // Create PDO connection
     $dsn = "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4";
     $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -106,11 +105,7 @@ try {
         }
     }
     
-    // PDO connections are automatically closed when the script ends
-    // No need for explicit close
-    $conn = null;
     echo "Database check completed successfully" . PHP_EOL;
-    
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage() . PHP_EOL;
     exit(1);
