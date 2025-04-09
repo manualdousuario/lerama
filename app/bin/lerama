@@ -1,0 +1,61 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use League\CLImate\CLImate;
+use Lerama\Commands\FeedProcessor;
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+$dotenv->load();
+
+DB::$host = $_ENV['DB_HOST'];
+DB::$user = $_ENV['DB_USER'];
+DB::$password = $_ENV['DB_PASS'];
+DB::$dbName = $_ENV['DB_NAME'];
+DB::$port = (int)$_ENV['DB_PORT'];
+DB::$encoding = 'utf8mb4';
+
+$climate = new CLImate();
+
+$processor = new FeedProcessor($climate);
+
+$command = $argv[1] ?? '';
+
+if (empty($command)) {
+    showUsage($climate);
+    exit(1);
+}
+
+switch ($command) {
+    case 'feed:process':
+        // Process all feeds
+        $processor->process(null);
+        break;
+
+    case 'feed:id':
+        // Process specific feed by ID
+        $feedId = $argv[2] ?? null;
+
+        if (empty($feedId) || !is_numeric($feedId)) {
+            $climate->error("Feed ID is required and must be a number");
+            exit(1);
+        }
+
+        $processor->process((int)$feedId);
+        break;
+
+    default:
+        $climate->error("Unknown command: {$command}");
+        showUsage($climate);
+        exit(1);
+}
+
+function showUsage(CLImate $climate): void
+{
+    $climate->out("Usage:");
+    $climate->out("  php bin/lerama feed:process         Process all feeds");
+    $climate->out("  php bin/lerama feed:id {ID_DO_FEED} Process a specific feed by ID");
+}

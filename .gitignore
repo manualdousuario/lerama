@@ -1,3 +1,6 @@
-vendor/
-composer.lock
+**/vendor/*
+vendor
 .env
+composer.lock
+**/node_modules/*
+app/public/storage/thumbnails/**

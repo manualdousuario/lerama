@@ -1,20 +1,26 @@
 services:
   lerama:
+    image: ghcr.io/altendorfme/lerama:latest
     container_name: lerama
-    image: ghcr.io/manualdousuario/lerama:latest
-    ports:
-      - "80:80"
     environment:
-      DB_HOST: mariadb
-      DB_USERNAME: USUARIO
-      DB_PASSWORD: SENHA
-      DB_NAME: BANCO_DE_DADOS
-      SITE_URL: https://lerama.xyz
-      SITE_NAME: Lerama
-      ADMIN_PASSWORD: p@ssw0rd
+      TZ: ${TZ:-UTC}
+      APP_URL: https://lerama.lab
+      MYSQL_HOST: localhost
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: lerama
+      MYSQL_USERNAME: root
+      MYSQL_PASSWORD: root
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin
+    ports:
+      - 8077:8077
+    volumes:
+      - ./lerama/storage:/app/public/storage
+    restart: unless-stopped
+    networks:
+      - lerama
     depends_on:
       - db
-services:
   db:
     image: mariadb:10.11
     container_name: db
@@ -27,3 +33,8 @@ services:
       - 3306:3306
     volumes:
       - ./mariadb/data:/var/lib/mysql
+    networks:
+      - lerama
+networks:
+  lerama:
+    driver: bridge

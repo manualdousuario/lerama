@@ -1,41 +1,54 @@
-FROM php:8.0-fpm
+FROM php:8.3-fpm AS base
 
-RUN apt-get update && apt-get install -y nginx cron nano procps unzip \
-    && docker-php-ext-install pdo_mysql
-	
+RUN apt-get update && apt-get install -y \
+    nginx \
+    nano \
+    procps \
+    psmisc \
+    git \
+    htop \
+    nano \
+    cron \
+    openssl \
+    libonig-dev \
+    libxml2-dev \
+    libssl-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libgmp-dev \
+    libzip-dev \
+    && docker-php-ext-configure gd --with-jpeg --with-freetype \
+    && docker-php-ext-install pdo_mysql sockets gd zip gmp bcmath \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+FROM base AS builder
+
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Configura o PHP-FPM para enviar logs para o coletor de logs do Docker
-RUN ln -sf /dev/stdout /var/log/php-fpm.access.log \
-    && ln -sf /dev/stderr /var/log/php-fpm.error.log
-
-# Configura o log de erros do PHP
-RUN echo "error_log = /dev/stderr" >> /usr/local/etc/php/php.ini
-
-COPY default.conf /etc/nginx/sites-available/default
-
-RUN mkdir -p /app
 COPY app/ /app/
 
 WORKDIR /app
+
+RUN composer config platform.php-64bit 8.3
 RUN composer install --no-interaction --optimize-autoloader
 
-# Copia e configura permissões do script de inicialização
+FROM base
+
+COPY --from=builder /usr/local/bin/composer /usr/local/bin/composer
+COPY --from=builder /app /app
+
+COPY default.conf /etc/nginx/sites-available/default
+COPY setup/ /setup/
+
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-RUN mkdir -p /app/logs
+RUN chown -R www-data:www-data /app \
+    && chmod -R 755 /app
 
-# Configura o cron para usar o logger para coleta de logs do Docker
-RUN touch /app/logs/cron.log && ln -sf /dev/stdout /app/logs/cron.log
-RUN echo '0 * * * * root php "/app/cron/fetchFeeds.php" 2>&1 | logger -t cron-fetchfeeds' >> /etc/crontab
+ENV TZ=UTC
 
-RUN chown -R www-data:www-data /app && chmod -R 755 /app
-
-# Garante que os logs do nginx sejam direcionados para o coletor de logs do Docker
-RUN ln -sf /dev/stdout /var/log/nginx/access.log \
-    && ln -sf /dev/stderr /var/log/nginx/error.log
-
-EXPOSE 80
+EXPOSE 8077
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
