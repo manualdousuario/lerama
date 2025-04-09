@@ -1,6 +1,6 @@
 services:
   lerama:
-    image: ghcr.io/altendorfme/lerama:latest
+    image: ghcr.io/manualdousuario/lerama:2
     container_name: lerama
     environment:
       TZ: ${TZ:-UTC}
