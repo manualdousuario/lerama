@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
     libgmp-dev \
     libzip-dev \
     && docker-php-ext-configure gd --with-jpeg --with-freetype \
-    && docker-php-ext-install pdo_mysql sockets gd zip gmp bcmath \
+    && docker-php-ext-install mysqli pdo_mysql sockets gd zip gmp bcmath \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 FROM base AS builder
