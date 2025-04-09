@@ -151,7 +151,7 @@ log_success "Cron jobs added with stdout logging"
 # Set correct permissions for /app/storage
 log_info "Setting permissions for /app/public/storage..."
 chown -R www-data:www-data /app/public/storage
-chmod -R 755 /app/public/public/storage
+chmod -R 755 /app/public/storage
 log_success "Permissions set for /app/public/storage"
 
 # PHP-FPM
