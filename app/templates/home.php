@@ -7,9 +7,8 @@
         <div>
             <h3 class="fs-5 fw-medium mb-0 mt-1">
                 <i class="bi bi-grid me-1"></i>
-                Últimos Itens de Feed
+                Últimos artigos
             </h3>
-            <p class="text-secondary small mb-0">Navegue pelo conteúdo mais recente de todos os feeds</p>
         </div>
         <div>
             <form action="<?= isset($pagination) && $pagination['current'] > 1 ? $pagination['baseUrl'] . $pagination['current'] : '/' ?>" method="GET" class="d-flex gap-2">
@@ -17,7 +16,7 @@
                     <select name="feed" class="form-select">
                         <option value="">
                             <i class="bi bi-collection me-1"></i>
-                            Todos os Feeds
+                            Feeds
                         </option>
                         <?php foreach ($feeds as $feed): ?>
                             <option value="<?= $feed['id'] ?>" <?= $selectedFeed == $feed['id'] ? 'selected' : '' ?>>

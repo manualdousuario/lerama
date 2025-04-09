@@ -81,7 +81,7 @@ class HomeController
                 'total' => $totalPages,
                 'baseUrl' => '/page/'
             ],
-            'title' => 'Latest Feed Items',
+            'title' => 'Últimos Artigos',
             'thumbnailService' => $this->thumbnailService
         ]);
 

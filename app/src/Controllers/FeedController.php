@@ -34,7 +34,7 @@ class FeedController
 
         $html = $this->templates->render('feeds', [
             'feeds' => $feeds,
-            'title' => 'Feed Sources'
+            'title' => 'Feeds'
         ]);
 
         return new HtmlResponse($html);
@@ -90,7 +90,7 @@ class FeedController
         return new JsonResponse($response);
     }
 
-    public function xml(ServerRequestInterface $request): ResponseInterface
+    public function rss(ServerRequestInterface $request): ResponseInterface
     {
         $params = $request->getQueryParams();
         $page = isset($params['page']) ? max(1, (int)$params['page']) : 1;
@@ -112,8 +112,8 @@ class FeedController
         $channel = $xml->addChild('channel');
         $channel->addChild('title', $_ENV['APP_NAME'] . ' Feed');
         $channel->addChild('link', $_ENV['APP_URL']);
-        $channel->addChild('description', 'Aggregated feed from multiple sources');
-        $channel->addChild('language', 'en-us');
+        $channel->addChild('description', 'Feed agregado de múltiplas fontes');
+        $channel->addChild('language', 'pt-br');
         $channel->addChild('pubDate', date('r'));
 
         foreach ($items as $item) {

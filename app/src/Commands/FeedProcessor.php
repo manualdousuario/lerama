@@ -38,20 +38,20 @@ class FeedProcessor
     public function process(?int $feedId = null): void
     {
         if ($feedId) {
-            $this->climate->info("Processing feed ID: {$feedId}");
+            $this->climate->info("Processando feed ID: {$feedId}");
             $feeds = DB::query("SELECT * FROM feeds WHERE id = %i AND status = 'online'", $feedId);
         } else {
-            $this->climate->info("Processing all online feeds");
+            $this->climate->info("Processando todos os feeds online");
             $feeds = DB::query("SELECT * FROM feeds WHERE status = 'online'");
         }
 
         if (empty($feeds)) {
-            $this->climate->warning("No feeds found to process");
+            $this->climate->warning("Nenhum feed encontrado para processar");
             return;
         }
 
         foreach ($feeds as $feed) {
-            $this->climate->out("Processing: {$feed['title']} ({$feed['feed_url']})");
+            $this->climate->out("Processando: {$feed['title']} ({$feed['feed_url']})");
             
             try {
                 $this->processFeed($feed);
@@ -60,9 +60,9 @@ class FeedProcessor
                     'status' => 'online'
                 ], 'id=%i', $feed['id']);
                 
-                $this->climate->green("✓ Successfully processed feed: {$feed['title']}");
+                $this->climate->green("✓ Feed processado com sucesso: {$feed['title']}");
             } catch (\Exception $e) {
-                $this->climate->red("✗ Error processing feed {$feed['title']}: {$e->getMessage()}");
+                $this->climate->red("✗ Erro ao processar feed {$feed['title']}: {$e->getMessage()}");
                 DB::update('feeds', [
                     'last_checked' => DB::sqleval("NOW()"),
                     'status' => 'offline'
@@ -93,7 +93,7 @@ class FeedProcessor
                 $this->processXmlFeed($feed);
                 break;
             default:
-                throw new \Exception("Unsupported feed type: {$feedType}");
+                throw new \Exception("Tipo de feed não suportado: {$feedType}");
         }
     }
 
@@ -148,7 +148,7 @@ class FeedProcessor
                 $count++;
                 $updated = true;
             } catch (\Exception $e) {
-                lerama
+                // Erro ao processar item
                 continue;
             }
             
@@ -167,7 +167,7 @@ class FeedProcessor
             ], 'id=%i', $feed['id']);
         }
 
-        $this->climate->out("Added {$count} new items from feed: {$feed['title']}");
+        $this->climate->out("Adicionados {$count} novos itens do feed: {$feed['title']}");
     }
 
     private function processPaginatedRssFeed(array $feed, SimplePie $simplePie, &$count, &$updated, &$lastGuid, &$processedItems, $maxItemsToProcess): void
@@ -200,7 +200,7 @@ class FeedProcessor
         $currentPage = 1;
         
         while ($nextPageUrl && $currentPage < $maxPages && $processedItems < $maxItemsToProcess) {
-            $this->climate->out("Processing next page: {$nextPageUrl}");
+            $this->climate->out("Processando próxima página: {$nextPageUrl}");
             
             try {
                 $nextSimplePie = new SimplePie();
@@ -209,7 +209,7 @@ class FeedProcessor
                 $nextSimplePie->init();
                 
                 if ($nextSimplePie->error()) {
-                    $this->climate->yellow("Error loading next page: {$nextSimplePie->error()}");
+                    $this->climate->yellow("Erro ao carregar próxima página: {$nextSimplePie->error()}");
                     break;
                 }
                 
@@ -219,7 +219,7 @@ class FeedProcessor
                     $guid = $item->get_id();
 
                     if ($feed['last_post_id'] === $guid) {
-                        break 2;lerama
+                        break 2;
                     }
                     
                     if ($lastGuid === null) {
@@ -248,13 +248,13 @@ class FeedProcessor
                         $count++;
                         $updated = true;
                     } catch (\Exception $e) {
-                        lerama
+                        // Erro ao processar item
                         continue;
                     }
                     
                     $processedItems++;
                     if ($processedItems >= $maxItemsToProcess) {
-                        break 2;lerama
+                        break 2;
                     }
                 }
 
@@ -277,7 +277,7 @@ class FeedProcessor
                 $currentPage++;
                 
             } catch (\Exception $e) {
-                $this->climate->yellow("Error processing next page: {$e->getMessage()}");
+                $this->climate->yellow("Erro ao processar próxima página: {$e->getMessage()}");
                 break;
             }
         }
@@ -333,12 +333,12 @@ class FeedProcessor
             $statusCode = $response->getStatusCode();
             
             if ($statusCode !== 200) {
-                throw new \Exception("Failed to fetch CSV feed: HTTP status {$statusCode}");
+                throw new \Exception("Falha ao buscar feed CSV: Status HTTP {$statusCode}");
             }
             
             $content = (string) $response->getBody();
         } catch (\Exception $e) {
-            throw new \Exception("Failed to fetch CSV feed: " . $e->getMessage());
+            throw new \Exception("Falha ao buscar feed CSV: " . $e->getMessage());
         }
 
         $lines = explode("\n", $content);
@@ -352,7 +352,7 @@ class FeedProcessor
         $dateIndex = array_search('date', $headers);
         
         if ($titleIndex === false || $urlIndex === false || $guidIndex === false) {
-            throw new \Exception("CSV feed missing required columns (title, url, guid)");
+            throw new \Exception("Feed CSV sem as colunas obrigatórias (title, url, guid)");
         }
         
         $count = 0;
@@ -411,7 +411,7 @@ class FeedProcessor
             ], 'id=%i', $feed['id']);
         }
         
-        $this->climate->out("Added {$count} new items from CSV feed: {$feed['title']}");
+        $this->climate->out("Adicionados {$count} novos itens do feed CSV: {$feed['title']}");
     }
 
     private function processPaginatedCsvFeed(array $feed, &$count, &$updated, &$lastGuid): void
@@ -449,7 +449,7 @@ class FeedProcessor
             $urlParts['query'] = http_build_query($queryParams);
             $nextPageUrl = $this->buildUrl($urlParts);
             
-            $this->climate->out("Processing next CSV page: {$nextPageUrl}");
+            $this->climate->out("Processando próxima página CSV: {$nextPageUrl}");
             
             try {
                 $this->climate->whisper("Buscando próxima página CSV: {$nextPageUrl}");
@@ -457,7 +457,7 @@ class FeedProcessor
                 $statusCode = $response->getStatusCode();
                 
                 if ($statusCode !== 200) {
-                    $this->climate->yellow("Failed to fetch next CSV page: HTTP status {$statusCode}");
+                    $this->climate->yellow("Falha ao buscar próxima página CSV: Status HTTP {$statusCode}");
                     break;
                 }
                 
@@ -474,7 +474,7 @@ class FeedProcessor
                 $dateIndex = array_search('date', $headers);
                 
                 if ($titleIndex === false || $urlIndex === false || $guidIndex === false) {
-                    $this->climate->yellow("CSV feed missing required columns (title, url, guid)");
+                    $this->climate->yellow("Feed CSV sem as colunas obrigatórias (title, url, guid)");
                     break;
                 }
                 
@@ -489,7 +489,7 @@ class FeedProcessor
                     $guid = $data[$guidIndex];
 
                     if ($feed['last_post_id'] === $guid) {
-                        break 2;lerama
+                        break 2;
                     }
                     
                     if ($lastGuid === null) {
@@ -519,14 +519,13 @@ class FeedProcessor
                         $updated = true;
                         $this->climate->whisper("Item adicionado com sucesso: {$title}");
                     } catch (\Exception $e) {
-                        lerama
                         $this->climate->whisper("Erro ao adicionar item {$title}: {$e->getMessage()}");
                         continue;
                     }
                     
                     $processedItems++;
                     if ($processedItems >= $maxItemsToProcess) {
-                        break 2;lerama
+                        break 2;
                     }
                 }
 
@@ -558,23 +557,23 @@ class FeedProcessor
             $statusCode = $response->getStatusCode();
             
             if ($statusCode !== 200) {
-                throw new \Exception("Failed to fetch JSON feed: HTTP status {$statusCode}");
+                throw new \Exception("Falha ao buscar feed JSON: Status HTTP {$statusCode}");
             }
             
             $content = (string) $response->getBody();
         } catch (\Exception $e) {
-            throw new \Exception("Failed to fetch JSON feed: " . $e->getMessage());
+            throw new \Exception("Falha ao buscar feed JSON: " . $e->getMessage());
         }
         
         $data = json_decode($content, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \Exception("Invalid JSON feed: " . json_last_error_msg());
+            throw new \Exception("Feed JSON inválido: " . json_last_error_msg());
         }
 
         $items = $data['items'] ?? $data['entries'] ?? $data['feed'] ?? $data;
         
         if (!is_array($items)) {
-            throw new \Exception("Could not find items in JSON feed");
+            throw new \Exception("Não foi possível encontrar itens no feed JSON");
         }
         $nextPageUrl = $data['next'] ?? $data['next_page'] ?? $data['nextPage'] ?? null;
         
@@ -588,7 +587,7 @@ class FeedProcessor
         foreach ($items as $item) {
             $guid = $item['id'] ?? $item['guid'] ?? $item['url'] ?? null;
             if (!$guid) {
-                continue;lerama
+                continue;
             }
 
             if ($feed['last_post_id'] === $guid) {
@@ -599,7 +598,7 @@ class FeedProcessor
                 $lastGuid = $guid;
             }
             
-            $title = $item['title'] ?? 'Untitled';
+            $title = $item['title'] ?? 'Sem título';
             $content = $item['content'] ?? $item['content_html'] ?? $item['summary'] ?? '';
             $author = $item['author']['name'] ?? $item['author'] ?? null;
             $url = $item['url'] ?? $item['link'] ?? '';
@@ -645,7 +644,7 @@ class FeedProcessor
             ], 'id=%i', $feed['id']);
         }
         
-        $this->climate->out("Added {$count} new items from JSON feed: {$feed['title']}");
+        $this->climate->out("Adicionados {$count} novos itens do feed JSON: {$feed['title']}");
     }
 
     private function processPaginatedJsonFeed(array $feed, string $nextPageUrl, &$count, &$updated, &$lastGuid, &$processedItems, $maxItemsToProcess): void
@@ -654,7 +653,7 @@ class FeedProcessor
         $currentPage = 1;
         
         while ($nextPageUrl && $currentPage < $maxPages && $processedItems < $maxItemsToProcess) {
-            $this->climate->out("Processing next JSON page: {$nextPageUrl}");
+            $this->climate->out("Processando próxima página JSON: {$nextPageUrl}");
             
             try {
                 $this->climate->whisper("Buscando próxima página JSON: {$nextPageUrl}");
@@ -662,7 +661,7 @@ class FeedProcessor
                 $statusCode = $response->getStatusCode();
                 
                 if ($statusCode !== 200) {
-                    $this->climate->yellow("Failed to fetch next JSON page: HTTP status {$statusCode}");
+                    $this->climate->yellow("Falha ao buscar próxima página JSON: Status HTTP {$statusCode}");
                     break;
                 }
                 
@@ -670,14 +669,14 @@ class FeedProcessor
                 
                 $data = json_decode($content, true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
-                    $this->climate->yellow("Invalid JSON in next page: " . json_last_error_msg());
+                    $this->climate->yellow("JSON inválido na próxima página: " . json_last_error_msg());
                     break;
                 }
 
                 $items = $data['items'] ?? $data['entries'] ?? $data['feed'] ?? $data;
                 
                 if (!is_array($items)) {
-                    $this->climate->yellow("Could not find items in next JSON page");
+                    $this->climate->yellow("Não foi possível encontrar itens na próxima página JSON");
                     break;
                 }
                 
@@ -690,14 +689,14 @@ class FeedProcessor
                     }
                     
                     if ($feed['last_post_id'] === $guid) {
-                        break 2;lerama
+                        break 2;
                     }
                     
                     if ($lastGuid === null) {
                         $lastGuid = $guid;
                     }
                     
-                    $title = $item['title'] ?? 'Untitled';
+                    $title = $item['title'] ?? 'Sem título';
                     $content = $item['content'] ?? $item['content_html'] ?? $item['summary'] ?? '';
                     $author = $item['author']['name'] ?? $item['author'] ?? null;
                     $url = $item['url'] ?? $item['link'] ?? '';
@@ -745,7 +744,7 @@ class FeedProcessor
                 $currentPage++;
                 
             } catch (\Exception $e) {
-                $this->climate->yellow("Error processing next JSON page: {$e->getMessage()}");
+                $this->climate->yellow("Erro ao processar próxima página JSON: {$e->getMessage()}");
                 break;
             }
         }
@@ -760,17 +759,17 @@ class FeedProcessor
             $statusCode = $response->getStatusCode();
             
             if ($statusCode !== 200) {
-                throw new \Exception("Failed to fetch XML feed: HTTP status {$statusCode}");
+                throw new \Exception("Falha ao buscar feed XML: Status HTTP {$statusCode}");
             }
             
             $content = (string) $response->getBody();
         } catch (\Exception $e) {
-            throw new \Exception("Failed to fetch XML feed: " . $e->getMessage());
+            throw new \Exception("Falha ao buscar feed XML: " . $e->getMessage());
         }
         
         $xml = simplexml_load_string($content);
         if ($xml === false) {
-            throw new \Exception("Invalid XML feed");
+            throw new \Exception("Feed XML inválido");
         }
 
         $items = $xml->xpath('//item') ?: $xml->xpath('//entry') ?: [];
@@ -795,7 +794,7 @@ class FeedProcessor
                 $lastGuid = $guid;
             }
             
-            $title = (string)($item->title ?? 'Untitled');
+            $title = (string)($item->title ?? 'Sem título');
             $content = (string)($item->description ?? $item->content ?? $item->summary ?? '');
             $author = (string)($item->author ?? $item->creator ?? '');
             $url = (string)($item->link ?? $item->url ?? '');
@@ -840,7 +839,7 @@ class FeedProcessor
                 'last_updated' => DB::sqleval("NOW()")
             ], 'id=%i', $feed['id']);
         }
-        $this->climate->out("Added {$count} new items from XML feed: {$feed['title']}");
+        $this->climate->out("Adicionados {$count} novos itens do feed XML: {$feed['title']}");
     }
     
     private function processPaginatedXmlFeed(array $feed, \SimpleXMLElement $xml, &$count, &$updated, &$lastGuid, &$processedItems, $maxItemsToProcess): void
@@ -874,7 +873,7 @@ class FeedProcessor
         $currentPage = 1;
         
         while ($nextPageUrl && $currentPage < $maxPages && $processedItems < $maxItemsToProcess) {
-            $this->climate->out("Processing next XML page: {$nextPageUrl}");
+            $this->climate->out("Processando próxima página XML: {$nextPageUrl}");
             
             try {
                 $this->climate->whisper("Buscando próxima página XML: {$nextPageUrl}");
@@ -882,7 +881,7 @@ class FeedProcessor
                 $statusCode = $response->getStatusCode();
                 
                 if ($statusCode !== 200) {
-                    $this->climate->yellow("Failed to fetch next XML page: HTTP status {$statusCode}");
+                    $this->climate->yellow("Falha ao buscar próxima página XML: Status HTTP {$statusCode}");
                     break;
                 }
                 
@@ -890,7 +889,7 @@ class FeedProcessor
                 
                 $nextXml = simplexml_load_string($content);
                 if ($nextXml === false) {
-                    $this->climate->yellow("Invalid XML in next page");
+                    $this->climate->yellow("XML inválido na próxima página");
                     break;
                 }
 
@@ -905,14 +904,14 @@ class FeedProcessor
                     }
 
                     if ($feed['last_post_id'] === $guid) {
-                        break 2;lerama
+                        break 2;
                     }
                     
                     if ($lastGuid === null) {
                         $lastGuid = $guid;
                     }
                     
-                    $title = (string)($item->title ?? 'Untitled');
+                    $title = (string)($item->title ?? 'Sem título');
                     $content = (string)($item->description ?? $item->content ?? $item->summary ?? '');
                     $author = (string)($item->author ?? $item->creator ?? '');
                     $url = (string)($item->link ?? $item->url ?? '');
@@ -938,14 +937,13 @@ class FeedProcessor
                         $updated = true;
                         $this->climate->whisper("Item XML da página {$currentPage} adicionado com sucesso: {$title}");
                     } catch (\Exception $e) {
-                        lerama
                         $this->climate->whisper("Erro ao adicionar item XML da página {$currentPage} {$title}: {$e->getMessage()}");
                         continue;
                     }
                     
                     $processedItems++;
                     if ($processedItems >= $maxItemsToProcess) {
-                        break 2;lerama
+                        break 2;
                     }
                 }
 
@@ -973,11 +971,11 @@ class FeedProcessor
                 $currentPage++;
                 
             } catch (\Exception $e) {
-                $this->climate->yellow("Error processing next XML page: {$e->getMessage()}");
+                $this->climate->yellow("Erro ao processar próxima página XML: {$e->getMessage()}");
                 break;
             }
         }
-        $this->climate->out("Added {$count} new items from XML feed: {$feed['title']}");
+        $this->climate->out("Adicionados {$count} novos itens do feed XML: {$feed['title']}");
     }
     private function extractImageFromUrl(string $url): ?string
     {

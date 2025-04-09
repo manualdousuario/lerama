@@ -33,7 +33,7 @@ class AdminController
         }
 
         $html = $this->templates->render('admin/login', [
-            'title' => 'Admin Login'
+            'title' => 'Login'
         ]);
 
         return new HtmlResponse($html);
@@ -55,8 +55,8 @@ class AdminController
         }
 
         $html = $this->templates->render('admin/login', [
-            'title' => 'Admin Login',
-            'error' => 'Invalid username or password'
+            'title' => 'Login',
+            'error' => 'Nome de usuário ou senha inválidos'
         ]);
 
         return new HtmlResponse($html);
@@ -126,7 +126,7 @@ class AdminController
                     'feed' => $feedId
                 ]))
             ],
-            'title' => 'Manage Feed Items'
+            'title' => 'Gerenciar Itens do Feed'
         ]);
 
         return new HtmlResponse($html);
@@ -144,7 +144,7 @@ class AdminController
 
         $html = $this->templates->render('admin/feeds', [
             'feeds' => $feeds,
-            'title' => 'Manage Feeds'
+            'title' => 'Gerenciar Feeds'
         ]);
 
         return new HtmlResponse($html);
@@ -162,23 +162,23 @@ class AdminController
 
             $errors = [];
             if (empty($title)) {
-                $errors['title'] = 'Title is required';
+                $errors['title'] = 'O título é obrigatório';
             }
             if (empty($feedUrl)) {
-                $errors['feed_url'] = 'Feed URL is required';
+                $errors['feed_url'] = 'A URL do feed é obrigatória';
             } elseif (!filter_var($feedUrl, FILTER_VALIDATE_URL)) {
-                $errors['feed_url'] = 'Feed URL must be a valid URL';
+                $errors['feed_url'] = 'A URL do feed deve ser uma URL válida';
             }
             if (empty($siteUrl)) {
-                $errors['site_url'] = 'Site URL is required';
+                $errors['site_url'] = 'A URL do site é obrigatória';
             } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
-                $errors['site_url'] = 'Site URL must be a valid URL';
+                $errors['site_url'] = 'A URL do site deve ser uma URL válida';
             }
 
             if (!in_array($language, ['en', 'pt-BR', 'es'])) {
-                $errors['language'] = 'Invalid language selected';
+                $errors['language'] = 'Idioma selecionado inválido';
             } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
-                $errors['site_url'] = 'Site URL must be a valid URL';
+                $errors['site_url'] = 'A URL do site deve ser uma URL válida';
             }
 
             if (empty($errors)) {
@@ -205,12 +205,12 @@ class AdminController
 
                     return new RedirectResponse('/admin/feeds');
                 } catch (\Exception $e) {
-                    $errors['general'] = 'Error creating feed: ' . $e->getMessage();
+                    $errors['general'] = 'Erro ao criar feed: ' . $e->getMessage();
                 }
             }
 
             $html = $this->templates->render('admin/feed-form', [
-                'title' => 'Add New Feed',
+                'title' => 'Adicionar Novo Feed',
                 'isEdit' => false,
                 'feed' => [
                     'title' => $title,
@@ -226,7 +226,7 @@ class AdminController
         }
 
         $html = $this->templates->render('admin/feed-form', [
-            'title' => 'Add New Feed',
+            'title' => 'Adicionar Novo Feed',
             'isEdit' => false,
             'feed' => null,
             'errors' => []
@@ -255,23 +255,23 @@ class AdminController
 
             $errors = [];
             if (empty($title)) {
-                $errors['title'] = 'Title is required';
+                $errors['title'] = 'O título é obrigatório';
             }
             if (empty($feedUrl)) {
-                $errors['feed_url'] = 'Feed URL is required';
+                $errors['feed_url'] = 'A URL do feed é obrigatória';
             } elseif (!filter_var($feedUrl, FILTER_VALIDATE_URL)) {
-                $errors['feed_url'] = 'Feed URL must be a valid URL';
+                $errors['feed_url'] = 'A URL do feed deve ser uma URL válida';
             }
             if (empty($siteUrl)) {
-                $errors['site_url'] = 'Site URL is required';
+                $errors['site_url'] = 'A URL do site é obrigatória';
             } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
-                $errors['site_url'] = 'Site URL must be a valid URL';
+                $errors['site_url'] = 'A URL do site deve ser uma URL válida';
             }
 
             if (!in_array($language, ['en', 'pt-BR', 'es'])) {
-                $errors['language'] = 'Invalid language selected';
+                $errors['language'] = 'Idioma selecionado inválido';
             } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
-                $errors['site_url'] = 'Site URL must be a valid URL';
+                $errors['site_url'] = 'A URL do site deve ser uma URL válida';
             }
 
             if (empty($errors)) {
@@ -292,12 +292,12 @@ class AdminController
 
                     return new RedirectResponse('/admin/feeds');
                 } catch (\Exception $e) {
-                    $errors['general'] = 'Error updating feed: ' . $e->getMessage();
+                    $errors['general'] = 'Erro ao atualizar feed: ' . $e->getMessage();
                 }
             }
 
             $html = $this->templates->render('admin/feed-form', [
-                'title' => 'Edit Feed',
+                'title' => 'Editar Feed',
                 'isEdit' => true,
                 'feed' => [
                     'id' => $id,
@@ -315,7 +315,7 @@ class AdminController
         }
 
         $html = $this->templates->render('admin/feed-form', [
-            'title' => 'Edit Feed',
+            'title' => 'Editar Feed',
             'isEdit' => true,
             'feed' => $feed,
             'errors' => []
@@ -334,17 +334,17 @@ class AdminController
 
         $errors = [];
         if (empty($title)) {
-            $errors['title'] = 'Title is required';
+            $errors['title'] = 'O título é obrigatório';
         }
         if (empty($feedUrl)) {
-            $errors['feed_url'] = 'Feed URL is required';
+            $errors['feed_url'] = 'A URL do feed é obrigatória';
         } elseif (!filter_var($feedUrl, FILTER_VALIDATE_URL)) {
-            $errors['feed_url'] = 'Feed URL must be a valid URL';
+            $errors['feed_url'] = 'A URL do feed deve ser uma URL válida';
         }
         if (empty($siteUrl)) {
-            $errors['site_url'] = 'Site URL is required';
+            $errors['site_url'] = 'A URL do site é obrigatória';
         } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
-            $errors['site_url'] = 'Site URL must be a valid URL';
+            $errors['site_url'] = 'A URL do site deve ser uma URL válida';
         }
 
         if (!empty($errors)) {
@@ -376,12 +376,12 @@ class AdminController
 
             return new JsonResponse([
                 'success' => true,
-                'message' => 'Feed created successfully'
+                'message' => 'Feed criado com sucesso'
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Error creating feed: ' . $e->getMessage()
+                'message' => 'Erro ao criar feed: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -395,7 +395,7 @@ class AdminController
         if (!$feed) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Feed not found'
+                'message' => 'Feed não encontrado'
             ], 404);
         }
 
@@ -404,7 +404,7 @@ class AdminController
 
         if (isset($params['title'])) {
             if (empty($params['title'])) {
-                $errors['title'] = 'Title cannot be empty';
+                $errors['title'] = 'O título não pode estar vazio';
             } else {
                 $updateData['title'] = $params['title'];
             }
@@ -412,9 +412,9 @@ class AdminController
 
         if (isset($params['feed_url'])) {
             if (empty($params['feed_url'])) {
-                $errors['feed_url'] = 'Feed URL cannot be empty';
+                $errors['feed_url'] = 'A URL do feed não pode estar vazia';
             } elseif (!filter_var($params['feed_url'], FILTER_VALIDATE_URL)) {
-                $errors['feed_url'] = 'Feed URL must be a valid URL';
+                $errors['feed_url'] = 'A URL do feed deve ser uma URL válida';
             } else {
                 $updateData['feed_url'] = $params['feed_url'];
             }
@@ -422,9 +422,9 @@ class AdminController
 
         if (isset($params['site_url'])) {
             if (empty($params['site_url'])) {
-                $errors['site_url'] = 'Site URL cannot be empty';
+                $errors['site_url'] = 'A URL do site não pode estar vazia';
             } elseif (!filter_var($params['site_url'], FILTER_VALIDATE_URL)) {
-                $errors['site_url'] = 'Site URL must be a valid URL';
+                $errors['site_url'] = 'A URL do site deve ser uma URL válida';
             } else {
                 $updateData['site_url'] = $params['site_url'];
             }
@@ -448,7 +448,7 @@ class AdminController
         if (empty($updateData)) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'No fields to update'
+                'message' => 'Nenhum campo para atualizar'
             ], 400);
         }
 
@@ -457,12 +457,12 @@ class AdminController
 
             return new JsonResponse([
                 'success' => true,
-                'message' => 'Feed updated successfully'
+                'message' => 'Feed atualizado com sucesso'
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Error updating feed: ' . $e->getMessage()
+                'message' => 'Erro ao atualizar feed: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -475,7 +475,7 @@ class AdminController
         if (!$feed) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Feed not found'
+                'message' => 'Feed não encontrado'
             ], 404);
         }
 
@@ -484,12 +484,12 @@ class AdminController
 
             return new JsonResponse([
                 'success' => true,
-                'message' => 'Feed deleted successfully'
+                'message' => 'Feed excluído com sucesso'
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Error deleting feed: ' . $e->getMessage()
+                'message' => 'Erro ao excluir feed: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -503,7 +503,7 @@ class AdminController
         if (!$item) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Item not found'
+                'message' => 'Item não encontrado'
             ], 404);
         }
 
@@ -517,19 +517,19 @@ class AdminController
 
                 return new JsonResponse([
                     'success' => true,
-                    'message' => 'Item updated successfully'
+                    'message' => 'Item atualizado com sucesso'
                 ]);
             } catch (\Exception $e) {
                 return new JsonResponse([
                     'success' => false,
-                    'message' => 'Error updating item: ' . $e->getMessage()
+                    'message' => 'Erro ao atualizar item: ' . $e->getMessage()
                 ], 500);
             }
         }
 
         return new JsonResponse([
             'success' => false,
-            'message' => 'No fields to update'
+            'message' => 'Nenhum campo para atualizar'
         ], 400);
     }
 }

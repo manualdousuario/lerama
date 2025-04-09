@@ -7,15 +7,14 @@
         <div>
             <h3 class="fs-5 fw-medium mb-0 mt-1">
                 <i class="bi bi-collection me-1"></i>
-                Gerenciar Itens de Feed
+                Gerenciar artigos de feeds
             </h3>
-            <p class="text-secondary small mb-0">Visualizar e gerenciar itens de feed</p>
         </div>
         <div>
             <form action="/admin" method="GET" class="d-flex gap-2">
                 <div>
                     <select name="feed" class="form-select">
-                        <option value="">Todos os Feeds</option>
+                        <option value="">Feeds</option>
                         <?php foreach ($feeds as $feed): ?>
                             <option value="<?= $feed['id'] ?>" <?= $selectedFeed == $feed['id'] ? 'selected' : '' ?>>
                                 <?= $this->e($feed['title']) ?>

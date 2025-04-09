@@ -9,7 +9,6 @@
                 <i class="bi bi-grid me-1"></i>
                 Gerenciar Feeds
             </h3>
-            <p class="text-secondary small mb-0">Adicionar, editar ou remover fontes de feed</p>
         </div>
         <div>
             <a href="/admin/feeds/new" class="btn btn-primary d-inline-flex align-items-center">

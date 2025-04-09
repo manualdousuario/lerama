@@ -31,50 +31,7 @@ curl -o ./docker-compose.yml https://raw.githubusercontent.com/manualdousuario/l
 nano docker-compose.yml
 ```
 
-```yaml
-services:
-  lerama:
-    image: ghcr.io/altendorfme/lerama:latest
-    container_name: lerama
-    environment:
-      TZ: ${TZ:-UTC}
-      APP_URL: https://lerama.lab
-      MYSQL_HOST: localhost
-      MYSQL_PORT: 3306
-      MYSQL_DATABASE: lerama
-      MYSQL_USERNAME: root
-      MYSQL_PASSWORD: root
-      ADMIN_USERNAME: admin
-      ADMIN_PASSWORD: admin
-    ports:
-      - 8077:8077
-    volumes:
-      - ./lerama/storage:/app/public/storage
-    restart: unless-stopped
-    networks:
-      - lerama
-    depends_on:
-      - db
-  db:
-    image: mariadb:10.11
-    container_name: db
-    environment:
-      MYSQL_ROOT_PASSWORD: SENHA_ROOT
-      MYSQL_DATABASE: BANCO_DE_DADOS
-      MYSQL_USER: USUARIO
-      MYSQL_PASSWORD: SENHA
-    ports:
-      - 3306:3306
-    volumes:
-      - ./mariadb/data:/var/lib/mysql
-    networks:
-      - lerama
-networks:
-  lerama:
-    driver: bridge
-```
-
-### Coleta de Dados
+### Coleta de dados
 
 A coleta de feeds é executada automaticamente a cada hora. Você pode monitorar o processo através dos logs.
 

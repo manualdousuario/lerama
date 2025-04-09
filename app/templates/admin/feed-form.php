@@ -13,7 +13,6 @@
                 Adicionar Novo Feed
             <?php endif; ?>
         </h3>
-        <p class="text-secondary small mb-0"><?= $isEdit ? 'Atualizar detalhes do feed' : 'Adicionar uma nova fonte de feed' ?></p>
     </div>
 
     <div class="card-body">
@@ -34,7 +33,7 @@
             <div>
                 <div class="mb-3">
                     <label for="title" class="form-label">
-                        Título
+                        Título do Site
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
@@ -86,8 +85,8 @@
                             <i class="bi bi-translate"></i>
                         </span>
                         <select name="language" id="language" class="form-select" required>
-                            <option value="en" <?= $isEdit && $feed['language'] === 'en' ? 'selected' : '' ?>>Inglês</option>
                             <option value="pt-BR" <?= $isEdit && $feed['language'] === 'pt-BR' ? 'selected' : '' ?>>Português (Brasil)</option>
+                            <option value="en" <?= $isEdit && $feed['language'] === 'en' ? 'selected' : '' ?>>Inglês</option>
                             <option value="es" <?= $isEdit && $feed['language'] === 'es' ? 'selected' : '' ?>>Espanhol</option>
                         </select>
                     </div>
@@ -98,7 +97,7 @@
 
                 <div class="mb-3">
                     <label for="feed_type" class="form-label">
-                        Tipo de Feed (Opcional - Auto-detectado)
+                        Tipo de Feed
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">

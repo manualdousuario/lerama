@@ -13,10 +13,26 @@ services:
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: admin
     ports:
-      - 80:80
+      - 8077:8077
     volumes:
       - ./lerama/storage:/app/public/storage
     restart: unless-stopped
+    networks:
+      - lerama
+    depends_on:
+      - db
+  db:
+    image: mariadb:10.11
+    container_name: db
+    environment:
+      MYSQL_ROOT_PASSWORD: SENHA_ROOT
+      MYSQL_DATABASE: BANCO_DE_DADOS
+      MYSQL_USER: USUARIO
+      MYSQL_PASSWORD: SENHA
+    ports:
+      - 3306:3306
+    volumes:
+      - ./mariadb/data:/var/lib/mysql
     networks:
       - lerama
 networks:

@@ -47,7 +47,13 @@
                     <?php endif; ?>
                 </nav>
             </div>
-            <div>
+            <div class="d-flex align-items-center">
+                <a href="/feed/rss" target="_blank" class="btn btn-sm btn-outline-secondary me-2" title="Feed RSS">
+                    <i class="bi bi-rss"></i>
+                </a>
+                <a href="/feed/json" target="_blank" class="btn btn-sm btn-outline-secondary me-2" title="Feed JSON">
+                    <i class="bi bi-braces"></i>
+                </a>
                 <button id="darkModeToggle" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-sun d-none" id="lightIcon"></i>
                     <i class="bi bi-moon" id="darkIcon"></i>
@@ -68,6 +74,14 @@
             <p class="text-center text-secondary small p-0 m-0">
                 Quer incluir o seu blog pessoal no Lerama? <a href="mailto:ghedin@manualdousuario.net">Envie um e-mail</a>.
             </p>
+            <p class="text-center mt-2 mb-0">
+                <a href="/feed/rss" target="_blank" class="btn btn-sm btn-outline-secondary mx-1" title="Feed RSS">
+                    <i class="bi bi-rss"></i> RSS
+                </a>
+                <a href="/feed/json" target="_blank" class="btn btn-sm btn-outline-secondary mx-1" title="Feed JSON">
+                    <i class="bi bi-braces"></i> JSON
+                </a>
+            </p>
         </div>
     </footer>
     <script>
@@ -76,8 +90,6 @@
             const html = document.documentElement;
             const lightIcon = document.getElementById('lightIcon');
             const darkIcon = document.getElementById('darkIcon');
-
-            // Check for saved theme preference or use preferred color scheme
             const savedTheme = localStorage.getItem('theme');
 
             if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -94,7 +106,6 @@
                 darkIcon.classList.remove('d-none');
             }
 
-            // Alternar modo escuro
             darkModeToggle.addEventListener('click', function() {
                 if (html.getAttribute('data-bs-theme') === 'dark') {
                     html.setAttribute('data-bs-theme', 'light');

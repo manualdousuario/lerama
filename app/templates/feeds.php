@@ -6,9 +6,8 @@
     <div class="card-header">
         <h3 class="fs-5 fw-medium mb-0 mt-1">
             <i class="bi bi-journal-text me-1"></i>
-            Fontes de Feed
+            Feeds
         </h3>
-        <p class="text-secondary small mb-0">Lista de todas as fontes de feed e seus status</p>
     </div>
 
     <?php if (empty($feeds)): ?>
