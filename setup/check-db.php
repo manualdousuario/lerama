@@ -46,7 +46,7 @@ try {
     $currentDir = __DIR__;
     $rootDir = dirname($currentDir);
     
-    $envFile = $currentDir . '/.env';
+    $envFile = $currentDir . '/public/.env';
     $env = parseEnvFile($envFile);
     
     if (empty($env)) {
