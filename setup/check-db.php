@@ -50,9 +50,6 @@ function executeSqlFile($conn, $filePath) {
 }
 
 try {
-    $currentDir = __DIR__;
-    $rootDir = dirname($currentDir);
-    
     $envFile = '/app/.env';
     $env = parseEnvFile($envFile);
     
@@ -93,7 +90,7 @@ try {
     } else {
         echo "Database tables do not exist. Running schema.sql..." . PHP_EOL;
 
-        $schemaFile = $rootDir . '/schema.sql';
+        $schemaFile = '/setup/schema.sql';
         if (!file_exists($schemaFile)) {
             throw new Exception("Schema file not found: {$schemaFile}");
         }
