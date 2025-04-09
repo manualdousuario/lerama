@@ -20,8 +20,9 @@ function parseEnvFile($filePath) {
 
 // Function to check if a table exists
 function tableExists($conn, $tableName) {
-    $result = $conn->query("SHOW TABLES LIKE '{$tableName}'");
-    return $result->num_rows > 0;
+    $stmt = $conn->prepare("SHOW TABLES LIKE :tableName");
+    $stmt->execute(['tableName' => $tableName]);
+    return $stmt->rowCount() > 0;
 }
 
 // Function to execute SQL file
@@ -29,17 +30,23 @@ function executeSqlFile($conn, $filePath) {
     $sql = file_get_contents($filePath);
     $queries = explode(';', $sql);
 
-    foreach ($queries as $query) {
-        $query = trim($query);
-        if (!empty($query)) {
-            if (!$conn->query($query . ';')) {
-                echo "Error executing query: " . $conn->error . PHP_EOL;
-                return false;
+    try {
+        $conn->beginTransaction();
+        
+        foreach ($queries as $query) {
+            $query = trim($query);
+            if (!empty($query)) {
+                $conn->exec($query . ';');
             }
         }
+        
+        $conn->commit();
+        return true;
+    } catch (PDOException $e) {
+        $conn->rollBack();
+        echo "Error executing query: " . $e->getMessage() . PHP_EOL;
+        return false;
     }
-    
-    return true;
 }
 
 try {
@@ -63,10 +70,18 @@ try {
         throw new Exception("Database configuration is incomplete in .env file");
     }
 
-    $conn = new mysqli($dbHost, $dbUser, $dbPass, $dbName, $dbPort);
+    // Create PDO connection
+    $dsn = "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4";
+    $options = [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false,
+    ];
     
-    if ($conn->connect_error) {
-        throw new Exception("Connection failed: " . $conn->connect_error);
+    try {
+        $conn = new PDO($dsn, $dbUser, $dbPass, $options);
+    } catch (PDOException $e) {
+        throw new Exception("Connection failed: " . $e->getMessage());
     }
     
     echo "Connected to database successfully" . PHP_EOL;
@@ -91,7 +106,9 @@ try {
         }
     }
     
-    $conn->close();
+    // PDO connections are automatically closed when the script ends
+    // No need for explicit close
+    $conn = null;
     echo "Database check completed successfully" . PHP_EOL;
     
 } catch (Exception $e) {
