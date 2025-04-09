@@ -4,7 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $this->e($title ?? 'Lerama - Agregador de Feeds') ?></title>
+    <title><?= $this->e($title ?? $_ENV['APP_NAME']) ?> | <?= $_ENV['APP_NAME'] ?></title>
+    <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+    <link rel="shortcut icon" href="/assets/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="<?= $this->e($title ?? $_ENV['APP_NAME']) ?>" />
+    <link rel="manifest" href="/assets/site.webmanifest" />
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="<?= $this->e($title ?? $_ENV['APP_NAME']) ?>">
+    <meta property="og:url" content="<?= $_ENV['APP_URL'] ?>">
+    <meta property="og:image" content="/assets/ogimage.png">
+    <meta property="og:description" content="Diretório de blogs pessoais baseados em feeds RSS 1.0/2.0, Atom, JSON, XML.">
+
     <link href="//cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="//cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <script src="//cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
@@ -15,6 +27,7 @@
         <div class="container">
             <div class="d-flex">
                 <div class="me-3">
+                    <i class="bi bi-book-half text-white fs-5 me-2"></i>
                     <a href="/" class="fs-4 fw-bold text-white text-decoration-none">Lerama</a>
                 </div>
                 <nav class="d-flex">
