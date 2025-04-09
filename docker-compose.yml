@@ -15,7 +15,7 @@ services:
     ports:
       - 80:80
     volumes:
-      - ./lerama/storage:/app/storage
+      - ./lerama/storage:/app/public/storage
     restart: unless-stopped
     networks:
       - lerama

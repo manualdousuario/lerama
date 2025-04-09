@@ -10,7 +10,7 @@
                     <i class="bi bi-file-earmark-lock-fill me-2"></i>
                 </h2>
             </div>
-        
+
             <?php if (isset($error)): ?>
                 <div class="alert alert-danger d-flex align-items-center" role="alert">
                     <i class="bi bi-exclamation-circle-fill me-2"></i>
@@ -19,7 +19,7 @@
                     </div>
                 </div>
             <?php endif; ?>
-        
+
             <form action="/admin/login" method="POST">
                 <div class="mb-3">
                     <div class="input-group">

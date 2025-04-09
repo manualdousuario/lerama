@@ -18,7 +18,7 @@
             </a>
         </div>
     </div>
-    
+
     <?php if (empty($feeds)): ?>
         <div class="card-body text-center p-4">
             <p class="text-secondary mb-0 mt-1">
@@ -64,12 +64,12 @@
                                 </td>
                                 <td class="align-middle">
                                     <?php
-                                        $languages = [
-                                            'en' => 'Inglês',
-                                            'pt-BR' => 'Português-Brasil',
-                                            'es' => 'Espanhol'
-                                        ];
-                                        echo $this->e($languages[$feed['language']] ?? $feed['language']);
+                                    $languages = [
+                                        'en' => 'Inglês',
+                                        'pt-BR' => 'Português-Brasil',
+                                        'es' => 'Espanhol'
+                                    ];
+                                    echo $this->e($languages[$feed['language']] ?? $feed['language']);
                                     ?>
                                 </td>
                                 <td class="align-middle">
@@ -143,91 +143,91 @@
 
 <?php $this->start('scripts') ?>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Modal elements
-    const deleteModal = new bootstrap.Modal(document.getElementById('delete-modal'));
-    
-    // Buttons
-    const cancelDeleteButton = document.getElementById('cancel-delete');
-    const confirmDeleteButton = document.getElementById('confirm-delete');
-    const deleteFeedButtons = document.querySelectorAll('.delete-feed');
-    const statusSelects = document.querySelectorAll('.status-select');
-    
-    // Delete feed
-    deleteFeedButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const feedId = this.dataset.feedId;
-            confirmDeleteButton.dataset.feedId = feedId;
-            deleteModal.show();
+    document.addEventListener('DOMContentLoaded', function() {
+        // Modal elements
+        const deleteModal = new bootstrap.Modal(document.getElementById('delete-modal'));
+
+        // Buttons
+        const cancelDeleteButton = document.getElementById('cancel-delete');
+        const confirmDeleteButton = document.getElementById('confirm-delete');
+        const deleteFeedButtons = document.querySelectorAll('.delete-feed');
+        const statusSelects = document.querySelectorAll('.status-select');
+
+        // Delete feed
+        deleteFeedButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const feedId = this.dataset.feedId;
+                confirmDeleteButton.dataset.feedId = feedId;
+                deleteModal.show();
+            });
         });
-    });
-    
-    // Confirm delete
-    confirmDeleteButton.addEventListener('click', function() {
-        const feedId = this.dataset.feedId;
-        
-        fetch(`/admin/feeds/${feedId}`, {
-            method: 'DELETE',
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Remove the row from the table
-                const row = document.querySelector(`tr[data-feed-id="${feedId}"]`);
-                row.remove();
-                
-                // Hide the modal
-                deleteModal.hide();
-                
-                // If no feeds left, refresh the page to show the empty state
-                if (document.querySelectorAll('tbody tr').length === 0) {
-                    window.location.reload();
-                }
-            } else {
-                alert('Erro ao excluir feed: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Ocorreu um erro ao excluir o feed.');
-        });
-    });
-    
-    // Update feed status
-    statusSelects.forEach(select => {
-        select.addEventListener('change', function() {
+
+        // Confirm delete
+        confirmDeleteButton.addEventListener('click', function() {
             const feedId = this.dataset.feedId;
-            const newStatus = this.value;
-            const originalValue = this.dataset.originalValue;
-            
+
             fetch(`/admin/feeds/${feedId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    status: newStatus
-                }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update the data attribute
-                    this.dataset.originalValue = newStatus;
-                } else {
-                    // Revert to original value
-                    this.value = originalValue;
-                    alert('Erro ao atualizar status do feed: ' + data.message);
-                }
-            })
-            .catch(error => {
-                // Revert to original value
-                this.value = originalValue;
-                console.error('Error:', error);
-                alert('Ocorreu um erro ao atualizar o status do feed.');
+                    method: 'DELETE',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove the row from the table
+                        const row = document.querySelector(`tr[data-feed-id="${feedId}"]`);
+                        row.remove();
+
+                        // Hide the modal
+                        deleteModal.hide();
+
+                        // If no feeds left, refresh the page to show the empty state
+                        if (document.querySelectorAll('tbody tr').length === 0) {
+                            window.location.reload();
+                        }
+                    } else {
+                        alert('Erro ao excluir feed: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Ocorreu um erro ao excluir o feed.');
+                });
+        });
+
+        // Update feed status
+        statusSelects.forEach(select => {
+            select.addEventListener('change', function() {
+                const feedId = this.dataset.feedId;
+                const newStatus = this.value;
+                const originalValue = this.dataset.originalValue;
+
+                fetch(`/admin/feeds/${feedId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            status: newStatus
+                        }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update the data attribute
+                            this.dataset.originalValue = newStatus;
+                        } else {
+                            // Revert to original value
+                            this.value = originalValue;
+                            alert('Erro ao atualizar status do feed: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        // Revert to original value
+                        this.value = originalValue;
+                        console.error('Error:', error);
+                        alert('Ocorreu um erro ao atualizar o status do feed.');
+                    });
             });
         });
     });
-});
 </script>
 <?php $this->stop() ?>

@@ -141,7 +141,7 @@ chmod +x /app/cron-scripts/*.sh
 
 # Set up crontab to use the wrapper scripts and redirect output to Docker logs
 (
-    echo "0 0 * * * /app/cron-scripts/feed_process.sh >> /proc/1/fd/1 2>> /proc/1/fd/2"
+    echo "0 * * * * /app/cron-scripts/feed_process.sh >> /proc/1/fd/1 2>> /proc/1/fd/2"
 ) | crontab -
 
 service cron restart
@@ -149,10 +149,10 @@ service cron restart
 log_success "Cron jobs added with stdout logging"
 
 # Set correct permissions for /app/storage
-log_info "Setting permissions for /app/storage..."
-chown -R www-data:www-data /app/storage
-chmod -R 755 /app/storage
-log_success "Permissions set for /app/storage"
+log_info "Setting permissions for /app/public/storage..."
+chown -R www-data:www-data /app/public/storage
+chmod -R 755 /app/public/public/storage
+log_success "Permissions set for /app/public/storage"
 
 # PHP-FPM
 if [ ! -d /var/run/php ]; then

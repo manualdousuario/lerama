@@ -10,7 +10,7 @@
         </h3>
         <p class="text-secondary small mb-0">Lista de todas as fontes de feed e seus status</p>
     </div>
-    
+
     <?php if (empty($feeds)): ?>
         <div class="card-body text-center p-4">
             <p class="text-secondary mb-0">Nenhum feed encontrado.</p>

@@ -33,7 +33,7 @@
             </form>
         </div>
     </div>
-    
+
     <?php if (empty($items)): ?>
         <div class="card-body text-center p-4">
             <p class="text-secondary mb-0">
@@ -93,8 +93,8 @@
                                     <?= date('j M Y', strtotime($item['published_at'])) ?>
                                 </td>
                                 <td class="align-middle text-end">
-                                    <button 
-                                        data-id="<?= $item['id'] ?>" 
+                                    <button
+                                        data-id="<?= $item['id'] ?>"
                                         data-visible="<?= $item['is_visible'] ? '1' : '0' ?>"
                                         class="d-inline-block btn btn-sm btn-outline-primary toggle-visibility">
                                         <?php if ($item['is_visible']): ?>
@@ -110,7 +110,7 @@
                 </table>
             </div>
         </div>
-        
+
         <?php if ($pagination['total'] > 1): ?>
             <div class="card-footer d-flex justify-content-between align-items-center">
                 <div class="d-flex d-sm-none w-100 justify-content-between">
@@ -147,15 +147,15 @@
                                         </a>
                                     </li>
                                 <?php endif; ?>
-                                
+
                                 <?php
                                 $start = max(1, $pagination['current'] - 2);
                                 $end = min($pagination['total'], $pagination['current'] + 2);
-                                
+
                                 if ($start > 1) {
                                     echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
                                 }
-                                
+
                                 for ($i = $start; $i <= $end; $i++) {
                                     if ($i == $pagination['current']) {
                                         echo '<li class="page-item active"><span class="page-link">' . $i . '</span></li>';
@@ -163,12 +163,12 @@
                                         echo '<li class="page-item"><a href="' . $pagination['baseUrl'] . '&page=' . $i . '" class="page-link">' . $i . '</a></li>';
                                     }
                                 }
-                                
+
                                 if ($end < $pagination['total']) {
                                     echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
                                 }
                                 ?>
-                                
+
                                 <?php if ($pagination['current'] < $pagination['total']): ?>
                                     <li class="page-item">
                                         <a href="<?= $pagination['baseUrl'] ?>&page=<?= $pagination['current'] + 1 ?>" class="page-link" aria-label="Next">
@@ -187,58 +187,58 @@
 
 <?php $this->start('scripts') ?>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const toggleButtons = document.querySelectorAll('.toggle-visibility');
-    
-    toggleButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.dataset.id;
-            const currentVisible = this.dataset.visible === '1';
-            const newVisible = !currentVisible;
-            
-            fetch(`/admin/items/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    is_visible: newVisible
-                }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update button text and icon
-                    if (newVisible) {
-                        this.innerHTML = '<i class="bi bi-eye-slash me-1"></i> Ocultar';
-                    } else {
-                        this.innerHTML = '<i class="bi bi-eye me-1"></i> Mostrar';
-                    }
-                    this.dataset.visible = newVisible ? '1' : '0';
-                    
-                    // Update visibility badge
-                    const row = this.closest('tr');
-                    const badge = row.querySelector('td:nth-child(5) span');
-                    
-                    if (newVisible) {
-                        badge.innerHTML = '<i class="bi bi-eye me-1"></i> Visível';
-                        badge.classList.remove('bg-danger');
-                        badge.classList.add('bg-success');
-                    } else {
-                        badge.innerHTML = '<i class="bi bi-eye-slash me-1"></i> Oculto';
-                        badge.classList.remove('bg-success');
-                        badge.classList.add('bg-danger');
-                    }
-                } else {
-                    alert('Erro ao atualizar item: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Ocorreu um erro ao atualizar o item.');
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggleButtons = document.querySelectorAll('.toggle-visibility');
+
+        toggleButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const currentVisible = this.dataset.visible === '1';
+                const newVisible = !currentVisible;
+
+                fetch(`/admin/items/${id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            is_visible: newVisible
+                        }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update button text and icon
+                            if (newVisible) {
+                                this.innerHTML = '<i class="bi bi-eye-slash me-1"></i> Ocultar';
+                            } else {
+                                this.innerHTML = '<i class="bi bi-eye me-1"></i> Mostrar';
+                            }
+                            this.dataset.visible = newVisible ? '1' : '0';
+
+                            // Update visibility badge
+                            const row = this.closest('tr');
+                            const badge = row.querySelector('td:nth-child(5) span');
+
+                            if (newVisible) {
+                                badge.innerHTML = '<i class="bi bi-eye me-1"></i> Visível';
+                                badge.classList.remove('bg-danger');
+                                badge.classList.add('bg-success');
+                            } else {
+                                badge.innerHTML = '<i class="bi bi-eye-slash me-1"></i> Oculto';
+                                badge.classList.remove('bg-success');
+                                badge.classList.add('bg-danger');
+                            }
+                        } else {
+                            alert('Erro ao atualizar item: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Ocorreu um erro ao atualizar o item.');
+                    });
             });
         });
     });
-});
 </script>
 <?php $this->stop() ?>

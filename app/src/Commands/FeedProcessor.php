@@ -113,13 +113,11 @@ class FeedProcessor
         $updated = false;
         $lastGuid = null;
         $processedItems = 0;
-        $maxItemsToProcess = 100; // Limite para evitar processamento excessivo
+        $maxItemsToProcess = 100;
 
-        // Processar os itens da primeira página
         foreach ($items as $item) {
             $guid = $item->get_id();
             
-            // Skip if we've already processed this item
             if ($feed['last_post_id'] === $guid) {
                 break;
             }
@@ -133,8 +131,7 @@ class FeedProcessor
             $author = $item->get_author() ? $item->get_author()->get_name() : null;
             $url = $item->get_permalink();
             $date = $item->get_date('Y-m-d H:i:s') ?: date('Y-m-d H:i:s');
-            
-            // Extrair a URL da imagem do og:image
+
             $imageUrl = $this->extractImageFromUrl($url);
             
             try {
@@ -151,7 +148,7 @@ class FeedProcessor
                 $count++;
                 $updated = true;
             } catch (\Exception $e) {
-                // Item might already exist, continue to next item
+                lerama
                 continue;
             }
             
@@ -161,11 +158,9 @@ class FeedProcessor
             }
         }
 
-        // Verificar se há paginação e processar páginas adicionais
         $this->processPaginatedRssFeed($feed, $simplePie, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
 
         if ($updated && $lastGuid) {
-            // Update the last post ID to the most recent item
             DB::update('feeds', [
                 'last_post_id' => $lastGuid,
                 'last_updated' => DB::sqleval("NOW()")
@@ -177,11 +172,9 @@ class FeedProcessor
 
     private function processPaginatedRssFeed(array $feed, SimplePie $simplePie, &$count, &$updated, &$lastGuid, &$processedItems, $maxItemsToProcess): void
     {
-        // Verificar se o feed tem links de paginação
         $links = $simplePie->get_links();
         $nextPageUrl = null;
-        
-        // Procurar por links de próxima página
+
         if ($links) {
             foreach ($links as $link) {
                 if (isset($link['rel']) && ($link['rel'] === 'next' || $link['rel'] === 'self' && strpos($link['href'], 'page=') !== false)) {
@@ -190,8 +183,7 @@ class FeedProcessor
                 }
             }
         }
-        
-        // Se não encontrou link explícito, tentar inferir do URL atual
+
         if (!$nextPageUrl && strpos($feed['feed_url'], 'page=') !== false) {
             $urlParts = parse_url($feed['feed_url']);
             parse_str($urlParts['query'] ?? '', $queryParams);
@@ -203,8 +195,7 @@ class FeedProcessor
                 $nextPageUrl = $this->buildUrl($urlParts);
             }
         }
-        
-        // Processar até 5 páginas adicionais ou até atingir o limite de itens
+
         $maxPages = 5;
         $currentPage = 1;
         
@@ -226,10 +217,9 @@ class FeedProcessor
                 
                 foreach ($nextItems as $item) {
                     $guid = $item->get_id();
-                    
-                    // Skip if we've already processed this item
+
                     if ($feed['last_post_id'] === $guid) {
-                        break 2; // Break out of both loops
+                        break 2;lerama
                     }
                     
                     if ($lastGuid === null) {
@@ -241,8 +231,7 @@ class FeedProcessor
                     $author = $item->get_author() ? $item->get_author()->get_name() : null;
                     $url = $item->get_permalink();
                     $date = $item->get_date('Y-m-d H:i:s') ?: date('Y-m-d H:i:s');
-                    
-                    // Extrair a URL da imagem do og:image
+
                     $imageUrl = $this->extractImageFromUrl($url);
                     
                     try {
@@ -259,17 +248,16 @@ class FeedProcessor
                         $count++;
                         $updated = true;
                     } catch (\Exception $e) {
-                        // Item might already exist, continue to next item
+                        lerama
                         continue;
                     }
                     
                     $processedItems++;
                     if ($processedItems >= $maxItemsToProcess) {
-                        break 2; // Break out of both loops
+                        break 2;lerama
                     }
                 }
-                
-                // Procurar pelo próximo link de paginação
+
                 $links = $nextSimplePie->get_links();
                 $nextPageUrl = null;
                 
@@ -281,8 +269,7 @@ class FeedProcessor
                         }
                     }
                 }
-                
-                // Se não encontrou link explícito, tentar inferir do URL atual
+
                 if (!$nextPageUrl) {
                     break;
                 }
@@ -356,8 +343,7 @@ class FeedProcessor
 
         $lines = explode("\n", $content);
         $headers = str_getcsv(array_shift($lines));
-        
-        // Find the column indexes for required fields
+
         $titleIndex = array_search('title', $headers);
         $authorIndex = array_search('author', $headers);
         $contentIndex = array_search('content', $headers);
@@ -377,11 +363,10 @@ class FeedProcessor
             if (empty(trim($line))) continue;
             
             $data = str_getcsv($line);
-            if (count($data) <= $guidIndex) continue; // Skip malformed lines
+            if (count($data) <= $guidIndex) continue;
             
             $guid = $data[$guidIndex];
-            
-            // Skip if we've already processed this item
+
             if ($feed['last_post_id'] === $guid) {
                 break;
             }
@@ -412,17 +397,14 @@ class FeedProcessor
                 $updated = true;
                 $this->climate->whisper("Item adicionado com sucesso: {$title}");
             } catch (\Exception $e) {
-                // Item might already exist, continue to next item
                 $this->climate->whisper("Erro ao adicionar item {$title}: {$e->getMessage()}");
                 continue;
             }
         }
-        
-        // Verificar se há paginação no CSV (geralmente via parâmetro na URL)
+
         $this->processPaginatedCsvFeed($feed, $count, $updated, $lastGuid);
         
         if ($updated && $lastGuid) {
-            // Update the last post ID to the most recent item
             DB::update('feeds', [
                 'last_post_id' => $lastGuid,
                 'last_updated' => DB::sqleval("NOW()")
@@ -434,15 +416,13 @@ class FeedProcessor
 
     private function processPaginatedCsvFeed(array $feed, &$count, &$updated, &$lastGuid): void
     {
-        // Verificar se a URL do feed tem parâmetros de paginação
         if (strpos($feed['feed_url'], 'page=') === false && strpos($feed['feed_url'], 'offset=') === false) {
-            return; // Não parece ter paginação
+            return;
         }
         
         $urlParts = parse_url($feed['feed_url']);
         parse_str($urlParts['query'] ?? '', $queryParams);
-        
-        // Determinar o tipo de paginação
+
         $pageParam = null;
         $currentValue = null;
         
@@ -453,13 +433,12 @@ class FeedProcessor
         } elseif (isset($queryParams['offset'])) {
             $pageParam = 'offset';
             $currentValue = (int)$queryParams['offset'];
-            $limit = $queryParams['limit'] ?? 10; // Valor padrão se não especificado
+            $limit = $queryParams['limit'] ?? 10;
             $nextValue = $currentValue + $limit;
         } else {
-            return; // Não conseguiu determinar o parâmetro de paginação
+            return;
         }
-        
-        // Processar até 5 páginas adicionais
+
         $maxPages = 5;
         $currentPage = 1;
         $maxItemsToProcess = 100;
@@ -486,8 +465,7 @@ class FeedProcessor
                 
                 $lines = explode("\n", $content);
                 $headers = str_getcsv(array_shift($lines));
-                
-                // Find the column indexes for required fields
+
                 $titleIndex = array_search('title', $headers);
                 $authorIndex = array_search('author', $headers);
                 $contentIndex = array_search('content', $headers);
@@ -506,13 +484,12 @@ class FeedProcessor
                     if (empty(trim($line))) continue;
                     
                     $data = str_getcsv($line);
-                    if (count($data) <= $guidIndex) continue; // Skip malformed lines
+                    if (count($data) <= $guidIndex) continue;
                     
                     $guid = $data[$guidIndex];
-                    
-                    // Skip if we've already processed this item
+
                     if ($feed['last_post_id'] === $guid) {
-                        break 2; // Break out of both loops
+                        break 2;lerama
                     }
                     
                     if ($lastGuid === null) {
@@ -542,26 +519,24 @@ class FeedProcessor
                         $updated = true;
                         $this->climate->whisper("Item adicionado com sucesso: {$title}");
                     } catch (\Exception $e) {
-                        // Item might already exist, continue to next item
+                        lerama
                         $this->climate->whisper("Erro ao adicionar item {$title}: {$e->getMessage()}");
                         continue;
                     }
                     
                     $processedItems++;
                     if ($processedItems >= $maxItemsToProcess) {
-                        break 2; // Break out of both loops
+                        break 2;lerama
                     }
                 }
-                
-                // Se não encontrou nenhum item novo nesta página, parar
+
                 if ($pageItemCount === 0) {
                     break;
                 }
-                
-                // Preparar para a próxima página
+
                 if ($pageParam === 'page') {
                     $nextValue++;
-                } else { // offset
+                } else {
                     $nextValue += $limit;
                 }
                 
@@ -595,14 +570,12 @@ class FeedProcessor
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new \Exception("Invalid JSON feed: " . json_last_error_msg());
         }
-        
-        // Handle different JSON feed formats
+
         $items = $data['items'] ?? $data['entries'] ?? $data['feed'] ?? $data;
         
         if (!is_array($items)) {
             throw new \Exception("Could not find items in JSON feed");
         }
-        // Verificar se há informações de paginação
         $nextPageUrl = $data['next'] ?? $data['next_page'] ?? $data['nextPage'] ?? null;
         
         $count = 0;
@@ -615,10 +588,9 @@ class FeedProcessor
         foreach ($items as $item) {
             $guid = $item['id'] ?? $item['guid'] ?? $item['url'] ?? null;
             if (!$guid) {
-                continue; // Skip items without a unique identifier
+                continue;lerama
             }
-            
-            // Skip if we've already processed this item
+
             if ($feed['last_post_id'] === $guid) {
                 break;
             }
@@ -634,8 +606,7 @@ class FeedProcessor
             $date = $item['date_published'] ?? $item['published'] ?? $item['date'] ?? date('Y-m-d H:i:s');
             
             $this->climate->whisper("Processando item JSON: {$title} ({$url})");
-            
-            // Extrair a URL da imagem do og:image
+
             $imageUrl = $this->extractImageFromUrl($url);
             
             try {
@@ -653,7 +624,6 @@ class FeedProcessor
                 $updated = true;
                 $this->climate->whisper("Item JSON adicionado com sucesso: {$title}");
             } catch (\Exception $e) {
-                // Item might already exist, continue to next item
                 $this->climate->whisper("Erro ao adicionar item JSON {$title}: {$e->getMessage()}");
                 continue;
             }
@@ -663,14 +633,12 @@ class FeedProcessor
                 break;
             }
         }
-        
-        // Processar páginas adicionais se houver
+
         if ($nextPageUrl) {
             $this->processPaginatedJsonFeed($feed, $nextPageUrl, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
         }
         
         if ($updated && $lastGuid) {
-            // Update the last post ID to the most recent item
             DB::update('feeds', [
                 'last_post_id' => $lastGuid,
                 'last_updated' => DB::sqleval("NOW()")
@@ -682,7 +650,6 @@ class FeedProcessor
 
     private function processPaginatedJsonFeed(array $feed, string $nextPageUrl, &$count, &$updated, &$lastGuid, &$processedItems, $maxItemsToProcess): void
     {
-        // Processar até 5 páginas adicionais ou até atingir o limite de itens
         $maxPages = 5;
         $currentPage = 1;
         
@@ -706,8 +673,7 @@ class FeedProcessor
                     $this->climate->yellow("Invalid JSON in next page: " . json_last_error_msg());
                     break;
                 }
-                
-                // Handle different JSON feed formats
+
                 $items = $data['items'] ?? $data['entries'] ?? $data['feed'] ?? $data;
                 
                 if (!is_array($items)) {
@@ -720,12 +686,11 @@ class FeedProcessor
                 foreach ($items as $item) {
                     $guid = $item['id'] ?? $item['guid'] ?? $item['url'] ?? null;
                     if (!$guid) {
-                        continue; // Skip items without a unique identifier
+                        continue;
                     }
                     
-                    // Skip if we've already processed this item
                     if ($feed['last_post_id'] === $guid) {
-                        break 2; // Break out of both loops
+                        break 2;lerama
                     }
                     
                     if ($lastGuid === null) {
@@ -739,8 +704,7 @@ class FeedProcessor
                     $date = $item['date_published'] ?? $item['published'] ?? $item['date'] ?? date('Y-m-d H:i:s');
                     
                     $this->climate->whisper("Processando item JSON da página {$currentPage}: {$title} ({$url})");
-                    
-                    // Extrair a URL da imagem do og:image
+
                     $imageUrl = $this->extractImageFromUrl($url);
                     
                     try {
@@ -759,23 +723,20 @@ class FeedProcessor
                         $updated = true;
                         $this->climate->whisper("Item JSON da página {$currentPage} adicionado com sucesso: {$title}");
                     } catch (\Exception $e) {
-                        // Item might already exist, continue to next item
                         $this->climate->whisper("Erro ao adicionar item JSON da página {$currentPage} {$title}: {$e->getMessage()}");
                         continue;
                     }
                     
                     $processedItems++;
                     if ($processedItems >= $maxItemsToProcess) {
-                        break 2; // Break out of both loops
+                        break 2;
                     }
                 }
-                
-                // Se não encontrou nenhum item novo nesta página, parar
+
                 if ($pageItemCount === 0) {
                     break;
                 }
-                
-                // Verificar se há próxima página
+
                 $nextPageUrl = $data['next'] ?? $data['next_page'] ?? $data['nextPage'] ?? null;
                 if (!$nextPageUrl) {
                     break;
@@ -811,8 +772,7 @@ class FeedProcessor
         if ($xml === false) {
             throw new \Exception("Invalid XML feed");
         }
-        
-        // Try to determine the structure of the XML
+
         $items = $xml->xpath('//item') ?: $xml->xpath('//entry') ?: [];
         
         $count = 0;
@@ -824,10 +784,9 @@ class FeedProcessor
         foreach ($items as $item) {
             $guid = (string)($item->guid ?? $item->id ?? $item->link ?? '');
             if (empty($guid)) {
-                continue; // Skip items without a unique identifier
+                continue;
             }
-            
-            // Skip if we've already processed this item
+    
             if ($feed['last_post_id'] === $guid) {
                 break;
             }
@@ -843,8 +802,7 @@ class FeedProcessor
             $date = (string)($item->pubDate ?? $item->published ?? $item->date ?? date('Y-m-d H:i:s'));
             
             $this->climate->whisper("Processando item XML: {$title} ({$url})");
-            
-            // Extrair a URL da imagem do og:image
+
             $imageUrl = $this->extractImageFromUrl($url);
             
             try {
@@ -862,7 +820,7 @@ class FeedProcessor
                 $updated = true;
                 $this->climate->whisper("Item XML adicionado com sucesso: {$title}");
             } catch (\Exception $e) {
-                // Item might already exist, continue to next item
+                
                 $this->climate->whisper("Erro ao adicionar item XML {$title}: {$e->getMessage()}");
                 continue;
             }
@@ -873,12 +831,10 @@ class FeedProcessor
             }
             
         }
-        
-        // Verificar se há paginação no XML
+    
         $this->processPaginatedXmlFeed($feed, $xml, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
         
         if ($updated && $lastGuid) {
-            // Update the last post ID to the most recent item
             DB::update('feeds', [
                 'last_post_id' => $lastGuid,
                 'last_updated' => DB::sqleval("NOW()")
@@ -889,10 +845,8 @@ class FeedProcessor
     
     private function processPaginatedXmlFeed(array $feed, \SimpleXMLElement $xml, &$count, &$updated, &$lastGuid, &$processedItems, $maxItemsToProcess): void
     {
-        // Verificar se há links de paginação no XML
         $nextPageUrl = null;
-        
-        // Procurar por links de próxima página em diferentes formatos
+
         $links = $xml->xpath('//link[@rel="next"]') ?: $xml->xpath('//atom:link[@rel="next"]') ?: [];
         if (!empty($links)) {
             foreach ($links as $link) {
@@ -903,8 +857,7 @@ class FeedProcessor
                 }
             }
         }
-        
-        // Se não encontrou link explícito, tentar inferir do URL atual
+
         if (!$nextPageUrl && strpos($feed['feed_url'], 'page=') !== false) {
             $urlParts = parse_url($feed['feed_url']);
             parse_str($urlParts['query'] ?? '', $queryParams);
@@ -916,8 +869,7 @@ class FeedProcessor
                 $nextPageUrl = $this->buildUrl($urlParts);
             }
         }
-        
-        // Processar até 5 páginas adicionais ou até atingir o limite de itens
+
         $maxPages = 5;
         $currentPage = 1;
         
@@ -941,8 +893,7 @@ class FeedProcessor
                     $this->climate->yellow("Invalid XML in next page");
                     break;
                 }
-                
-                // Try to determine the structure of the XML
+
                 $items = $nextXml->xpath('//item') ?: $nextXml->xpath('//entry') ?: [];
                 
                 $pageItemCount = 0;
@@ -950,12 +901,11 @@ class FeedProcessor
                 foreach ($items as $item) {
                     $guid = (string)($item->guid ?? $item->id ?? $item->link ?? '');
                     if (empty($guid)) {
-                        continue; // Skip items without a unique identifier
+                        continue;
                     }
-                    
-                    // Skip if we've already processed this item
+
                     if ($feed['last_post_id'] === $guid) {
-                        break 2; // Break out of both loops
+                        break 2;lerama
                     }
                     
                     if ($lastGuid === null) {
@@ -969,8 +919,7 @@ class FeedProcessor
                     $date = (string)($item->pubDate ?? $item->published ?? $item->date ?? date('Y-m-d H:i:s'));
                     
                     $this->climate->whisper("Processando item XML da página {$currentPage}: {$title} ({$url})");
-                    
-                    // Extrair a URL da imagem do og:image
+    
                     $imageUrl = $this->extractImageFromUrl($url);
                     
                     try {
@@ -989,23 +938,21 @@ class FeedProcessor
                         $updated = true;
                         $this->climate->whisper("Item XML da página {$currentPage} adicionado com sucesso: {$title}");
                     } catch (\Exception $e) {
-                        // Item might already exist, continue to next item
+                        lerama
                         $this->climate->whisper("Erro ao adicionar item XML da página {$currentPage} {$title}: {$e->getMessage()}");
                         continue;
                     }
                     
                     $processedItems++;
                     if ($processedItems >= $maxItemsToProcess) {
-                        break 2; // Break out of both loops
+                        break 2;lerama
                     }
                 }
-                
-                // Se não encontrou nenhum item novo nesta página, parar
+
                 if ($pageItemCount === 0) {
                     break;
                 }
-                
-                // Procurar pelo próximo link de paginação
+
                 $links = $nextXml->xpath('//link[@rel="next"]') ?: $nextXml->xpath('//atom:link[@rel="next"]') ?: [];
                 $nextPageUrl = null;
                 
@@ -1018,8 +965,7 @@ class FeedProcessor
                         }
                     }
                 }
-                
-                // Se não encontrou link explícito, tentar inferir do URL atual
+    
                 if (!$nextPageUrl) {
                     break;
                 }
@@ -1043,8 +989,7 @@ class FeedProcessor
             $this->climate->whisper("Extraindo imagem de: {$url}");
             $response = $this->httpClient->get($url);
             $statusCode = $response->getStatusCode();
-            
-            // Aguardar 1 segundo após cada requisição
+
             sleep(1);
             
             if ($statusCode !== 200) {
@@ -1053,14 +998,13 @@ class FeedProcessor
             }
             
             $html = (string) $response->getBody();
-            
-            // Extrair og:image usando expressão regular
+
             if (preg_match('/<meta[^>]*property=["\']og:image["\'][^>]*content=["\'](.*?)["\'][^>]*>/i', $html, $matches)) {
                 $this->climate->whisper("Imagem extraída (og:image): {$matches[1]}");
                 return $matches[1];
             }
             
-            // Tentar extrair usando outra abordagem se a primeira falhar
+
             if (preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:image["\'][^>]*>/i', $html, $matches)) {
                 $this->climate->whisper("Imagem extraída (og:image alt): {$matches[1]}");
                 return $matches[1];
@@ -1069,7 +1013,6 @@ class FeedProcessor
             $this->climate->whisper("Nenhuma imagem encontrada");
             return null;
         } catch (\Exception $e) {
-            // Em caso de erro, retornar null
             $this->climate->whisper("Erro ao extrair imagem: {$e->getMessage()}");
             return null;
         }

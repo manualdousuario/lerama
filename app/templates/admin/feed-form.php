@@ -15,13 +15,13 @@
         </h3>
         <p class="text-secondary small mb-0"><?= $isEdit ? 'Atualizar detalhes do feed' : 'Adicionar uma nova fonte de feed' ?></p>
     </div>
-    
+
     <div class="card-body">
         <form id="feed-form" method="POST">
             <?php if ($isEdit): ?>
                 <input type="hidden" id="feed-id" name="feed-id" value="<?= $feed['id'] ?>">
             <?php endif; ?>
-            
+
             <?php if (isset($errors['general'])): ?>
                 <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
                     <i class="bi bi-exclamation-circle-fill me-2"></i>
@@ -30,7 +30,7 @@
                     </div>
                 </div>
             <?php endif; ?>
-            
+
             <div>
                 <div class="mb-3">
                     <label for="title" class="form-label">
@@ -46,7 +46,7 @@
                         <div class="form-text text-danger"><?= $this->e($errors['title']) ?></div>
                     <?php endif; ?>
                 </div>
-                
+
                 <div class="mb-3">
                     <label for="feed_url" class="form-label">
                         URL do Feed
@@ -61,7 +61,7 @@
                         <div class="form-text text-danger"><?= $this->e($errors['feed_url']) ?></div>
                     <?php endif; ?>
                 </div>
-                
+
                 <div class="mb-3">
                     <label for="site_url" class="form-label">
                         URL do Site
@@ -76,7 +76,7 @@
                         <div class="form-text text-danger"><?= $this->e($errors['site_url']) ?></div>
                     <?php endif; ?>
                 </div>
-                
+
                 <div class="mb-3">
                     <label for="language" class="form-label">
                         Idioma
@@ -95,7 +95,7 @@
                         <div class="form-text text-danger"><?= $this->e($errors['language']) ?></div>
                     <?php endif; ?>
                 </div>
-                
+
                 <div class="mb-3">
                     <label for="feed_type" class="form-label">
                         Tipo de Feed (Opcional - Auto-detectado)
@@ -120,25 +120,25 @@
                         <div class="form-text text-danger"><?= $this->e($errors['feed_type']) ?></div>
                     <?php endif; ?>
                 </div>
-                
+
                 <?php if ($isEdit): ?>
-                <div class="mb-3">
-                    <label for="status" class="form-label">
-                        Status
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="bi bi-clock"></i>
-                        </span>
-                        <select name="status" id="status" class="form-select">
-                            <option value="online" <?= $feed['status'] === 'online' ? 'selected' : '' ?>>Online</option>
-                            <option value="offline" <?= $feed['status'] === 'offline' ? 'selected' : '' ?>>Offline</option>
-                            <option value="paused" <?= $feed['status'] === 'paused' ? 'selected' : '' ?>>Pausado</option>
-                        </select>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">
+                            Status
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-clock"></i>
+                            </span>
+                            <select name="status" id="status" class="form-select">
+                                <option value="online" <?= $feed['status'] === 'online' ? 'selected' : '' ?>>Online</option>
+                                <option value="offline" <?= $feed['status'] === 'offline' ? 'selected' : '' ?>>Offline</option>
+                                <option value="paused" <?= $feed['status'] === 'paused' ? 'selected' : '' ?>>Pausado</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
                 <?php endif; ?>
-                
+
                 <div class="d-flex justify-content-end gap-2 mt-4">
                     <a href="/admin/feeds" class="btn btn-secondary">
                         <i class="bi bi-x-lg me-1"></i>
@@ -161,15 +161,15 @@
 
 <?php $this->start('scripts') ?>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const feedForm = document.getElementById('feed-form');
-    
-    // Show loading state when form is submitted
-    feedForm.addEventListener('submit', function() {
-        const submitButton = feedForm.querySelector('button[type="submit"]');
-        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Salvando...';
-        submitButton.disabled = true;
+    document.addEventListener('DOMContentLoaded', function() {
+        const feedForm = document.getElementById('feed-form');
+
+        // Show loading state when form is submitted
+        feedForm.addEventListener('submit', function() {
+            const submitButton = feedForm.querySelector('button[type="submit"]');
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Salvando...';
+            submitButton.disabled = true;
+        });
     });
-});
 </script>
 <?php $this->stop() ?>
