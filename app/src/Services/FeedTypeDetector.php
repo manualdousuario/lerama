@@ -4,19 +4,74 @@ declare(strict_types=1);
 
 namespace Lerama\Services;
 
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
+use DB;
+
 class FeedTypeDetector
 {
-    public function detectType(string $url): ?string
+    private \GuzzleHttp\Client $httpClient;
+
+    public function __construct()
+    {
+        $this->httpClient = new \GuzzleHttp\Client([
+            'timeout' => 10,
+            'connect_timeout' => 5,
+            'http_errors' => false,
+            'allow_redirects' => [
+                'max' => 2,
+                'strict' => true,
+                'referer' => true,
+                'protocols' => ['http', 'https'],
+                'track_redirects' => true
+            ],
+            'headers' => [
+                'User-Agent' => 'Meta-ExternalFetcher'
+            ]
+        ]);
+    }
+
+    public function detectType(string $url, ?int $feedId = null): ?string
     {
         try {
-            $content = file_get_contents($url);
-            if ($content === false) {
+            $response = $this->httpClient->get($url);
+            $statusCode = $response->getStatusCode();
+            
+            if ($statusCode !== 200) {
+                if ($feedId) {
+                    $this->pauseFeedWithError($feedId, "HTTP error: Status code {$statusCode}");
+                }
+                return null;
+            }
+            
+            $content = (string) $response->getBody();
+            if (empty($content)) {
+                if ($feedId) {
+                    $this->pauseFeedWithError($feedId, "Empty response received");
+                }
                 return null;
             }
 
             return $this->detectTypeFromContent($content);
         } catch (\Exception $e) {
+            if ($feedId) {
+                $this->pauseFeedWithError($feedId, $e->getMessage());
+            }
             return null;
+        }
+    }
+
+    private function pauseFeedWithError(int $feedId, string $errorMessage): void
+    {
+        try {
+            DB::update('feeds', [
+                'status' => 'paused',
+                'last_error' => $errorMessage,
+                'last_checked' => DB::sqleval("NOW()")
+            ], 'id=%i', $feedId);
+        } catch (\Exception $e) {
+            // Log error if needed
         }
     }
 

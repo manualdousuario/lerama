@@ -53,11 +53,17 @@
                         </div>
                     <?php endif; ?>
                     <div class="flex-fill">
-                        <h4 class="fs-5 fw-medium text-primary mb-0">
-                            <a href="<?= $this->e($item['url']) ?>" target="_blank" class="text-decoration-none hover-underline">
-                                <?= $this->e($item['title']) ?>
+                        <div class="align-bottom d-flex align-items-end">
+                            <h4 class="fs-5 fw-medium text-primary m-0">
+                                <a href="<?= $this->e($item['url']) ?>" target="_blank" class="text-decoration-none hover-underline">
+                                    <?= $this->e($item['title']) ?>
+                                </a>
+                            </h4>
+                            <span class="mx-2">em</span>
+                            <a href="<?= $this->e($item['site_url']) ?>" class="text-truncate">
+                                <?= $this->e($item['feed_title']) ?>
                             </a>
-                        </h4>
+                        </div>
                         <?php if (!empty($item['author'])): ?>
                             <p class="d-flex align-items-center small mb-0">
                                 <i class="bi bi-person me-1"></i>
@@ -71,11 +77,6 @@
                                 <?= strip_tags(substr($item['content'], 0, 300)) ?>...
                             </div>
                         <?php endif; ?>
-                    </div>
-                    <div>
-                        <a href="<?= $this->e($item['site_url']) ?>" class="badge bg-primary rounded-pill text-truncate">
-                            <?= $this->e($item['feed_title']) ?>
-                        </a>
                     </div>
                 </li>
             <?php endforeach; ?>

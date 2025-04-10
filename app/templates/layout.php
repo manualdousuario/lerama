@@ -31,18 +31,10 @@
                     <a href="/" class="fs-4 fw-bold text-white text-decoration-none">Lerama</a>
                 </div>
                 <nav class="d-flex">
-                    <a href="/" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'home' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
-                        <i class="bi bi-house-door me-1"></i>
-                        Início
-                    </a>
-                    <a href="/feeds" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'feeds' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
-                        <i class="bi bi-journal-text me-1"></i>
-                        Feeds
-                    </a>
                     <?php if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true): ?>
                         <a href="/admin" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'admin' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
                             <i class="bi bi-file-earmark-lock-fill me-1"></i>
-                            Admin
+                            Feeds
                         </a>
                         <a href="/admin/feeds" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'admin-feeds' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
                             <i class="bi bi-grid me-1"></i>
@@ -52,10 +44,14 @@
                             <i class="bi bi-box-arrow-right me-1"></i>
                             Sair
                         </a>
-                    <?php else: ?>
-                        <a href="/admin/login" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'login' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
-                            <i class="bi bi-file-earmark-lock-fill me-1"></i>
-                            Admin
+                    <?php else : ?>
+                        <a href="/" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'home' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
+                            <i class="bi bi-house-door me-1"></i>
+                            Início
+                        </a>
+                        <a href="/feeds" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'feeds' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
+                            <i class="bi bi-journal-text me-1"></i>
+                            Feeds
                         </a>
                     <?php endif; ?>
                 </nav>
