@@ -389,7 +389,13 @@ class AdminController
     public function updateFeed(ServerRequestInterface $request, array $args): ResponseInterface
     {
         $id = (int)$args['id'];
-        $params = (array)$request->getParsedBody();
+        
+        $body = $request->getBody()->getContents();
+        $params = !empty($body) ? json_decode($body, true) : [];
+        
+        if ($params === null) {
+            $params = (array)$request->getParsedBody();
+        }
 
         $feed = DB::queryFirstRow("SELECT * FROM feeds WHERE id = %i", $id);
         if (!$feed) {
@@ -435,7 +441,12 @@ class AdminController
         }
 
         if (isset($params['status'])) {
-            $updateData['status'] = $params['status'];
+            $validStatuses = ['online', 'offline', 'paused'];
+            if (!in_array($params['status'], $validStatuses)) {
+                $errors['status'] = 'Status inválido. Valores permitidos: online, offline, paused';
+            } else {
+                $updateData['status'] = $params['status'];
+            }
         }
 
         if (!empty($errors)) {

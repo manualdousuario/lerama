@@ -4,7 +4,7 @@
 
 <div class="card shadow-sm">
     <div class="card-header">
-        <h3 class="fs-5 fw-medium mb-0 mt-1">
+        <h3 class="fs-5 fw-medium mb-1 mb-md-0 mt-1">
             <i class="bi bi-journal-text me-1"></i>
             Feeds
         </h3>
@@ -28,24 +28,18 @@
                             </th>
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
-                                    <i class="bi bi-book me-1"></i>
-                                    Tipo
-                                </div>
-                            </th>
-                            <th scope="col" class="small text-uppercase">
-                                <div class="d-flex align-items-center">
                                     <i class="bi bi-clock me-1"></i>
                                     Status
                                 </div>
                             </th>
                             <th scope="col" class="small text-uppercase">
-                                <div class="d-flex align-items-center">
+                                <div class="d-flex align-items-center text-truncate">
                                     <i class="bi bi-clock-history me-1"></i>
                                     Última Verificação
                                 </div>
                             </th>
                             <th scope="col" class="small text-uppercase">
-                                <div class="d-flex align-items-center">
+                                <div class="d-flex align-items-center text-truncate">
                                     <i class="bi bi-arrow-repeat me-1"></i>
                                     Última Atualização
                                 </div>
@@ -53,7 +47,7 @@
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-collection me-1"></i>
-                                    Itens
+                                    Artigos
                                 </div>
                             </th>
                         </tr>
@@ -79,9 +73,6 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="align-middle fw-medium">
-                                    <?= $this->e(strtoupper($feed['feed_type'])) ?>
-                                </td>
                                 <td class="align-middle">
                                     <?php if ($feed['status'] === 'online'): ?>
                                         <span class="badge bg-success">
@@ -101,10 +92,10 @@
                                     <?php endif; ?>
                                 </td>
                                 <td class="align-middle small text-secondary">
-                                    <?= $feed['last_checked'] ? date('M j, Y H:i', strtotime($feed['last_checked'])) : 'Nunca' ?>
+                                    <?= $feed['last_checked'] ? date('d/m/Y \à\s H:i', strtotime($feed['last_checked'])) : 'Nunca' ?>
                                 </td>
                                 <td class="align-middle small text-secondary">
-                                    <?= $feed['last_updated'] ? date('M j, Y H:i', strtotime($feed['last_updated'])) : 'Nunca' ?>
+                                    <?= $feed['last_updated'] ? date('d/m/Y \à\s H:i', strtotime($feed['last_updated'])) : 'Nunca' ?>
                                 </td>
                                 <td class="align-middle small text-secondary">
                                     <?= $feed['item_count'] ?? 0 ?>

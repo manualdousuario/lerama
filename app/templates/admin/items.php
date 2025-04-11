@@ -3,33 +3,35 @@
 <?php $this->start('active') ?>admin<?php $this->stop() ?>
 
 <div class="card shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <div>
-            <h3 class="fs-5 fw-medium mb-0 mt-1">
-                <i class="bi bi-collection me-1"></i>
-                Gerenciar artigos de feeds
-            </h3>
-        </div>
-        <div>
-            <form action="/admin" method="GET" class="d-flex gap-2">
-                <div>
-                    <select name="feed" class="form-select">
-                        <option value="">Feeds</option>
-                        <?php foreach ($feeds as $feed): ?>
-                            <option value="<?= $feed['id'] ?>" <?= $selectedFeed == $feed['id'] ? 'selected' : '' ?>>
-                                <?= $this->e($feed['title']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <input type="text" name="search" value="<?= $this->e($search) ?>" class="form-control" placeholder="Pesquisar...">
-                    <button type="submit" class="btn btn-primary d-flex align-items-center">
-                        <i class="bi bi-search me-1"></i>
-                        Pesquisar
-                    </button>
-                </div>
-            </form>
+    <div class="card-header">
+        <div class="row">
+            <div class="col-12 col-md-6">
+                <h3 class="fs-5 fw-medium mb-0 mt-1 mt-md-2">
+                    <i class="bi bi-collection me-1"></i>
+                    Gerenciar artigos de feeds
+                </h3>
+            </div>
+            <div class="col-12 col-md-6 pb-1 pb-md-0 pt-3 pt-md-0">
+                <form action="/admin" method="GET" class="d-flex gap-2">
+                    <div>
+                        <select name="feed" class="form-select">
+                            <option value="">Feeds</option>
+                            <?php foreach ($feeds as $feed): ?>
+                                <option value="<?= $feed['id'] ?>" <?= $selectedFeed == $feed['id'] ? 'selected' : '' ?>>
+                                    <?= $this->e($feed['title']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" name="search" value="<?= $this->e($search) ?>" class="form-control" placeholder="...">
+                        <button type="submit" class="btn btn-primary d-flex align-items-center">
+                            <i class="bi bi-search me-1"></i>
+                            Pesquisar
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -89,7 +91,7 @@
                                     <?= $this->e($item['author'] ?? 'Desconhecido') ?>
                                 </td>
                                 <td class="small text-secondary align-middle">
-                                    <?= date('j M Y', strtotime($item['published_at'])) ?>
+                                    <?= $item['published_at'] ? date('d/m/Y \à\s H:i', strtotime($item['published_at'])) : 'Nunca' ?>
                                 </td>
                                 <td class="align-middle text-end">
                                     <button
@@ -112,28 +114,10 @@
 
         <?php if ($pagination['total'] > 1): ?>
             <div class="card-footer d-flex justify-content-between align-items-center">
-                <div class="d-flex d-sm-none w-100 justify-content-between">
-                    <?php if ($pagination['current'] > 1): ?>
-                        <a href="<?= $pagination['baseUrl'] ?>&page=<?= $pagination['current'] - 1 ?>" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
-                            <i class="bi bi-chevron-left me-1"></i>
-                            Anterior
-                        </a>
-                    <?php else: ?>
-                        <div></div>
-                    <?php endif; ?>
-                    <?php if ($pagination['current'] < $pagination['total']): ?>
-                        <a href="<?= $pagination['baseUrl'] ?>&page=<?= $pagination['current'] + 1 ?>" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
-                            Próximo
-                            <i class="bi bi-chevron-right ms-1"></i>
-                        </a>
-                    <?php else: ?>
-                        <div></div>
-                    <?php endif; ?>
-                </div>
-                <div class="d-none d-sm-flex justify-content-between align-items-center w-100">
+                <div class="d-flex justify-content-between align-items-center w-100">
                     <div>
                         <p class="small text-secondary mb-0">
-                            Mostrando página <span class="fw-medium"><?= $pagination['current'] ?></span> de <span class="fw-medium"><?= $pagination['total'] ?></span>
+                            Página <span class="fw-medium"><?= $pagination['current'] ?></span> de <span class="fw-medium"><?= $pagination['total'] ?></span>
                         </p>
                     </div>
                     <div>
@@ -207,7 +191,6 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            // Update button text and icon
                             if (newVisible) {
                                 this.innerHTML = '<i class="bi bi-eye-slash me-1"></i> Ocultar';
                             } else {
@@ -215,7 +198,6 @@
                             }
                             this.dataset.visible = newVisible ? '1' : '0';
 
-                            // Update visibility badge
                             const row = this.closest('tr');
                             const badge = row.querySelector('td:nth-child(5) span');
 

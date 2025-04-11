@@ -3,14 +3,14 @@
 <?php $this->start('active') ?>admin-feeds<?php $this->stop() ?>
 
 <div class="card shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card-header d-md-flex justify-content-between align-items-center">
         <div>
             <h3 class="fs-5 fw-medium mb-0 mt-1">
                 <i class="bi bi-grid me-1"></i>
                 Gerenciar Feeds
             </h3>
         </div>
-        <div>
+        <div class="pt-2 pb-1 pt-md-0 pb-md-0">
             <a href="/admin/feeds/new" class="btn btn-primary d-inline-flex align-items-center">
                 <i class="bi bi-plus-lg me-1"></i>
                 Adicionar Novo Feed
@@ -35,8 +35,8 @@
                             <th scope="col" class="small text-uppercase">Tipo</th>
                             <th scope="col" class="small text-uppercase">Idioma</th>
                             <th scope="col" class="small text-uppercase">Status</th>
-                            <th scope="col" class="small text-uppercase">Última Verificação</th>
-                            <th scope="col" class="small text-uppercase">Última Atualização</th>
+                            <th scope="col" class="small text-uppercase text-truncate">Última Verificação</th>
+                            <th scope="col" class="small text-uppercase text-truncate">Última Atualização</th>
                             <th scope="col" class="small text-uppercase">Itens</th>
                             <th scope="col"></th>
                         </tr>
@@ -79,21 +79,22 @@
                                     </select>
                                 </td>
                                 <td class="align-middle small text-secondary">
-                                    <?= $feed['last_checked'] ? date('j M Y H:i', strtotime($feed['last_checked'])) : 'Nunca' ?>
+                                    <?= $feed['last_checked'] ? date('d/m/Y \à\s H:i', strtotime($feed['last_checked'])) : 'Nunca' ?>
                                 </td>
                                 <td class="align-middle small text-secondary">
-                                    <?= $feed['last_updated'] ? date('j M Y H:i', strtotime($feed['last_updated'])) : 'Nunca' ?>
+                                    <?= $feed['last_updated'] ? date('d/m/Y \à\s H:i', strtotime($feed['last_updated'])) : 'Nunca' ?>
                                 </td>
                                 <td class="align-middle small text-secondary">
                                     <?= $feed['item_count'] ?? 0 ?>
                                 </td>
                                 <td class="align-middle text-end">
-                                    <a href="/admin/feeds/<?= $feed['id'] ?>/edit" class="d-inline-block btn btn-sm btn-outline-primary">
+                                    <div class="text-truncate">
+                                    <a href="/admin/feeds/<?= $feed['id'] ?>/edit" class="d-inline-block btn btn-sm btn-outline-primary me-2">
                                         <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <button class="d-inline-block btn btn-sm btn-outline-danger delete-feed" data-feed-id="<?= $feed['id'] ?>">
+                                    </a><button class="d-inline-block btn btn-sm btn-outline-danger delete-feed" data-feed-id="<?= $feed['id'] ?>">
                                         <i class="bi bi-trash"></i>
                                     </button>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -104,7 +105,6 @@
     <?php endif; ?>
 </div>
 
-<!-- Delete Confirmation Modal -->
 <div class="modal fade" id="delete-modal" tabindex="-1" aria-labelledby="modal-title" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -115,9 +115,7 @@
             <div class="modal-body">
                 <div class="d-flex">
                     <div class="me-3">
-                        <div class="bg-danger bg-opacity-10 p-2 rounded-circle">
-                            <i class="bi bi-exclamation-triangle text-danger fs-4"></i>
-                        </div>
+                        <i class="bi bi-exclamation-triangle text-danger fs-4"></i>
                     </div>
                     <div>
                         <p class="mb-0">
@@ -143,16 +141,13 @@
 <?php $this->start('scripts') ?>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Modal elements
         const deleteModal = new bootstrap.Modal(document.getElementById('delete-modal'));
 
-        // Buttons
         const cancelDeleteButton = document.getElementById('cancel-delete');
         const confirmDeleteButton = document.getElementById('confirm-delete');
         const deleteFeedButtons = document.querySelectorAll('.delete-feed');
         const statusSelects = document.querySelectorAll('.status-select');
 
-        // Delete feed
         deleteFeedButtons.forEach(button => {
             button.addEventListener('click', function() {
                 const feedId = this.dataset.feedId;
@@ -161,7 +156,6 @@
             });
         });
 
-        // Confirm delete
         confirmDeleteButton.addEventListener('click', function() {
             const feedId = this.dataset.feedId;
 
@@ -171,14 +165,11 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Remove the row from the table
                         const row = document.querySelector(`tr[data-feed-id="${feedId}"]`);
                         row.remove();
 
-                        // Hide the modal
                         deleteModal.hide();
 
-                        // If no feeds left, refresh the page to show the empty state
                         if (document.querySelectorAll('tbody tr').length === 0) {
                             window.location.reload();
                         }
@@ -192,7 +183,6 @@
                 });
         });
 
-        // Update feed status
         statusSelects.forEach(select => {
             select.addEventListener('change', function() {
                 const feedId = this.dataset.feedId;
@@ -211,16 +201,14 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            // Update the data attribute
                             this.dataset.originalValue = newStatus;
+                            alert('Status do feed atualizado com sucesso para: ' + newStatus);
                         } else {
-                            // Revert to original value
                             this.value = originalValue;
                             alert('Erro ao atualizar status do feed: ' + data.message);
                         }
                     })
                     .catch(error => {
-                        // Revert to original value
                         this.value = originalValue;
                         console.error('Error:', error);
                         alert('Ocorreu um erro ao atualizar o status do feed.');

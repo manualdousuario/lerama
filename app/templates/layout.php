@@ -25,14 +25,14 @@
 <body class="bg-light min-vh-100">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom shadow">
         <div class="container">
-            <div class="d-flex">
+            <div class="d-block d-md-flex">
                 <div class="me-3">
                     <i class="bi bi-book-half text-white fs-5 me-2"></i>
                     <a href="/" class="fs-4 fw-bold text-white text-decoration-none">Lerama</a>
                 </div>
-                <nav class="d-flex">
+                <nav class="d-block d-md-flex pb-1 pb-md-0">
                     <?php if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true): ?>
-                        <a href="/admin" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'admin' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
+                        <a href="/admin" class="d-inline-flex align-items-center py-2 me-3 pl-0 pl-md-2 text-decoration-none <?= $this->section('active') === 'admin' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
                             <i class="bi bi-file-earmark-lock-fill me-1"></i>
                             Feeds
                         </a>
@@ -89,6 +89,9 @@
                 </a>
                 <a href="/feed/json" target="_blank" class="btn btn-sm btn-outline-secondary mx-1" title="Feed JSON">
                     <i class="bi bi-braces"></i> JSON
+                </a>
+                <a href="https://github.com/manualdousuario/lerama" target="_blank" class="btn btn-sm btn-outline-secondary mx-1" title="GitHub">
+                    <i class="bi bi-github"></i> GitHub
                 </a>
             </p>
         </div>
