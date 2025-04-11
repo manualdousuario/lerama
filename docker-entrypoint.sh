@@ -98,11 +98,11 @@ php-fpm &
 check_php_fpm
 
 # Ensure /app/storage directory exists and has correct permissions
-log_info "Checking /app/storage directory..."
-if [ ! -d /app/storage ]; then
-    log_info "Creating /app/storage directory..."
-    mkdir -p /app/storage
-    log_success "/app/storage directory created"
+log_info "Checking /app/public/storage directory..."
+if [ ! -d /app/public/storage ]; then
+    log_info "Creating /app/public/storage directory..."
+    mkdir -p /app/public/storage
+    log_success "/app/public/storage directory created"
 fi
 
 # Database
