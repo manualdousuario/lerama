@@ -69,14 +69,18 @@
                                     </a>
                                 </div>
                             </div>
-                            <?php if (!empty($item['author'])): ?>
-                                <p class="d-flex align-items-center small mb-0">
+                            
+                            <p class="d-flex align-items-center small mb-0">
+                                <?php if (!empty($item['author'])): ?>
                                     <i class="bi bi-person me-1"></i>
                                     <?= $this->e($item['author']) ?>
+                                <?php endif; ?>
+                                <?php if (!empty($item['published_at'])): ?>
                                     <i class="ms-2 bi bi-calendar me-1"></i>
                                     <?= date('j \d\e F \d\e Y', strtotime($item['published_at'])) ?>
-                                </p>
-                            <?php endif; ?>
+                                <?php endif; ?>
+                            </p>
+                            
                             <?php if (!empty($item['content'])): ?>
                                 <div class="mt-2 small">
                                     <?= strip_tags(substr($item['content'], 0, 300)) ?>...

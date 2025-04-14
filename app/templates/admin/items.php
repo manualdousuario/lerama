@@ -69,7 +69,7 @@
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-calendar me-1"></i>
-                                    Data
+                                    Publicado
                                 </div>
                             </th>
                             <th scope="col"></th>
