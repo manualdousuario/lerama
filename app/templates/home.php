@@ -52,7 +52,7 @@
                     <div class="d-block d-md-flex">
                         <?php if (!empty($item['image_url'])) : ?>
                             <div class="pe-md-3 pb-2 pb-md-0">
-                                <img class="rounded-2" src="<?= $this->e($thumbnailService->getThumbnail($item['image_url'], 180, 90)) ?>" width="180" height="90" loading="lazy" decoding="async" alt="<?= $this->e($item['title']) ?>">
+                                <img class="rounded-2" src="<?= $this->e($thumbnailService->getThumbnail($item['image_url'], 180, 100)) ?>" width="180" height="100" loading="lazy" decoding="async" alt="<?= $this->e($item['title']) ?>">
                             </div>
                         <?php endif; ?>
                         <div class="flex-fill">
@@ -64,7 +64,7 @@
                                 </h4>
                                 <div class="d-block">
                                     <span>em</span>
-                                    <a href="<?= $this->e($item['site_url']) ?>" class="text-truncate">
+                                    <a href="<?= $this->e($item['site_url']) ?>" target="_blank" class="text-truncate">
                                         <?= $this->e($item['feed_title']) ?>
                                     </a>
                                 </div>
