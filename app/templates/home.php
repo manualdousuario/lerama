@@ -5,33 +5,40 @@
 <div class="card shadow-sm">
     <div class="card-header">
         <div class="row">
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-md-4">
                 <h3 class="fs-5 fw-medium mb-0 mt-1 mt-md-2">
                     <i class="bi bi-grid me-1"></i>
                     Últimos artigos
                 </h3>
             </div>
-            <div class="col-12 col-md-6 pb-1 pb-md-0 pt-3 pt-md-0">
-                <form action="<?= isset($pagination) && $pagination['current'] > 1 ? $pagination['baseUrl'] . $pagination['current'] : '/' ?>" method="GET" class="d-flex gap-2">
-                    <div>
-                        <select name="feed" class="form-select">
-                            <option value="">
-                                <i class="bi bi-collection me-1"></i>
-                                Feeds
-                            </option>
-                            <?php foreach ($feeds as $feed): ?>
-                                <option value="<?= $feed['id'] ?>" <?= $selectedFeed == $feed['id'] ? 'selected' : '' ?>>
-                                    <?= $this->e($feed['title']) ?>
+            <div class="col-12 col-md-8 pb-1 pb-md-0 pt-3 pt-md-0">
+                <form action="<?= isset($pagination) && $pagination['current'] > 1 ? $pagination['baseUrl'] . $pagination['current'] : '/' ?>" method="GET">
+                    <div class="row align-items-center g-2">
+                        <div class="col-12 col-md-2">
+                            <input type="checkbox" id="simplified-view" /> <label for="simplified-view">Simplificado</label>
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <select name="feed" class="form-select w-100">
+                                <option value="">
+                                    <i class="bi bi-collection me-1"></i>
+                                    Feeds
                                 </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="input-group">
-                        <input type="text" name="search" value="<?= $this->e($search) ?>" class="form-control" placeholder="...">
-                        <button type="submit" class="btn btn-primary d-flex align-items-center">
-                            <i class="bi bi-search me-1"></i>
-                            Pesquisar
-                        </button>
+                                <?php foreach ($feeds as $feed): ?>
+                                    <option value="<?= $feed['id'] ?>" <?= $selectedFeed == $feed['id'] ? 'selected' : '' ?>>
+                                        <?= $this->e($feed['title']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <div class="input-group w-100">
+                                <input type="text" name="search" value="<?= $this->e($search) ?>" class="form-control" placeholder="...">
+                                <button type="submit" class="btn btn-primary d-flex align-items-center">
+                                    <i class="bi bi-search me-1"></i>
+                                    Pesquisar
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -51,7 +58,7 @@
                 <li class="list-group-item p-3 hover-bg-light">
                     <div class="d-block d-md-flex">
                         <?php if (!empty($item['image_url'])) : ?>
-                            <div class="pe-md-3 pb-2 pb-md-0">
+                            <div class="pe-md-3 pb-2 pb-md-0 image-thumbnail">
                                 <img class="rounded-2" src="<?= $this->e($thumbnailService->getThumbnail($item['image_url'], 180, 100)) ?>" width="180" height="100" loading="lazy" decoding="async" alt="<?= $this->e($item['title']) ?>">
                             </div>
                         <?php endif; ?>
@@ -82,8 +89,8 @@
 
                             </p>
                             
-                            <?php if (!empty($item['content'])): ?>
-                                <div class="mt-2 small">
+                            <?php if (!empty($item['content']) && strlen($item['content']) >= 30): ?>
+                                <div class="mt-2 small content">
                                     <?= strip_tags(substr($item['content'], 0, 300)) ?>...
                                 </div>
                             <?php endif; ?>
@@ -154,3 +161,39 @@
         <?php endif; ?>
     <?php endif; ?>
 </div>
+
+<?php $this->start('scripts') ?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const simplifiedCheckbox = document.getElementById('simplified-view');
+    const imageThumbnails = document.querySelectorAll('.image-thumbnail');
+    const contentDivs = document.querySelectorAll('.content');
+    
+    function updateVisibility(isSimplified) {
+        const displayValue = isSimplified ? 'none' : '';
+        
+        imageThumbnails.forEach(function(element) {
+            element.style.display = displayValue;
+        });
+        
+        contentDivs.forEach(function(element) {
+            element.style.display = displayValue;
+        });
+    }
+    
+    const savedState = localStorage.getItem('simplifiedView');
+    if (savedState === 'true') {
+        simplifiedCheckbox.checked = true;
+        updateVisibility(true);
+    }
+    
+    simplifiedCheckbox.addEventListener('change', function() {
+        const isChecked = this.checked;
+        
+        updateVisibility(isChecked);
+        
+        localStorage.setItem('simplifiedView', isChecked);
+    });
+});
+</script>
+<?php $this->stop() ?>

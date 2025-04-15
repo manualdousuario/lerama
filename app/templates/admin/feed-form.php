@@ -163,7 +163,6 @@
     document.addEventListener('DOMContentLoaded', function() {
         const feedForm = document.getElementById('feed-form');
 
-        // Show loading state when form is submitted
         feedForm.addEventListener('submit', function() {
             const submitButton = feedForm.querySelector('button[type="submit"]');
             submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Salvando...';
