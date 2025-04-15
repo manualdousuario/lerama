@@ -113,55 +113,48 @@
         </div>
 
         <?php if ($pagination['total'] > 1): ?>
-            <div class="card-footer d-flex justify-content-between align-items-center">
-                <div class="d-flex justify-content-between align-items-center w-100">
-                    <div>
-                        <p class="small text-secondary mb-0">
-                            Página <span class="fw-medium"><?= $pagination['current'] ?></span> de <span class="fw-medium"><?= $pagination['total'] ?></span>
-                        </p>
-                    </div>
-                    <div>
-                        <nav aria-label="Pagination">
-                            <ul class="pagination pagination-sm mb-0">
-                                <?php if ($pagination['current'] > 1): ?>
-                                    <li class="page-item">
-                                        <a href="<?= $pagination['baseUrl'] ?>&page=<?= $pagination['current'] - 1 ?>" class="page-link" aria-label="Previous">
-                                            <span aria-hidden="true">&laquo;</span>
-                                        </a>
-                                    </li>
-                                <?php endif; ?>
+            <div class="card-footer d-flex justify-content-between align-items-center p-3">
+                <div class="d-flex justify-content-center align-items-center w-100">
+                    <nav aria-label="Pagination">
+                        <ul class="pagination pagination-sm mb-0">
+                            <?php if ($pagination['current'] > 1): ?>
+                                <li class="page-item">
+                                    <a href="<?= $pagination['baseUrl'] ?>&page=<?= $pagination['current'] - 1 ?>" class="page-link" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            <?php endif; ?>
 
-                                <?php
-                                $start = max(1, $pagination['current'] - 2);
-                                $end = min($pagination['total'], $pagination['current'] + 2);
+                            <?php
+                            $start = max(1, $pagination['current'] - 2);
+                            $end = min($pagination['total'], $pagination['current'] + 2);
 
-                                if ($start > 1) {
-                                    echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                            if ($start > 1) {
+                                echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                            }
+
+                            for ($i = $start; $i <= $end; $i++) {
+                                if ($i == $pagination['current']) {
+                                    echo '<li class="page-item active"><span class="page-link">' . $i . '</span></li>';
+                                } else {
+                                    echo '<li class="page-item"><a href="' . $pagination['baseUrl'] . '&page=' . $i . '" class="page-link">' . $i . '</a></li>';
                                 }
+                            }
 
-                                for ($i = $start; $i <= $end; $i++) {
-                                    if ($i == $pagination['current']) {
-                                        echo '<li class="page-item active"><span class="page-link">' . $i . '</span></li>';
-                                    } else {
-                                        echo '<li class="page-item"><a href="' . $pagination['baseUrl'] . '&page=' . $i . '" class="page-link">' . $i . '</a></li>';
-                                    }
-                                }
+                            if ($end < $pagination['total']) {
+                                echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                            }
+                            ?>
 
-                                if ($end < $pagination['total']) {
-                                    echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
-                                }
-                                ?>
-
-                                <?php if ($pagination['current'] < $pagination['total']): ?>
-                                    <li class="page-item">
-                                        <a href="<?= $pagination['baseUrl'] ?>&page=<?= $pagination['current'] + 1 ?>" class="page-link" aria-label="Next">
-                                            <span aria-hidden="true">&raquo;</span>
-                                        </a>
-                                    </li>
-                                <?php endif; ?>
-                            </ul>
-                        </nav>
-                    </div>
+                            <?php if ($pagination['current'] < $pagination['total']): ?>
+                                <li class="page-item">
+                                    <a href="<?= $pagination['baseUrl'] ?>&page=<?= $pagination['current'] + 1 ?>" class="page-link" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            <?php endif; ?>
+                        </ul>
+                    </nav>
                 </div>
             </div>
         <?php endif; ?>
