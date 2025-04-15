@@ -9,11 +9,13 @@ use DB;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
+use Lerama\Services\CacheService;
 
 class FeedProcessor
 {
     private CLImate $climate;
     private \GuzzleHttp\Client $httpClient;
+    private CacheService $cacheService;
 
     public function __construct(CLImate $climate)
     {
@@ -33,6 +35,7 @@ class FeedProcessor
                 'User-Agent' => 'Meta-ExternalFetcher'
             ]
         ]);
+        $this->cacheService = new CacheService();
     }
 
     public function process(?int $feedId = null): void
@@ -148,7 +151,6 @@ class FeedProcessor
                 $count++;
                 $updated = true;
             } catch (\Exception $e) {
-                // Erro ao processar item
                 continue;
             }
             
@@ -165,6 +167,8 @@ class FeedProcessor
                 'last_post_id' => $lastGuid,
                 'last_updated' => DB::sqleval("NOW()")
             ], 'id=%i', $feed['id']);
+            
+            $this->clearFeedCache($feed['id']);
         }
 
         $this->climate->out("Adicionados {$count} novos itens do feed: {$feed['title']}");
@@ -248,7 +252,6 @@ class FeedProcessor
                         $count++;
                         $updated = true;
                     } catch (\Exception $e) {
-                        // Erro ao processar item
                         continue;
                     }
                     
@@ -409,6 +412,8 @@ class FeedProcessor
                 'last_post_id' => $lastGuid,
                 'last_updated' => DB::sqleval("NOW()")
             ], 'id=%i', $feed['id']);
+            
+            $this->clearFeedCache($feed['id']);
         }
         
         $this->climate->out("Adicionados {$count} novos itens do feed CSV: {$feed['title']}");
@@ -642,6 +647,8 @@ class FeedProcessor
                 'last_post_id' => $lastGuid,
                 'last_updated' => DB::sqleval("NOW()")
             ], 'id=%i', $feed['id']);
+            
+            $this->clearFeedCache($feed['id']);
         }
         
         $this->climate->out("Adicionados {$count} novos itens do feed JSON: {$feed['title']}");
@@ -838,6 +845,8 @@ class FeedProcessor
                 'last_post_id' => $lastGuid,
                 'last_updated' => DB::sqleval("NOW()")
             ], 'id=%i', $feed['id']);
+            
+            $this->clearFeedCache($feed['id']);
         }
         $this->climate->out("Adicionados {$count} novos itens do feed XML: {$feed['title']}");
     }
@@ -1016,5 +1025,13 @@ class FeedProcessor
         }
     }
     
-    
+    private function clearFeedCache(int $feedId): void
+    {
+        $this->climate->whisper("Limpando cache para o feed ID: {$feedId}");
+        
+        $this->cacheService->flushByPattern("*feed*");
+        $this->cacheService->flushByPattern("*home*");
+        
+        $this->climate->whisper("Cache limpo com sucesso");
+    }
 }
