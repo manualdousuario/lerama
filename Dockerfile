@@ -19,10 +19,13 @@ RUN apt-get update && apt-get install -y \
     libgmp-dev \
     libzip-dev \
     redis-server \
+    locales \
     && docker-php-ext-configure gd --with-jpeg --with-freetype \
     && docker-php-ext-install mysqli pdo_mysql sockets gd zip gmp bcmath \
     && pecl install redis \
     && docker-php-ext-enable redis \
+    && sed -i -e 's/# pt_BR.UTF-8 UTF-8/pt_BR.UTF-8 UTF-8/' /etc/locale.gen \
+    && locale-gen \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 FROM base AS builder
@@ -50,7 +53,10 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 RUN chown -R www-data:www-data /app \
     && chmod -R 755 /app
 
-ENV TZ=UTC
+ENV TZ=America/Sao_Paulo
+ENV LANG=pt_BR.UTF-8
+ENV LANGUAGE=pt_BR:pt
+ENV LC_ALL=pt_BR.UTF-8
 
 EXPOSE 8077
 
