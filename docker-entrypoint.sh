@@ -117,14 +117,6 @@ else
     log_success "Timezone set to UTC for both system and PHP"
 fi
 
-# Configure PHP locale settings for Brazilian Portuguese
-log_info "Configurando locale do PHP para português do Brasil (pt_BR)..."
-echo "
-intl.default_locale = pt_BR
-date.timezone = $TZ
-" > /usr/local/etc/php/conf.d/locale.ini
-log_success "Locale do PHP configurado para pt_BR"
-
 # Create or update .env file with environment variables
 log_info "Setting up environment variables in /app/.env..."
 cat > /app/.env << EOL
