@@ -80,7 +80,7 @@
                             <p class="d-flex align-items-center small mb-0">
                                 <?php if (!empty($item['published_at'])): ?>
                                     <i class="bi bi-calendar me-1"></i>
-                                    <?= date('j \d\e F \d\e Y', strtotime($item['published_at'])) ?>
+                                    <?= date('j/m/Y \à\s H:i', strtotime($item['published_at'])) ?>
                                 <?php endif; ?>
                                 <?php if (!empty($item['author'])): ?>
                                     <i class="ms-2 bi bi-person me-1"></i>
