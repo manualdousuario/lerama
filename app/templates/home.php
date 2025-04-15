@@ -91,7 +91,7 @@
                             
                             <?php if (!empty($item['content']) && strlen($item['content']) >= 30): ?>
                                 <div class="mt-2 small content">
-                                    <?= strip_tags(substr($item['content'], 0, 300)) ?>...
+                                    <?= substr(strip_tags($item['content']), 0, 300) ?>...
                                 </div>
                             <?php endif; ?>
                         </div>
