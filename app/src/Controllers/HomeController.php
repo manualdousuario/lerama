@@ -11,19 +11,16 @@ use Laminas\Diactoros\Response\RedirectResponse;
 use League\Plates\Engine;
 use DB;
 use Lerama\Services\ThumbnailService;
-use Lerama\Services\CacheService;
 
 class HomeController
 {
     private Engine $templates;
     private ThumbnailService $thumbnailService;
-    private CacheService $cacheService;
 
     public function __construct()
     {
         $this->templates = new Engine(__DIR__ . '/../../templates');
         $this->thumbnailService = new ThumbnailService();
-        $this->cacheService = new CacheService();
     }
 
     public function index(ServerRequestInterface $request, array $args = []): ResponseInterface
@@ -61,34 +58,18 @@ class HomeController
             $queryParams[] = $feedId;
         }
 
-        $countCacheKey = $this->cacheService->generateKey('home_count', $queryParams);
-        $itemsCacheKey = $this->cacheService->generateKey('home_items', [...$queryParams, 'page' => $page, 'perPage' => $perPage]);
-        $feedsCacheKey = 'home_feeds_list';
-
-        $totalCount = $this->cacheService->get($countCacheKey);
-        if ($totalCount === null) {
-            $totalCount = DB::queryFirstField($countQuery, ...$queryParams);
-            $this->cacheService->set($countCacheKey, $totalCount);
-        }
-
+        $totalCount = DB::queryFirstField($countQuery, ...$queryParams);
         $totalPages = ceil($totalCount / $perPage);
         if ($page > $totalPages && $totalPages > 0) {
             return new RedirectResponse('/page/' . $totalPages . $this->buildQueryString($params));
         }
 
-        $items = $this->cacheService->get($itemsCacheKey);
-        if ($items === null) {
-            $query .= " ORDER BY fi.published_at DESC LIMIT %i, %i";
-            $finalQueryParams = [...$queryParams, $offset, $perPage];
-            $items = DB::query($query, ...$finalQueryParams);
-            $this->cacheService->set($itemsCacheKey, $items);
-        }
+        $query .= " ORDER BY fi.published_at DESC LIMIT %i, %i";
+        $finalQueryParams = [...$queryParams, $offset, $perPage];
 
-        $feeds = $this->cacheService->get($feedsCacheKey);
-        if ($feeds === null) {
-            $feeds = DB::query("SELECT id, title FROM feeds ORDER BY title");
-            $this->cacheService->set($feedsCacheKey, $feeds);
-        }
+        $items = DB::query($query, ...$finalQueryParams);
+
+        $feeds = DB::query("SELECT id, title FROM feeds ORDER BY title");
 
         $html = $this->templates->render('home', [
             'items' => $items,

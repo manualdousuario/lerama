@@ -18,11 +18,8 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libgmp-dev \
     libzip-dev \
-    redis-server \
     && docker-php-ext-configure gd --with-jpeg --with-freetype \
     && docker-php-ext-install mysqli pdo_mysql sockets gd zip gmp bcmath \
-    && pecl install redis \
-    && docker-php-ext-enable redis \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 FROM base AS builder

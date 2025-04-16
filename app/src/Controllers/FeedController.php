@@ -11,35 +11,26 @@ use Laminas\Diactoros\Response\JsonResponse;
 use Laminas\Diactoros\Response\XmlResponse;
 use League\Plates\Engine;
 use DB;
-use Lerama\Services\CacheService;
 
 class FeedController
 {
     private Engine $templates;
-    private CacheService $cacheService;
 
     public function __construct()
     {
         $this->templates = new Engine(__DIR__ . '/../../templates');
-        $this->cacheService = new CacheService();
     }
 
     public function index(ServerRequestInterface $request): ResponseInterface
     {
-        $cacheKey = 'feeds_index';
-        $feeds = $this->cacheService->get($cacheKey);
-        
-        if ($feeds === null) {
-            $feeds = DB::query("
-                SELECT f.*,
-                      (SELECT COUNT(*) FROM feed_items WHERE feed_id = f.id) as item_count,
-                      (SELECT MAX(published_at) FROM feed_items WHERE feed_id = f.id) as latest_item_date
-                FROM feeds f
-                ORDER BY f.title
-            ");
-            
-            $this->cacheService->set($cacheKey, $feeds);
-        }
+
+        $feeds = DB::query("
+            SELECT f.*,
+                  (SELECT COUNT(*) FROM feed_items WHERE feed_id = f.id) as item_count,
+                  (SELECT MAX(published_at) FROM feed_items WHERE feed_id = f.id) as latest_item_date
+            FROM feeds f
+            ORDER BY f.title
+        ");
 
         $html = $this->templates->render('feeds', [
             'feeds' => $feeds,
@@ -56,31 +47,18 @@ class FeedController
         $perPage = isset($params['per_page']) ? min(100, max(1, (int)$params['per_page'])) : 20;
         $offset = ($page - 1) * $perPage;
 
-        $countCacheKey = $this->cacheService->generateKey('feed_json_count');
-        $itemsCacheKey = $this->cacheService->generateKey('feed_json_items', ['page' => $page, 'perPage' => $perPage]);
-        
-        $totalCount = $this->cacheService->get($countCacheKey);
-        if ($totalCount === null) {
-            $totalCount = DB::queryFirstField("SELECT COUNT(*) FROM feed_items WHERE is_visible = 1");
-            $this->cacheService->set($countCacheKey, $totalCount);
-        }
-        
+        $totalCount = DB::queryFirstField("SELECT COUNT(*) FROM feed_items WHERE is_visible = 1");
         $totalPages = ceil($totalCount / $perPage);
-        
-        $items = $this->cacheService->get($itemsCacheKey);
-        if ($items === null) {
-            $items = DB::query("
-                SELECT fi.id, fi.title, fi.author, fi.content, fi.url, fi.image_url, fi.published_at,
-                       f.title as feed_title, f.site_url as feed_site_url
-                FROM feed_items fi
-                JOIN feeds f ON fi.feed_id = f.id
-                WHERE fi.is_visible = 1
-                ORDER BY fi.published_at DESC
-                LIMIT %i, %i
-            ", $offset, $perPage);
-            
-            $this->cacheService->set($itemsCacheKey, $items);
-        }
+
+        $items = DB::query("
+            SELECT fi.id, fi.title, fi.author, fi.content, fi.url, fi.image_url, fi.published_at,
+                   f.title as feed_title, f.site_url as feed_site_url
+            FROM feed_items fi
+            JOIN feeds f ON fi.feed_id = f.id
+            WHERE fi.is_visible = 1
+            ORDER BY fi.published_at DESC
+            LIMIT %i, %i
+        ", $offset, $perPage);
 
         $formattedItems = [];
         foreach ($items as $item) {
@@ -119,22 +97,15 @@ class FeedController
         $perPage = isset($params['per_page']) ? min(100, max(1, (int)$params['per_page'])) : 20;
         $offset = ($page - 1) * $perPage;
 
-        $itemsCacheKey = $this->cacheService->generateKey('feed_rss_items', ['page' => $page, 'perPage' => $perPage]);
-        
-        $items = $this->cacheService->get($itemsCacheKey);
-        if ($items === null) {
-            $items = DB::query("
-                SELECT fi.id, fi.title, fi.author, fi.content, fi.url, fi.image_url, fi.published_at,
-                       f.title as feed_title, f.site_url as feed_site_url
-                FROM feed_items fi
-                JOIN feeds f ON fi.feed_id = f.id
-                WHERE fi.is_visible = 1
-                ORDER BY fi.published_at DESC
-                LIMIT %i, %i
-            ", $offset, $perPage);
-            
-            $this->cacheService->set($itemsCacheKey, $items);
-        }
+        $items = DB::query("
+            SELECT fi.id, fi.title, fi.author, fi.content, fi.url, fi.image_url, fi.published_at,
+                   f.title as feed_title, f.site_url as feed_site_url
+            FROM feed_items fi
+            JOIN feeds f ON fi.feed_id = f.id
+            WHERE fi.is_visible = 1
+            ORDER BY fi.published_at DESC
+            LIMIT %i, %i
+        ", $offset, $perPage);
 
         $xml = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"></rss>');
 
