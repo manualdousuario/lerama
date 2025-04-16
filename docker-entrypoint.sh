@@ -57,46 +57,6 @@ check_php_fpm() {
     log_error "Failed to start PHP-FPM after $max_attempts attempts"
 }
 
-check_redis() {
-    log_info "Checking Redis connection..."
-    local max_attempts=5
-    local attempt=0
-    local redis_host=${REDIS_HOST:-localhost}
-    local redis_port=${REDIS_PORT:-6379}
-    local redis_password=${REDIS_PASSWORD:-""}
-
-    while [ $attempt -lt $max_attempts ]; do
-        if [ -n "$redis_password" ]; then
-            if redis-cli -h $redis_host -p $redis_port -a $redis_password ping 2>/dev/null | grep -q "PONG"; then
-                log_success "Redis connection successful"
-                return 0
-            fi
-        else
-            if redis-cli -h $redis_host -p $redis_port ping 2>/dev/null | grep -q "PONG"; then
-                log_success "Redis connection successful"
-                return 0
-            fi
-        fi
-        
-        log_info "Redis not responding... (Attempt $((attempt+1))/$max_attempts)"
-        
-        if [ "$redis_host" = "localhost" ] || [ "$redis_host" = "127.0.0.1" ]; then
-            log_info "Attempting to start Redis locally..."
-            if command -v redis-server >/dev/null 2>&1; then
-                redis-server --daemonize yes
-                log_info "Redis server started"
-            else
-                log_info "Redis server not installed, cannot start automatically"
-            fi
-        fi
-        
-        sleep 3
-        attempt=$((attempt+1))
-    done
-
-    log_error "Failed to connect to Redis after $max_attempts attempts"
-}
-
 echo -e "\n${YELLOW}Lerama: Starting${NC}\n"
 
 # Set timezone
@@ -129,9 +89,6 @@ DB_USER=${MYSQL_USERNAME:-root}
 DB_PASS=${MYSQL_PASSWORD:-root}
 ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
 ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
-REDIS_HOST=${REDIS_HOST:-localhost}
-REDIS_PORT=${REDIS_PORT:-6379}
-REDIS_PASSWORD=${REDIS_PASSWORD:-}
 EOL
 
 log_success "Environment variables set in /app/.env"
@@ -204,10 +161,6 @@ if [ ! -d /var/run/php ]; then
     chown -R www-data:www-data /var/run/php
     log_success "PHP-FPM directory created"
 fi
-
-# Check Redis connection
-log_info "Checking Redis service..."
-check_redis
 
 echo -e "\n${GREEN}Lerama: Initialized ===${NC}\n"
 
