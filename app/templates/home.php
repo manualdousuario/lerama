@@ -1,4 +1,4 @@
-<?php $this->layout('layout', ['title' => $title]) ?>
+<?php $this->layout('layout', []) ?>
 
 <?php $this->start('active') ?>home<?php $this->stop() ?>
 

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $this->e($title ?? $_ENV['APP_NAME']) ?> | <?= $_ENV['APP_NAME'] ?></title>
+    <title><?= $this->e(isset($title) ? $title .' | ' . $_ENV['APP_NAME'] : $_ENV['APP_NAME']) ?></title>
     <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
     <link rel="shortcut icon" href="/assets/favicon.ico" />
