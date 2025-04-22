@@ -508,7 +508,13 @@ class AdminController
     public function updateItem(ServerRequestInterface $request, array $args): ResponseInterface
     {
         $id = (int)$args['id'];
-        $params = (array)$request->getParsedBody();
+        
+        $body = $request->getBody()->getContents();
+        $params = !empty($body) ? json_decode($body, true) : [];
+        
+        if ($params === null) {
+            $params = (array)$request->getParsedBody();
+        }
 
         $item = DB::queryFirstRow("SELECT * FROM feed_items WHERE id = %i", $id);
         if (!$item) {

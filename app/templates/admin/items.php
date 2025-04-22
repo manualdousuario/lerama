@@ -97,11 +97,11 @@
                                     <button
                                         data-id="<?= $item['id'] ?>"
                                         data-visible="<?= $item['is_visible'] ? '1' : '0' ?>"
-                                        class="d-inline-block btn btn-sm btn-outline-primary toggle-visibility">
+                                        class="d-inline-block btn btn-sm <?= $item['is_visible'] ? 'btn-success' : 'btn-danger' ?> toggle-visibility">
                                         <?php if ($item['is_visible']): ?>
-                                            <i class="bi bi-eye-slash"></i>
-                                        <?php else: ?>
                                             <i class="bi bi-eye"></i>
+                                        <?php else: ?>
+                                            <i class="bi bi-eye-slash"></i>
                                         <?php endif; ?>
                                     </button>
                                 </td>
@@ -185,24 +185,15 @@
                     .then(data => {
                         if (data.success) {
                             if (newVisible) {
-                                this.innerHTML = '<i class="bi bi-eye-slash me-1"></i> Ocultar';
+                                this.innerHTML = '<i class="bi bi-eye"></i>';
+                                this.classList.remove('btn-danger');
+                                this.classList.add('btn-success');
                             } else {
-                                this.innerHTML = '<i class="bi bi-eye me-1"></i> Mostrar';
+                                this.innerHTML = '<i class="bi bi-eye-slash"></i>';
+                                this.classList.remove('btn-success');
+                                this.classList.add('btn-danger');
                             }
                             this.dataset.visible = newVisible ? '1' : '0';
-
-                            const row = this.closest('tr');
-                            const badge = row.querySelector('td:nth-child(5) span');
-
-                            if (newVisible) {
-                                badge.innerHTML = '<i class="bi bi-eye me-1"></i> Visível';
-                                badge.classList.remove('bg-danger');
-                                badge.classList.add('bg-success');
-                            } else {
-                                badge.innerHTML = '<i class="bi bi-eye-slash me-1"></i> Oculto';
-                                badge.classList.remove('bg-success');
-                                badge.classList.add('bg-danger');
-                            }
                         } else {
                             alert('Erro ao atualizar item: ' + data.message);
                         }
