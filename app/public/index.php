@@ -32,6 +32,7 @@ $router = new Router();
 $router->map('GET', '/', [HomeController::class, 'index']);
 $router->map('GET', '/page/{page:number}', [HomeController::class, 'index']);
 $router->map('GET', '/feeds', [FeedController::class, 'index']);
+$router->map('GET', '/feed', [FeedController::class, 'rss']);
 $router->map('GET', '/feed/json', [FeedController::class, 'json']);
 $router->map('GET', '/feed/rss', [FeedController::class, 'rss']);
 $router->map('GET', '/admin/login', [AdminController::class, 'loginForm']);
