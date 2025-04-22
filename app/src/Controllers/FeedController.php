@@ -62,10 +62,13 @@ class FeedController
 
         $formattedItems = [];
         foreach ($items as $item) {
+            // Se o campo author estiver vazio, preencher com o nome do source
+            $author = !empty($item['author']) ? $item['author'] : $item['feed_title'];
+            
             $formattedItems[] = [
                 'id' => $item['id'],
                 'title' => $item['title'],
-                'author' => $item['author'],
+                'author' => $author,
                 'content' => $item['content'],
                 'url' => $item['url'],
                 'image_url' => $item['image_url'],
@@ -120,9 +123,9 @@ class FeedController
             $xmlItem = $channel->addChild('item');
             $xmlItem->addChild('title', htmlspecialchars($item['title']));
 
-            if (!empty($item['author'])) {
-                $xmlItem->addChild('author', htmlspecialchars($item['author']));
-            }
+            // Se o campo author estiver vazio, preencher com o nome do source
+            $author = !empty($item['author']) ? $item['author'] : $item['feed_title'];
+            $xmlItem->addChild('author', htmlspecialchars($author));
 
             $xmlItem->addChild('link', htmlspecialchars($item['url']));
             $xmlItem->addChild('guid', htmlspecialchars($item['url']));
