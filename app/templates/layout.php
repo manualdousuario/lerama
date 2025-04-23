@@ -45,23 +45,29 @@
                             Sair
                         </a>
                     <?php else : ?>
-                        <a href="/" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'home' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
+                        <a href="/" class="d-inline-flex align-items-center pe-1 py-2 me-3 text-decoration-none <?= $this->section('active') === 'home' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
                             <i class="bi bi-house-door me-1"></i>
                             Início
                         </a>
-                        <a href="/feeds" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'feeds' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
+                        <a href="/feeds" class="d-inline-flex align-items-center pe-1 py-2 me-3 text-decoration-none <?= $this->section('active') === 'feeds' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
                             <i class="bi bi-journal-text me-1"></i>
                             Feeds
                         </a>
+                        <?php if(isset($_ENV['ADD_BLOG_LINK']) && !empty($_ENV['ADD_BLOG_LINK'])) : ?>
+                        <a href="<?= $_ENV['ADD_BLOG_LINK'] ?>" target="_blank" class="d-inline-flex align-items-center pe-1 py-2 me-3 text-decoration-none text-secondary hover-text-white">
+                            <i class="bi bi-plus-circle me-1"></i>
+                            Sugerir Blog
+                        </a>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </nav>
             </div>
             <div class="d-flex align-items-center">
                 <a href="/feed/rss" target="_blank" class="btn btn-sm btn-outline-secondary me-2" title="Feed RSS">
-                    <i class="bi bi-rss"></i>
+                    <i class="bi bi-rss"></i> RSS
                 </a>
                 <a href="/feed/json" target="_blank" class="btn btn-sm btn-outline-secondary me-2" title="Feed JSON">
-                    <i class="bi bi-braces"></i>
+                    <i class="bi bi-braces"></i> JSON
                 </a>
                 <button id="darkModeToggle" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-sun d-none" id="lightIcon"></i>
@@ -79,9 +85,6 @@
         <div class="container">
             <p class="text-center text-secondary small p-0 m-0">
                 &copy; <?= date('Y') ?> - Diretório e buscador de blogs pessoais atualizado em tempo real.
-            </p>
-            <p class="text-center text-secondary small p-0 m-0">
-                Quer incluir o seu blog pessoal no Lerama? <a href="mailto:ghedin@manualdousuario.net">Envie um e-mail</a>.
             </p>
             <p class="text-center mt-2 mb-0">
                 <a href="/feed/rss" target="_blank" class="btn btn-sm btn-outline-secondary mx-1" title="Feed RSS">

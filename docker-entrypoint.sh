@@ -89,6 +89,7 @@ DB_USER=${MYSQL_USERNAME:-root}
 DB_PASS=${MYSQL_PASSWORD:-root}
 ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
 ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+ADD_BLOG_LINK=${ADD_BLOG_LINK:-}
 EOL
 
 log_success "Environment variables set in /app/.env"

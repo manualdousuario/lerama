@@ -12,6 +12,7 @@ services:
       MYSQL_PASSWORD: root
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: admin
+      ADD_BLOG_LINK: https:// # optional
     ports:
       - 8077:8077
     volumes:
