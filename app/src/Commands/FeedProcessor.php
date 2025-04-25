@@ -30,7 +30,17 @@ class FeedProcessor
                 'track_redirects' => true
             ],
             'headers' => [
-                'User-Agent' => 'Meta-ExternalFetcher'
+                'User-Agent' => 'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/W.X.Y.Z Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language' => 'en-US,en;q=0.5',
+                'Cache-Control' => 'no-cache',
+                'Pragma' => 'no-cache',
+                'DNT' => '1',
+                'X-Forwarded-For' => '66.249.' . rand(64, 95) . '.' . rand(1, 254),
+                'From' => 'googlebot(at)googlebot.com'
+            ],
+            'curl' => [
+                CURLOPT_DNS_SERVERS => '8.8.8.8'
             ]
         ]);
     }
