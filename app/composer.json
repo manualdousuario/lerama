@@ -12,7 +12,8 @@
         "laminas/laminas-diactoros": "^2.24",
         "laminas/laminas-httphandlerrunner": "^2.5",
         "league/plates": "^3.5",
-        "guzzlehttp/guzzle": "^7.9"
+        "guzzlehttp/guzzle": "^7.9",
+        "phpmailer/phpmailer": "^6.8"
     },
     "autoload": {
         "psr-4": {

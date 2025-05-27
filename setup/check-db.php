@@ -26,6 +26,16 @@ function tableExists($conn, $tableName) {
     return $result->rowCount() > 0;
 }
 
+function columnExists($conn, $tableName, $columnName) {
+    try {
+        $stmt = $conn->prepare("SHOW COLUMNS FROM `{$tableName}` LIKE :columnName");
+        $stmt->execute(['columnName' => $columnName]);
+        return $stmt->rowCount() > 0;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
 function executeSqlFile($conn, $filePath) {
     $sql = file_get_contents($filePath);
     $queries = explode(';', $sql);
@@ -99,6 +109,29 @@ try {
             echo "Schema executed successfully" . PHP_EOL;
         } else {
             throw new Exception("Failed to execute schema");
+        }
+    }
+    
+    if ($feedsTableExists) {
+        $migrationNeeded = !columnExists($conn, 'feeds', 'retry_count') ||
+                          !columnExists($conn, 'feeds', 'retry_proxy') ||
+                          !columnExists($conn, 'feeds', 'paused_at');
+        
+        if ($migrationNeeded) {
+            echo "Migration needed. Running migration-20250527.sql..." . PHP_EOL;
+            
+            $migrationFile = '/setup/migration-20250527.sql';
+            if (!file_exists($migrationFile)) {
+                throw new Exception("Migration file not found: {$migrationFile}");
+            }
+            
+            if (executeSqlFile($conn, $migrationFile)) {
+                echo "Migration executed successfully" . PHP_EOL;
+            } else {
+                throw new Exception("Failed to execute migration");
+            }
+        } else {
+            echo "Migration already applied. No action needed." . PHP_EOL;
         }
     }
     

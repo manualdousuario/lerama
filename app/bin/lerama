@@ -7,6 +7,8 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use League\CLImate\CLImate;
 use Lerama\Commands\FeedProcessor;
+use Lerama\Services\ProxyService;
+use Lerama\Services\EmailService;
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
@@ -46,6 +48,23 @@ switch ($command) {
 
         $processor->process((int)$feedId);
         break;
+        
+    case 'feed:check-status':
+        // Check and update status of paused feeds
+        $processor->checkPausedFeeds();
+        break;
+
+    case 'proxy:update':
+        // Update proxy list
+        $climate->info("Updating proxy list...");
+        $proxyService = new ProxyService();
+        if ($proxyService->fetchProxyList()) {
+            $climate->green("Proxy list updated successfully");
+        } else {
+            $climate->red("Failed to update proxy list");
+            exit(1);
+        }
+        break;
 
     default:
         $climate->error("Unknown command: {$command}");
@@ -58,4 +77,6 @@ function showUsage(CLImate $climate): void
     $climate->out("Usage:");
     $climate->out("  php bin/lerama feed:process         Process all feeds");
     $climate->out("  php bin/lerama feed:id {ID_DO_FEED} Process a specific feed by ID");
+    $climate->out("  php bin/lerama feed:check-status    Check and update status of paused feeds");
+    $climate->out("  php bin/lerama proxy:update         Update proxy list from PROXY_LIST URL");
 }

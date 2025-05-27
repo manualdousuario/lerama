@@ -9,16 +9,24 @@ use DB;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
+use Lerama\Services\ProxyService;
+use Lerama\Services\EmailService;
 
 class FeedProcessor
 {
     private CLImate $climate;
     private \GuzzleHttp\Client $httpClient;
+    private ProxyService $proxyService;
+    private EmailService $emailService;
+    private array $defaultClientConfig;
 
     public function __construct(CLImate $climate)
     {
         $this->climate = $climate;
-        $this->httpClient = new \GuzzleHttp\Client([
+        $this->proxyService = new ProxyService();
+        $this->emailService = new EmailService();
+        
+        $this->defaultClientConfig = [
             'timeout' => 10,
             'connect_timeout' => 5,
             'http_errors' => false,
@@ -42,43 +50,179 @@ class FeedProcessor
             'curl' => [
                 CURLOPT_DNS_SERVERS => '8.8.8.8'
             ]
-        ]);
+        ];
+        
+        $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
     }
 
     public function process(?int $feedId = null): void
     {
         if ($feedId) {
-            $this->climate->info("Processando feed ID: {$feedId}");
-            $feeds = DB::query("SELECT * FROM feeds WHERE id = %i AND status = 'online'", $feedId);
+            $this->climate->info("Processing feed ID: {$feedId}");
+            $feeds = DB::query("SELECT * FROM feeds WHERE id = %i AND (status = 'online' OR status = 'paused')", $feedId);
         } else {
-            $this->climate->info("Processando todos os feeds online");
+            $this->climate->info("Processing all online feeds");
             $feeds = DB::query("SELECT * FROM feeds WHERE status = 'online'");
         }
 
         if (empty($feeds)) {
-            $this->climate->warning("Nenhum feed encontrado para processar");
+            $this->climate->warning("No feeds found to process");
             return;
         }
 
         foreach ($feeds as $feed) {
             $this->climate->out("Processando: {$feed['title']} ({$feed['feed_url']})");
             
+            $useProxy = ($feed['retry_proxy'] ?? 0) == 1;
+            
+            if ($useProxy) {
+                $this->setupProxyClient();
+                $this->climate->info("Using proxy for feed: {$feed['title']}");
+            } else {
+                $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
+            }
+            
             try {
                 $this->processFeed($feed);
+                
                 DB::update('feeds', [
                     'last_checked' => DB::sqleval("NOW()"),
-                    'status' => 'online'
+                    'status' => 'online',
+                    'retry_count' => 0,
+                    'retry_proxy' => 0,
+                    'paused_at' => null
                 ], 'id=%i', $feed['id']);
                 
-                $this->climate->green("✓ Feed processado com sucesso: {$feed['title']}");
+                $this->climate->green("✓ Feed processed successfully: {$feed['title']}");
             } catch (\Exception $e) {
-                $this->climate->red("✗ Erro ao processar feed {$feed['title']}: {$e->getMessage()}");
-                DB::update('feeds', [
-                    'last_checked' => DB::sqleval("NOW()"),
-                    'status' => 'offline'
-                ], 'id=%i', $feed['id']);
+                $this->climate->red("✗ Error processing feed {$feed['title']}: {$e->getMessage()}");
+                
+                $retryCount = ($feed['retry_count'] ?? 0) + 1;
+                $this->climate->info("Attempt {$retryCount} for feed: {$feed['title']}");
+                
+                if ($retryCount > 10) {
+                    $this->climate->yellow("Feed {$feed['title']} marked as paused after {$retryCount} attempts");
+                    DB::update('feeds', [
+                        'last_checked' => DB::sqleval("NOW()"),
+                        'status' => 'paused',
+                        'retry_count' => $retryCount,
+                        'paused_at' => DB::sqleval("NOW()")
+                    ], 'id=%i', $feed['id']);
+                } else if ($retryCount > 3) {
+                    $this->climate->yellow("Feed {$feed['title']} will use proxy in next attempts");
+                    DB::update('feeds', [
+                        'last_checked' => DB::sqleval("NOW()"),
+                        'status' => 'online',
+                        'retry_count' => $retryCount,
+                        'retry_proxy' => 1
+                    ], 'id=%i', $feed['id']);
+                } else {
+                    DB::update('feeds', [
+                        'last_checked' => DB::sqleval("NOW()"),
+                        'status' => 'online',
+                        'retry_count' => $retryCount
+                    ], 'id=%i', $feed['id']);
+                }
             }
         }
+    }
+    
+    public function checkPausedFeeds(): void
+    {
+        $this->climate->info("Checking paused feeds...");
+        
+        $pausedFeeds = DB::query("SELECT * FROM feeds WHERE status = 'paused'");
+        
+        if (empty($pausedFeeds)) {
+            $this->climate->info("No paused feeds found");
+            return;
+        }
+        
+        foreach ($pausedFeeds as $feed) {
+            $pausedAt = strtotime($feed['paused_at']);
+            $now = time();
+            $hoursSincePaused = ($now - $pausedAt) / 3600;
+            
+            $this->climate->info("Feed {$feed['title']} has been paused for " . round($hoursSincePaused, 1) . " hours");
+            
+            if ($hoursSincePaused >= 72) {
+                $this->climate->info("Trying to process feed {$feed['title']} after 72 hours paused");
+                
+                try {
+                    $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
+                    
+                    $this->processFeed($feed);
+                    
+                    $this->climate->green("✓ Feed {$feed['title']} is working again after 72 hours paused");
+                    DB::update('feeds', [
+                        'last_checked' => DB::sqleval("NOW()"),
+                        'status' => 'online',
+                        'retry_count' => 0,
+                        'retry_proxy' => 0,
+                        'paused_at' => null
+                    ], 'id=%i', $feed['id']);
+                } catch (\Exception $e) {
+                    $this->climate->red("✗ Feed {$feed['title']} remains inaccessible after 72 hours paused");
+                    DB::update('feeds', [
+                        'last_checked' => DB::sqleval("NOW()"),
+                        'status' => 'offline'
+                    ], 'id=%i', $feed['id']);
+                    
+                    $this->emailService->sendFeedOfflineNotification($feed);
+                    $this->climate->info("Notification sent to administrator about offline feed: {$feed['title']}");
+                }
+            }
+            
+            else if ($hoursSincePaused >= 24) {
+                $this->climate->info("Trying to process feed {$feed['title']} after 24 hours paused");
+                
+                try {
+                    $this->setupProxyClient();
+                    
+                    $this->processFeed($feed);
+                    
+                    $this->climate->green("✓ Feed {$feed['title']} is working again after 24 hours paused");
+                    DB::update('feeds', [
+                        'last_checked' => DB::sqleval("NOW()"),
+                        'status' => 'online',
+                        'retry_count' => 0,
+                        'retry_proxy' => 0,
+                        'paused_at' => null
+                    ], 'id=%i', $feed['id']);
+                } catch (\Exception $e) {
+                    $this->climate->yellow("! Feed {$feed['title']} remains inaccessible after 24 hours paused");
+                    DB::update('feeds', [
+                        'last_checked' => DB::sqleval("NOW()")
+                    ], 'id=%i', $feed['id']);
+                }
+            }
+        }
+    }
+    
+    private function setupProxyClient(): bool
+    {
+        $proxy = $this->proxyService->getRandomProxy();
+        
+        if (!$proxy) {
+            $this->climate->warning("No proxy available, using direct connection");
+            $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
+            return false;
+        }
+        
+        $config = $this->defaultClientConfig;
+        
+        $proxyUrl = '';
+        if ($proxy['username'] && $proxy['password']) {
+            $proxyUrl = "http://{$proxy['username']}:{$proxy['password']}@{$proxy['host']}:{$proxy['port']}";
+        } else {
+            $proxyUrl = "http://{$proxy['host']}:{$proxy['port']}";
+        }
+        
+        $config['proxy'] = $proxyUrl;
+        $this->httpClient = new \GuzzleHttp\Client($config);
+        
+        $this->climate->info("Using proxy: {$proxy['host']}:{$proxy['port']}");
+        return true;
     }
 
     private function processFeed(array $feed): void
@@ -103,7 +247,7 @@ class FeedProcessor
                 $this->processXmlFeed($feed);
                 break;
             default:
-                throw new \Exception("Tipo de feed não suportado: {$feedType}");
+                throw new \Exception("Unsupported feed type: {$feedType}");
         }
     }
 
@@ -177,7 +321,7 @@ class FeedProcessor
             ], 'id=%i', $feed['id']);
         }
 
-        $this->climate->out("Adicionados {$count} novos itens do feed: {$feed['title']}");
+        $this->climate->out("Added {$count} new items from feed: {$feed['title']}");
     }
 
     private function processPaginatedRssFeed(array $feed, SimplePie $simplePie, &$count, &$updated, &$lastGuid, &$processedItems, $maxItemsToProcess): void
@@ -210,7 +354,7 @@ class FeedProcessor
         $currentPage = 1;
         
         while ($nextPageUrl && $currentPage < $maxPages && $processedItems < $maxItemsToProcess) {
-            $this->climate->out("Processando próxima página: {$nextPageUrl}");
+            $this->climate->out("Processing next page: {$nextPageUrl}");
             
             try {
                 $nextSimplePie = new SimplePie();
@@ -219,7 +363,7 @@ class FeedProcessor
                 $nextSimplePie->init();
                 
                 if ($nextSimplePie->error()) {
-                    $this->climate->yellow("Erro ao carregar próxima página: {$nextSimplePie->error()}");
+                    $this->climate->yellow("Error loading next page: {$nextSimplePie->error()}");
                     break;
                 }
                 
@@ -336,19 +480,19 @@ class FeedProcessor
 
     private function processCsvFeed(array $feed): void
     {
-        $this->climate->info("Processando feed CSV: {$feed['feed_url']}");
+        $this->climate->info("Processing CSV feed: {$feed['feed_url']}");
         
         try {
             $response = $this->httpClient->get($feed['feed_url']);
             $statusCode = $response->getStatusCode();
             
             if ($statusCode !== 200) {
-                throw new \Exception("Falha ao buscar feed CSV: Status HTTP {$statusCode}");
+                throw new \Exception("Failed to fetch CSV feed: HTTP Status {$statusCode}");
             }
             
             $content = (string) $response->getBody();
         } catch (\Exception $e) {
-            throw new \Exception("Falha ao buscar feed CSV: " . $e->getMessage());
+            throw new \Exception("Failed to fetch CSV feed: " . $e->getMessage());
         }
 
         $lines = explode("\n", $content);
@@ -362,7 +506,7 @@ class FeedProcessor
         $dateIndex = array_search('date', $headers);
         
         if ($titleIndex === false || $urlIndex === false || $guidIndex === false) {
-            throw new \Exception("Feed CSV sem as colunas obrigatórias (title, url, guid)");
+            throw new \Exception("CSV feed missing required columns (title, url, guid)");
         }
         
         $count = 0;
@@ -388,7 +532,7 @@ class FeedProcessor
             $url = $data[$urlIndex];
             $title = $data[$titleIndex];
             
-            $this->climate->whisper("Processando item: {$title} ({$url})");
+            $this->climate->whisper("Processing item: {$title} ({$url})");
             
             $imageUrl = $this->extractImageFromUrl($url);
             
@@ -405,9 +549,9 @@ class FeedProcessor
                 ]);
                 $count++;
                 $updated = true;
-                $this->climate->whisper("Item adicionado com sucesso: {$title}");
+                $this->climate->whisper("Item added successfully: {$title}");
             } catch (\Exception $e) {
-                $this->climate->whisper("Erro ao adicionar item {$title}: {$e->getMessage()}");
+                $this->climate->whisper("Error adding item {$title}: {$e->getMessage()}");
                 continue;
             }
         }
@@ -421,7 +565,7 @@ class FeedProcessor
             ], 'id=%i', $feed['id']);
         }
         
-        $this->climate->out("Adicionados {$count} novos itens do feed CSV: {$feed['title']}");
+        $this->climate->out("Added {$count} new items from CSV feed: {$feed['title']}");
     }
 
     private function processPaginatedCsvFeed(array $feed, &$count, &$updated, &$lastGuid): void
@@ -459,15 +603,15 @@ class FeedProcessor
             $urlParts['query'] = http_build_query($queryParams);
             $nextPageUrl = $this->buildUrl($urlParts);
             
-            $this->climate->out("Processando próxima página CSV: {$nextPageUrl}");
+            $this->climate->out("Processing next CSV page: {$nextPageUrl}");
             
             try {
-                $this->climate->whisper("Buscando próxima página CSV: {$nextPageUrl}");
+                $this->climate->whisper("Fetching next CSV page: {$nextPageUrl}");
                 $response = $this->httpClient->get($nextPageUrl);
                 $statusCode = $response->getStatusCode();
                 
                 if ($statusCode !== 200) {
-                    $this->climate->yellow("Falha ao buscar próxima página CSV: Status HTTP {$statusCode}");
+                    $this->climate->yellow("Failed to fetch next CSV page: HTTP Status {$statusCode}");
                     break;
                 }
                 
@@ -484,7 +628,7 @@ class FeedProcessor
                 $dateIndex = array_search('date', $headers);
                 
                 if ($titleIndex === false || $urlIndex === false || $guidIndex === false) {
-                    $this->climate->yellow("Feed CSV sem as colunas obrigatórias (title, url, guid)");
+                    $this->climate->yellow("CSV feed missing required columns (title, url, guid)");
                     break;
                 }
                 
@@ -509,7 +653,7 @@ class FeedProcessor
                     $url = $data[$urlIndex];
                     $title = $data[$titleIndex];
                     
-                    $this->climate->whisper("Processando item da página {$currentPage}: {$title} ({$url})");
+                    $this->climate->whisper("Processing item from page {$currentPage}: {$title} ({$url})");
                     
                     $imageUrl = $this->extractImageFromUrl($url);
                     
@@ -527,9 +671,9 @@ class FeedProcessor
                         $count++;
                         $pageItemCount++;
                         $updated = true;
-                        $this->climate->whisper("Item adicionado com sucesso: {$title}");
+                        $this->climate->whisper("Item added successfully: {$title}");
                     } catch (\Exception $e) {
-                        $this->climate->whisper("Erro ao adicionar item {$title}: {$e->getMessage()}");
+                        $this->climate->whisper("Error adding item {$title}: {$e->getMessage()}");
                         continue;
                     }
                     
@@ -560,30 +704,30 @@ class FeedProcessor
 
     private function processJsonFeed(array $feed): void
     {
-        $this->climate->info("Processando feed JSON: {$feed['feed_url']}");
+        $this->climate->info("Processing JSON feed: {$feed['feed_url']}");
         
         try {
             $response = $this->httpClient->get($feed['feed_url']);
             $statusCode = $response->getStatusCode();
             
             if ($statusCode !== 200) {
-                throw new \Exception("Falha ao buscar feed JSON: Status HTTP {$statusCode}");
+                throw new \Exception("Failed to fetch JSON feed: HTTP Status {$statusCode}");
             }
             
             $content = (string) $response->getBody();
         } catch (\Exception $e) {
-            throw new \Exception("Falha ao buscar feed JSON: " . $e->getMessage());
+            throw new \Exception("Failed to fetch JSON feed: " . $e->getMessage());
         }
         
         $data = json_decode($content, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \Exception("Feed JSON inválido: " . json_last_error_msg());
+            throw new \Exception("Invalid JSON feed: " . json_last_error_msg());
         }
 
         $items = $data['items'] ?? $data['entries'] ?? $data['feed'] ?? $data;
         
         if (!is_array($items)) {
-            throw new \Exception("Não foi possível encontrar itens no feed JSON");
+            throw new \Exception("Could not find items in JSON feed");
         }
         $nextPageUrl = $data['next'] ?? $data['next_page'] ?? $data['nextPage'] ?? null;
         
@@ -614,7 +758,7 @@ class FeedProcessor
             $url = $item['url'] ?? $item['link'] ?? '';
             $date = $item['date_published'] ?? $item['published'] ?? $item['date'] ?? date('Y-m-d H:i:s');
             
-            $this->climate->whisper("Processando item JSON: {$title} ({$url})");
+            $this->climate->whisper("Processing JSON item: {$title} ({$url})");
 
             $imageUrl = $this->extractImageFromUrl($url);
             
@@ -631,9 +775,9 @@ class FeedProcessor
                 ]);
                 $count++;
                 $updated = true;
-                $this->climate->whisper("Item JSON adicionado com sucesso: {$title}");
+                $this->climate->whisper("JSON item added successfully: {$title}");
             } catch (\Exception $e) {
-                $this->climate->whisper("Erro ao adicionar item JSON {$title}: {$e->getMessage()}");
+                $this->climate->whisper("Error adding JSON item {$title}: {$e->getMessage()}");
                 continue;
             }
             
@@ -654,7 +798,7 @@ class FeedProcessor
             ], 'id=%i', $feed['id']);
         }
         
-        $this->climate->out("Adicionados {$count} novos itens do feed JSON: {$feed['title']}");
+        $this->climate->out("Added {$count} new items from JSON feed: {$feed['title']}");
     }
 
     private function processPaginatedJsonFeed(array $feed, string $nextPageUrl, &$count, &$updated, &$lastGuid, &$processedItems, $maxItemsToProcess): void
@@ -663,15 +807,15 @@ class FeedProcessor
         $currentPage = 1;
         
         while ($nextPageUrl && $currentPage < $maxPages && $processedItems < $maxItemsToProcess) {
-            $this->climate->out("Processando próxima página JSON: {$nextPageUrl}");
+            $this->climate->out("Processing next JSON page: {$nextPageUrl}");
             
             try {
-                $this->climate->whisper("Buscando próxima página JSON: {$nextPageUrl}");
+                $this->climate->whisper("Fetching next JSON page: {$nextPageUrl}");
                 $response = $this->httpClient->get($nextPageUrl);
                 $statusCode = $response->getStatusCode();
                 
                 if ($statusCode !== 200) {
-                    $this->climate->yellow("Falha ao buscar próxima página JSON: Status HTTP {$statusCode}");
+                    $this->climate->yellow("Failed to fetch next JSON page: HTTP Status {$statusCode}");
                     break;
                 }
                 
@@ -679,14 +823,14 @@ class FeedProcessor
                 
                 $data = json_decode($content, true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
-                    $this->climate->yellow("JSON inválido na próxima página: " . json_last_error_msg());
+                    $this->climate->yellow("Invalid JSON in next page: " . json_last_error_msg());
                     break;
                 }
 
                 $items = $data['items'] ?? $data['entries'] ?? $data['feed'] ?? $data;
                 
                 if (!is_array($items)) {
-                    $this->climate->yellow("Não foi possível encontrar itens na próxima página JSON");
+                    $this->climate->yellow("Could not find items in next JSON page");
                     break;
                 }
                 
@@ -712,7 +856,7 @@ class FeedProcessor
                     $url = $item['url'] ?? $item['link'] ?? '';
                     $date = $item['date_published'] ?? $item['published'] ?? $item['date'] ?? date('Y-m-d H:i:s');
                     
-                    $this->climate->whisper("Processando item JSON da página {$currentPage}: {$title} ({$url})");
+                    $this->climate->whisper("Processing JSON item from page {$currentPage}: {$title} ({$url})");
 
                     $imageUrl = $this->extractImageFromUrl($url);
                     
@@ -730,9 +874,9 @@ class FeedProcessor
                         $count++;
                         $pageItemCount++;
                         $updated = true;
-                        $this->climate->whisper("Item JSON da página {$currentPage} adicionado com sucesso: {$title}");
+                        $this->climate->whisper("JSON item from page {$currentPage} added successfully: {$title}");
                     } catch (\Exception $e) {
-                        $this->climate->whisper("Erro ao adicionar item JSON da página {$currentPage} {$title}: {$e->getMessage()}");
+                        $this->climate->whisper("Error adding JSON item from page {$currentPage} {$title}: {$e->getMessage()}");
                         continue;
                     }
                     
@@ -754,7 +898,7 @@ class FeedProcessor
                 $currentPage++;
                 
             } catch (\Exception $e) {
-                $this->climate->yellow("Erro ao processar próxima página JSON: {$e->getMessage()}");
+                $this->climate->yellow("Error processing next JSON page: {$e->getMessage()}");
                 break;
             }
         }
@@ -762,24 +906,24 @@ class FeedProcessor
 
     private function processXmlFeed(array $feed): void
     {
-        $this->climate->info("Processando feed XML: {$feed['feed_url']}");
+        $this->climate->info("Processing XML feed: {$feed['feed_url']}");
         
         try {
             $response = $this->httpClient->get($feed['feed_url']);
             $statusCode = $response->getStatusCode();
             
             if ($statusCode !== 200) {
-                throw new \Exception("Falha ao buscar feed XML: Status HTTP {$statusCode}");
+                throw new \Exception("Failed to fetch XML feed: HTTP Status {$statusCode}");
             }
             
             $content = (string) $response->getBody();
         } catch (\Exception $e) {
-            throw new \Exception("Falha ao buscar feed XML: " . $e->getMessage());
+            throw new \Exception("Failed to fetch XML feed: " . $e->getMessage());
         }
         
         $xml = simplexml_load_string($content);
         if ($xml === false) {
-            throw new \Exception("Feed XML inválido");
+            throw new \Exception("Invalid XML feed");
         }
 
         $items = $xml->xpath('//item') ?: $xml->xpath('//entry') ?: [];
@@ -810,7 +954,7 @@ class FeedProcessor
             $url = (string)($item->link ?? $item->url ?? '');
             $date = (string)($item->pubDate ?? $item->published ?? $item->date ?? date('Y-m-d H:i:s'));
             
-            $this->climate->whisper("Processando item XML: {$title} ({$url})");
+            $this->climate->whisper("Processing XML item: {$title} ({$url})");
 
             $imageUrl = $this->extractImageFromUrl($url);
             
@@ -827,10 +971,10 @@ class FeedProcessor
                 ]);
                 $count++;
                 $updated = true;
-                $this->climate->whisper("Item XML adicionado com sucesso: {$title}");
+                $this->climate->whisper("XML item added successfully: {$title}");
             } catch (\Exception $e) {
                 
-                $this->climate->whisper("Erro ao adicionar item XML {$title}: {$e->getMessage()}");
+                $this->climate->whisper("Error adding XML item {$title}: {$e->getMessage()}");
                 continue;
             }
             
@@ -849,7 +993,7 @@ class FeedProcessor
                 'last_updated' => DB::sqleval("NOW()")
             ], 'id=%i', $feed['id']);
         }
-        $this->climate->out("Adicionados {$count} novos itens do feed XML: {$feed['title']}");
+        $this->climate->out("Added {$count} new items from XML feed: {$feed['title']}");
     }
     
     private function processPaginatedXmlFeed(array $feed, \SimpleXMLElement $xml, &$count, &$updated, &$lastGuid, &$processedItems, $maxItemsToProcess): void
@@ -883,15 +1027,15 @@ class FeedProcessor
         $currentPage = 1;
         
         while ($nextPageUrl && $currentPage < $maxPages && $processedItems < $maxItemsToProcess) {
-            $this->climate->out("Processando próxima página XML: {$nextPageUrl}");
+            $this->climate->out("Processing next XML page: {$nextPageUrl}");
             
             try {
-                $this->climate->whisper("Buscando próxima página XML: {$nextPageUrl}");
+                $this->climate->whisper("Fetching next XML page: {$nextPageUrl}");
                 $response = $this->httpClient->get($nextPageUrl);
                 $statusCode = $response->getStatusCode();
                 
                 if ($statusCode !== 200) {
-                    $this->climate->yellow("Falha ao buscar próxima página XML: Status HTTP {$statusCode}");
+                    $this->climate->yellow("Failed to fetch next XML page: HTTP Status {$statusCode}");
                     break;
                 }
                 
@@ -899,7 +1043,7 @@ class FeedProcessor
                 
                 $nextXml = simplexml_load_string($content);
                 if ($nextXml === false) {
-                    $this->climate->yellow("XML inválido na próxima página");
+                    $this->climate->yellow("Invalid XML in next page");
                     break;
                 }
 
@@ -927,7 +1071,7 @@ class FeedProcessor
                     $url = (string)($item->link ?? $item->url ?? '');
                     $date = (string)($item->pubDate ?? $item->published ?? $item->date ?? date('Y-m-d H:i:s'));
                     
-                    $this->climate->whisper("Processando item XML da página {$currentPage}: {$title} ({$url})");
+                    $this->climate->whisper("Processing XML item from page {$currentPage}: {$title} ({$url})");
     
                     $imageUrl = $this->extractImageFromUrl($url);
                     
@@ -945,9 +1089,9 @@ class FeedProcessor
                         $count++;
                         $pageItemCount++;
                         $updated = true;
-                        $this->climate->whisper("Item XML da página {$currentPage} adicionado com sucesso: {$title}");
+                        $this->climate->whisper("XML item from page {$currentPage} added successfully: {$title}");
                     } catch (\Exception $e) {
-                        $this->climate->whisper("Erro ao adicionar item XML da página {$currentPage} {$title}: {$e->getMessage()}");
+                        $this->climate->whisper("Error adding XML item from page {$currentPage} {$title}: {$e->getMessage()}");
                         continue;
                     }
                     
@@ -981,11 +1125,11 @@ class FeedProcessor
                 $currentPage++;
                 
             } catch (\Exception $e) {
-                $this->climate->yellow("Erro ao processar próxima página XML: {$e->getMessage()}");
+                $this->climate->yellow("Error processing next XML page: {$e->getMessage()}");
                 break;
             }
         }
-        $this->climate->out("Adicionados {$count} novos itens do feed XML: {$feed['title']}");
+        $this->climate->out("Added {$count} new items from XML feed: {$feed['title']}");
     }
     private function extractImageFromUrl(string $url): ?string
     {
@@ -994,34 +1138,34 @@ class FeedProcessor
         }
         
         try {
-            $this->climate->whisper("Extraindo imagem de: {$url}");
+            $this->climate->whisper("Extracting image from: {$url}");
             $response = $this->httpClient->get($url);
             $statusCode = $response->getStatusCode();
 
             sleep(1);
             
             if ($statusCode !== 200) {
-                $this->climate->whisper("Falha ao extrair imagem: Status {$statusCode}");
+                $this->climate->whisper("Failed to extract image: Status {$statusCode}");
                 return null;
             }
             
             $html = (string) $response->getBody();
 
             if (preg_match('/<meta[^>]*property=["\']og:image["\'][^>]*content=["\'](.*?)["\'][^>]*>/i', $html, $matches)) {
-                $this->climate->whisper("Imagem extraída (og:image): {$matches[1]}");
+                $this->climate->whisper("Image extracted (og:image): {$matches[1]}");
                 return $matches[1];
             }
             
 
             if (preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:image["\'][^>]*>/i', $html, $matches)) {
-                $this->climate->whisper("Imagem extraída (og:image alt): {$matches[1]}");
+                $this->climate->whisper("Image extracted (og:image alt): {$matches[1]}");
                 return $matches[1];
             }
             
-            $this->climate->whisper("Nenhuma imagem encontrada");
+            $this->climate->whisper("No image found");
             return null;
         } catch (\Exception $e) {
-            $this->climate->whisper("Erro ao extrair imagem: {$e->getMessage()}");
+            $this->climate->whisper("Error extracting image: {$e->getMessage()}");
             return null;
         }
     }

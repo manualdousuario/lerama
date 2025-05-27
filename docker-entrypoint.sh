@@ -90,6 +90,15 @@ DB_PASS=${MYSQL_PASSWORD:-root}
 ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
 ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
 ADD_BLOG_LINK=${ADD_BLOG_LINK:-}
+PROXY_LIST=${PROXY_LIST:-}
+ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
+SMTP_HOST=${SMTP_HOST:-}
+SMTP_PORT=${SMTP_PORT:-587}
+SMTP_USERNAME=${SMTP_USERNAME:-}
+SMTP_PASSWORD=${SMTP_PASSWORD:-}
+SMTP_SECURE=${SMTP_SECURE:-tls}
+SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL:-lerama@example.com}
+SMTP_FROM_NAME=${SMTP_FROM_NAME:-"Lerama Feed Aggregator"}
 EOL
 
 log_success "Environment variables set in /app/.env"
@@ -137,17 +146,44 @@ echo "$(date): Starting feed:process cron job"
 echo "$(date): Finished feed:process cron job"
 EOL
 
+cat > /app/cron-scripts/feed_check_status.sh << 'EOL'
+#!/bin/bash
+echo "$(date): Starting feed:check-status cron job"
+/usr/local/bin/php /app/bin/lerama feed:check-status 2>&1 | sed "s/^/[feed:check-status] /"
+echo "$(date): Finished feed:check-status cron job"
+EOL
+
+cat > /app/cron-scripts/proxy_update.sh << 'EOL'
+#!/bin/bash
+echo "$(date): Starting proxy_update cron job"
+/usr/local/bin/php /app/bin/lerama proxy:update 2>&1 | sed "s/^/[proxy:update] /"
+echo "$(date): Finished proxy_update cron job"
+EOL
+
 # Make the scripts executable
 chmod +x /app/cron-scripts/*.sh
 
 # Set up crontab to use the wrapper scripts and redirect output to Docker logs
 (
     echo "0 * * * * /app/cron-scripts/feed_process.sh >> /proc/1/fd/1 2>> /proc/1/fd/2"
+    echo "30 * * * * /app/cron-scripts/feed_check_status.sh >> /proc/1/fd/1 2>> /proc/1/fd/2"
+    echo "0 0 * * * /app/cron-scripts/proxy_update.sh >> /proc/1/fd/1 2>> /proc/1/fd/2"
 ) | crontab -
 
 service cron restart
 
 log_success "Cron jobs added with stdout logging"
+
+# Update proxy list if PROXY_LIST is defined
+if [ -n "$PROXY_LIST" ]; then
+    log_info "PROXY_LIST environment variable detected, updating proxy list..."
+    php /app/bin/lerama proxy:update
+    if [ $? -eq 0 ]; then
+        log_success "Proxy list updated successfully"
+    else
+        log_info "Failed to update proxy list, will retry later"
+    fi
+fi
 
 # Set correct permissions for /app/storage
 log_info "Setting permissions for /app/public/storage..."
@@ -166,4 +202,3 @@ fi
 echo -e "\n${GREEN}Lerama: Initialized ===${NC}\n"
 
 wait -n
-

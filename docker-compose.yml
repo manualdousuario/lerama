@@ -12,7 +12,16 @@ services:
       MYSQL_PASSWORD: root
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: admin
+      ADMIN_EMAIL: 
       ADD_BLOG_LINK: https:// # optional
+      PROXY_LIST: # optional
+      SMTP_HOST=smtp.resend.com
+      SMTP_PORT=587
+      SMTP_USERNAME=resend
+      SMTP_PASSWORD=re_
+      SMTP_SECURE: tls
+      SMTP_FROM_EMAIL: lerama@example.com
+      SMTP_FROM_NAME: Lerama
     ports:
       - 8077:8077
     volumes:
