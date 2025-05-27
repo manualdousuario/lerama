@@ -41,7 +41,21 @@ function executeSqlFile($conn, $filePath) {
     $queries = explode(';', $sql);
 
     try {
-        $conn->beginTransaction();
+        $containsDDL = false;
+        foreach ($queries as $query) {
+            $query = trim($query);
+            if (!empty($query)) {
+                $upperQuery = strtoupper($query);
+                if (preg_match('/^\s*(ALTER|CREATE|DROP)\s+/i', $upperQuery)) {
+                    $containsDDL = true;
+                    break;
+                }
+            }
+        }
+        
+        if (!$containsDDL) {
+            $conn->beginTransaction();
+        }
         
         foreach ($queries as $query) {
             $query = trim($query);
@@ -50,10 +64,15 @@ function executeSqlFile($conn, $filePath) {
             }
         }
         
-        $conn->commit();
+        if (!$containsDDL) {
+            $conn->commit();
+        }
+        
         return true;
     } catch (PDOException $e) {
-        $conn->rollBack();
+        if (!$containsDDL) {
+            $conn->rollBack();
+        }
         echo "Error executing query: " . $e->getMessage() . PHP_EOL;
         return false;
     }
