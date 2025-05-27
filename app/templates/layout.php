@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $this->e(isset($title) ? $title .' | ' . $_ENV['APP_NAME'] : $_ENV['APP_NAME']) ?></title>
+    <title><?= $this->e(isset($title) ? $title . ' | ' . $_ENV['APP_NAME'] : $_ENV['APP_NAME']) ?></title>
     <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
     <link rel="shortcut icon" href="/assets/favicon.ico" />
@@ -53,11 +53,11 @@
                             <i class="bi bi-journal-text me-1"></i>
                             Feeds
                         </a>
-                        <?php if(isset($_ENV['ADD_BLOG_LINK']) && !empty($_ENV['ADD_BLOG_LINK'])) : ?>
-                        <a href="<?= $_ENV['ADD_BLOG_LINK'] ?>" target="_blank" class="d-inline-flex align-items-center pe-1 py-2 me-3 text-decoration-none text-secondary hover-text-white">
-                            <i class="bi bi-plus-circle me-1"></i>
-                            Sugerir Blog
-                        </a>
+                        <?php if (isset($_ENV['ADD_BLOG_LINK']) && !empty($_ENV['ADD_BLOG_LINK'])) : ?>
+                            <a href="<?= $_ENV['ADD_BLOG_LINK'] ?>" target="_blank" class="d-inline-flex align-items-center pe-1 py-2 me-3 text-decoration-none text-secondary hover-text-white">
+                                <i class="bi bi-plus-circle me-1"></i>
+                                Sugerir Blog
+                            </a>
                         <?php endif; ?>
                     <?php endif; ?>
                 </nav>
@@ -96,6 +96,9 @@
                 <a href="https://github.com/manualdousuario/lerama" target="_blank" class="btn btn-sm btn-outline-secondary mx-1" title="GitHub">
                     <i class="bi bi-github"></i> GitHub
                 </a>
+                <button id="copySeloLerama" class="btn btn-sm btn-outline-secondary mx-1" title="Copiar código do Selo Lerama">
+                    <i class="bi bi-clipboard"></i> Selo Lerama
+                </button>
             </p>
         </div>
     </footer>
@@ -137,6 +140,30 @@
                     darkIcon.classList.add('d-none');
                     localStorage.setItem('theme', 'dark');
                 }
+            });
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const copySeloButton = document.getElementById('copySeloLerama');
+
+            copySeloButton.addEventListener('click', function() {
+                const seloHtml = `<a href="<?= $_ENV['APP_URL'] ?>"><img src="<?= $_ENV['APP_URL'] ?>/88x31.gif" alt="Lerama" width="81" height="33"></a>`;
+
+                navigator.clipboard.writeText(seloHtml)
+                    .then(() => {
+                        const originalText = copySeloButton.innerHTML;
+                        copySeloButton.innerHTML = '<i class="bi bi-check-lg"></i> Copiado!';
+
+                        setTimeout(() => {
+                            copySeloButton.innerHTML = originalText;
+                        }, 2000);
+                    })
+                    .catch(err => {
+                        console.error('Erro ao copiar: ', err);
+                        alert('Não foi possível copiar o código. Por favor, tente novamente.');
+                    });
             });
         });
     </script>
