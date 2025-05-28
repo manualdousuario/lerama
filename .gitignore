@@ -4,3 +4,4 @@ vendor
 composer.lock
 **/node_modules/*
 app/public/storage/thumbnails/**
+app/storage/*.cache
