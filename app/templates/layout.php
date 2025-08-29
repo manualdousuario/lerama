@@ -76,19 +76,6 @@
             </div>
         </div>
     </nav>
-    <div class="container">
-        <div class="alert alert-warning text-center mt-4 mb-0" role="alert">
-            <?php
-                $pagecord = [
-                    'Publique seus textos sem esforço. Tudo o que você precisa é de um e-mail.',
-                    'Compartilhe suas ideias em segundos. Só precisa do seu e-mail.',
-                    'Escreva menos, publique mais. Seu e-mail é o suficiente.',
-                    'Dê voz às suas ideias. Publique agora com seu e-mail.'
-                ];
-            ?>
-            <img src="assets/pagecord.svg" width="24" height="24" /> <a target="_blank" href="https://pagecord.com/?utm_source=lerama202509" class="alert-link"><?php $i = array_rand($pagecord); echo $pagecord[$i]; ?></a>
-        </div>
-    </div>
     <main>
         <div class="container py-4">
             <?= $this->section('content') ?>
