@@ -5,11 +5,11 @@ services:
     environment:
       TZ: ${TZ:-UTC}
       APP_URL: https://lerama.lab
-      MYSQL_HOST: localhost
-      MYSQL_PORT: 3306
-      MYSQL_DATABASE: lerama
-      MYSQL_USERNAME: root
-      MYSQL_PASSWORD: root
+      LERAMA_DB_HOST: localhost
+      LERAMA_DB_PORT: 3306
+      LERAMA_DB_DATABASE: lerama
+      LERAMA_DB_USERNAME: root
+      LERAMA_DB_PASSWORD: root
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: admin
       ADMIN_EMAIL: 
