@@ -82,11 +82,11 @@ log_info "Setting up environment variables in /app/.env..."
 cat > /app/.env << EOL
 APP_NAME=Lerama
 APP_URL=${APP_URL:-https://lerama.lab}
-DB_HOST=${LERAMA_DB_HOST:-localhost}
-DB_PORT=${LERAMA_DB_PORT:-3306}
-DB_NAME=${LERAMA_DB_NAME:-lerama}
-DB_USER=${LERAMA_DB_USER:-root}
-DB_PASS=${LERAMA_DB_PASS:-root}
+LERAMA_DB_HOST=${LERAMA_DB_HOST:-localhost}
+LERAMA_DB_PORT=${LERAMA_DB_PORT:-3306}
+LERAMA_DB_NAME=${LERAMA_DB_NAME:-lerama}
+LERAMA_DB_USER=${LERAMA_DB_USER:-root}
+LERAMA_DB_PASS=${LERAMA_DB_PASS:-root}
 ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
 ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
 ADD_BLOG_LINK=${ADD_BLOG_LINK:-}
