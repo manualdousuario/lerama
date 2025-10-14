@@ -7,9 +7,9 @@ services:
       APP_URL: https://lerama.lab
       LERAMA_DB_HOST: localhost
       LERAMA_DB_PORT: 3306
-      LERAMA_DB_DATABASE: lerama
-      LERAMA_DB_USERNAME: root
-      LERAMA_DB_PASSWORD: root
+      LERAMA_DB_NAME: lerama
+      LERAMA_DB_USER: root
+      LERAMA_DB_PASS: root
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: admin
       ADMIN_EMAIL: 
