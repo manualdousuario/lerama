@@ -117,7 +117,7 @@ fi
 
 # Database
 log_info "Checking database tables..."
-#php /setup/check-db.php
+php /setup/check-db.php
 
 # NGINX
 log_info "Checking Nginx configuration..."
