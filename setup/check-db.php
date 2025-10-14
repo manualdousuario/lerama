@@ -86,11 +86,11 @@ try {
         throw new Exception("Failed to parse .env file or file is empty");
     }
 
-    $dbHost = $env['DB_HOST'] ?? 'localhost';
-    $dbName = $env['DB_NAME'] ?? '';
-    $dbUser = $env['DB_USER'] ?? '';
-    $dbPass = $env['DB_PASS'] ?? '';
-    $dbPort = $env['DB_PORT'] ?? '3306';
+    $dbHost = $env['LERAMA_DB_HOST'] ?? 'localhost';
+    $dbName = $env['LERAMA_DB_NAME'] ?? '';
+    $dbUser = $env['LERAMA_DB_USER'] ?? '';
+    $dbPass = $env['LERAMA_DB_PASS'] ?? '';
+    $dbPort = $env['LERAMA_DB_PORT'] ?? 3306;
     
     if (empty($dbName) || empty($dbUser)) {
         throw new Exception("Database configuration is incomplete in .env file");

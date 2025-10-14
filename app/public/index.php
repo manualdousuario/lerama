@@ -17,11 +17,11 @@ $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
 
 // Initialize database connection
-DB::$host = $_ENV['DB_HOST'];
-DB::$user = $_ENV['DB_USER'];
-DB::$password = $_ENV['DB_PASS'];
-DB::$dbName = $_ENV['DB_NAME'];
-DB::$port = (int)$_ENV['DB_PORT'];
+DB::$host = $_ENV['LERAMA_DB_HOST'];
+DB::$user = $_ENV['LERAMA_DB_USER'];
+DB::$password = $_ENV['LERAMA_DB_PASS'];
+DB::$dbName = $_ENV['LERAMA_DB_NAME'];
+DB::$port = (int)$_ENV['LERAMA_DB_PORT'];
 DB::$encoding = 'utf8mb4';
 
 // Create the router
