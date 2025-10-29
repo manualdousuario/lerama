@@ -8,7 +8,7 @@
             <div class="col-12 col-md-6">
                 <h3 class="fs-5 fw-medium mb-0 mt-1 mt-md-2">
                     <i class="bi bi-collection me-1"></i>
-                    Gerenciar artigos de feeds
+                    Gerenciar Artigos
                 </h3>
             </div>
             <div class="col-12 col-md-6 pb-1 pb-md-0 pt-3 pt-md-0">
@@ -97,7 +97,7 @@
                                     <button
                                         data-id="<?= $item['id'] ?>"
                                         data-visible="<?= $item['is_visible'] ? '1' : '0' ?>"
-                                        class="d-inline-block btn btn-sm <?= $item['is_visible'] ? 'btn-success' : 'btn-danger' ?> toggle-visibility">
+                                        class="d-inline-block btn btn-sm <?= $item['is_visible'] ? 'btn-outline-success' : 'btn-outline-danger' ?> toggle-visibility">
                                         <?php if ($item['is_visible']): ?>
                                             <i class="bi bi-eye"></i>
                                         <?php else: ?>

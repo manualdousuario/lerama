@@ -134,16 +134,69 @@ class AdminController
 
     public function feeds(ServerRequestInterface $request): ResponseInterface
     {
-        $feeds = DB::query("
-            SELECT f.*, 
+        $params = $request->getQueryParams();
+        $page = isset($params['page']) ? max(1, (int)$params['page']) : 1;
+        $perPage = 50;
+        $offset = ($page - 1) * $perPage;
+        $status = $params['status'] ?? '';
+
+        $query = "
+            SELECT f.*,
                   (SELECT COUNT(*) FROM feed_items WHERE feed_id = f.id) as item_count,
                   (SELECT MAX(published_at) FROM feed_items WHERE feed_id = f.id) as latest_item_date
             FROM feeds f
-            ORDER BY f.title
-        ");
+        ";
+        $countQuery = "SELECT COUNT(*) FROM feeds f";
+        $queryParams = [];
+
+        if (!empty($status) && in_array($status, ['online', 'offline', 'paused', 'pending', 'rejected'])) {
+            $query .= " WHERE f.status = %s";
+            $countQuery .= " WHERE f.status = %s";
+            $queryParams[] = $status;
+        }
+
+        $query .= " ORDER BY f.title LIMIT %i, %i";
+        $finalQueryParams = [...$queryParams, $offset, $perPage];
+
+        $feeds = DB::query($query, ...$finalQueryParams);
+        $totalCount = DB::queryFirstField($countQuery, ...$queryParams);
+        $totalPages = ceil($totalCount / $perPage);
+
+        // Get categories and tags for each feed
+        foreach ($feeds as &$feed) {
+            $feed['categories'] = DB::query("
+                SELECT c.name
+                FROM categories c
+                JOIN feed_categories fc ON c.id = fc.category_id
+                WHERE fc.feed_id = %i
+                ORDER BY c.name
+            ", $feed['id']);
+            
+            $feed['tags'] = DB::query("
+                SELECT t.name
+                FROM tags t
+                JOIN feed_tags ft ON t.id = ft.tag_id
+                WHERE ft.feed_id = %i
+                ORDER BY t.name
+            ", $feed['id']);
+        }
+
+        // Get all categories and tags for bulk editing
+        $allCategories = DB::query("SELECT * FROM categories ORDER BY name");
+        $allTags = DB::query("SELECT * FROM tags ORDER BY name");
 
         $html = $this->templates->render('admin/feeds', [
             'feeds' => $feeds,
+            'allCategories' => $allCategories,
+            'allTags' => $allTags,
+            'currentStatus' => $status,
+            'pagination' => [
+                'current' => $page,
+                'total' => $totalPages,
+                'baseUrl' => '/admin/feeds?' . http_build_query(array_filter([
+                    'status' => $status
+                ]))
+            ],
             'title' => 'Gerenciar Feeds'
         ]);
 
@@ -152,6 +205,9 @@ class AdminController
 
     public function newFeedForm(ServerRequestInterface $request): ResponseInterface
     {
+        $allCategories = DB::query("SELECT * FROM categories ORDER BY name");
+        $allTags = DB::query("SELECT * FROM tags ORDER BY name");
+
         if ($request->getMethod() === 'POST') {
             $params = (array)$request->getParsedBody();
             $title = $params['title'] ?? '';
@@ -159,6 +215,8 @@ class AdminController
             $siteUrl = $params['site_url'] ?? '';
             $language = $params['language'] ?? 'en';
             $feedType = $params['feed_type'] ?? '';
+            $categoryIds = $params['categories'] ?? [];
+            $tagIds = $params['tags'] ?? [];
 
             $errors = [];
             if (empty($title)) {
@@ -177,8 +235,6 @@ class AdminController
 
             if (!in_array($language, ['en', 'pt-BR', 'es'])) {
                 $errors['language'] = 'Idioma selecionado inválido';
-            } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
-                $errors['site_url'] = 'A URL do site deve ser uma URL válida';
             }
 
             if (empty($errors)) {
@@ -194,7 +250,7 @@ class AdminController
                         }
                     }
 
-                    DB::insert('feeds', [
+                    $feedId = DB::insert('feeds', [
                         'title' => $title,
                         'feed_url' => $feedUrl,
                         'site_url' => $siteUrl,
@@ -202,6 +258,26 @@ class AdminController
                         'language' => $language,
                         'status' => 'online'
                     ]);
+
+                    // Insert categories
+                    if (!empty($categoryIds)) {
+                        foreach ($categoryIds as $categoryId) {
+                            DB::insert('feed_categories', [
+                                'feed_id' => $feedId,
+                                'category_id' => (int)$categoryId
+                            ]);
+                        }
+                    }
+
+                    // Insert tags
+                    if (!empty($tagIds)) {
+                        foreach ($tagIds as $tagId) {
+                            DB::insert('feed_tags', [
+                                'feed_id' => $feedId,
+                                'tag_id' => (int)$tagId
+                            ]);
+                        }
+                    }
 
                     return new RedirectResponse('/admin/feeds');
                 } catch (\Exception $e) {
@@ -219,6 +295,10 @@ class AdminController
                     'feed_type' => $feedType,
                     'language' => $language
                 ],
+                'selectedCategories' => $categoryIds,
+                'selectedTags' => $tagIds,
+                'allCategories' => $allCategories,
+                'allTags' => $allTags,
                 'errors' => $errors
             ]);
 
@@ -229,6 +309,10 @@ class AdminController
             'title' => 'Adicionar Novo Feed',
             'isEdit' => false,
             'feed' => null,
+            'selectedCategories' => [],
+            'selectedTags' => [],
+            'allCategories' => $allCategories,
+            'allTags' => $allTags,
             'errors' => []
         ]);
 
@@ -244,6 +328,14 @@ class AdminController
             return new RedirectResponse('/admin/feeds');
         }
 
+        $allCategories = DB::query("SELECT * FROM categories ORDER BY name");
+        $allTags = DB::query("SELECT * FROM tags ORDER BY name");
+        $selectedCategories = DB::query("SELECT category_id FROM feed_categories WHERE feed_id = %i", $id);
+        $selectedTags = DB::query("SELECT tag_id FROM feed_tags WHERE feed_id = %i", $id);
+        
+        $selectedCategoryIds = array_column($selectedCategories, 'category_id');
+        $selectedTagIds = array_column($selectedTags, 'tag_id');
+
         if ($request->getMethod() === 'POST') {
             $params = (array)$request->getParsedBody();
             $title = $params['title'] ?? '';
@@ -252,6 +344,8 @@ class AdminController
             $feedType = $params['feed_type'] ?? '';
             $language = $params['language'] ?? $feed['language'];
             $status = $params['status'] ?? $feed['status'];
+            $categoryIds = $params['categories'] ?? [];
+            $tagIds = $params['tags'] ?? [];
 
             $errors = [];
             if (empty($title)) {
@@ -270,8 +364,6 @@ class AdminController
 
             if (!in_array($language, ['en', 'pt-BR', 'es'])) {
                 $errors['language'] = 'Idioma selecionado inválido';
-            } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
-                $errors['site_url'] = 'A URL do site deve ser uma URL válida';
             }
 
             if (empty($errors)) {
@@ -289,6 +381,28 @@ class AdminController
                     }
 
                     DB::update('feeds', $updateData, 'id=%i', $id);
+
+                    // Update categories
+                    DB::delete('feed_categories', 'feed_id=%i', $id);
+                    if (!empty($categoryIds)) {
+                        foreach ($categoryIds as $categoryId) {
+                            DB::insert('feed_categories', [
+                                'feed_id' => $id,
+                                'category_id' => (int)$categoryId
+                            ]);
+                        }
+                    }
+
+                    // Update tags
+                    DB::delete('feed_tags', 'feed_id=%i', $id);
+                    if (!empty($tagIds)) {
+                        foreach ($tagIds as $tagId) {
+                            DB::insert('feed_tags', [
+                                'feed_id' => $id,
+                                'tag_id' => (int)$tagId
+                            ]);
+                        }
+                    }
 
                     return new RedirectResponse('/admin/feeds');
                 } catch (\Exception $e) {
@@ -308,6 +422,10 @@ class AdminController
                     'language' => $language,
                     'status' => $status
                 ],
+                'selectedCategories' => $categoryIds,
+                'selectedTags' => $tagIds,
+                'allCategories' => $allCategories,
+                'allTags' => $allTags,
                 'errors' => $errors
             ]);
 
@@ -318,6 +436,10 @@ class AdminController
             'title' => 'Editar Feed',
             'isEdit' => true,
             'feed' => $feed,
+            'selectedCategories' => $selectedCategoryIds,
+            'selectedTags' => $selectedTagIds,
+            'allCategories' => $allCategories,
+            'allTags' => $allTags,
             'errors' => []
         ]);
 
@@ -441,9 +563,9 @@ class AdminController
         }
 
         if (isset($params['status'])) {
-            $validStatuses = ['online', 'offline', 'paused'];
+            $validStatuses = ['online', 'offline', 'paused', 'pending', 'rejected'];
             if (!in_array($params['status'], $validStatuses)) {
-                $errors['status'] = 'Status inválido. Valores permitidos: online, offline, paused';
+                $errors['status'] = 'Status inválido. Valores permitidos: online, offline, paused, pending, rejected';
             } else {
                 $updateData['status'] = $params['status'];
             }
@@ -548,5 +670,652 @@ class AdminController
             'success' => false,
             'message' => 'Nenhum campo para atualizar'
         ], 400);
+    }
+
+    // Categories Management
+    public function categories(ServerRequestInterface $request): ResponseInterface
+    {
+        $categories = DB::query("
+            SELECT c.*,
+                   (SELECT COUNT(*) FROM feed_categories WHERE category_id = c.id) as feed_count
+            FROM categories c
+            ORDER BY c.name
+        ");
+
+        $html = $this->templates->render('admin/categories', [
+            'categories' => $categories,
+            'title' => 'Gerenciar Categorias'
+        ]);
+
+        return new HtmlResponse($html);
+    }
+
+    public function newCategoryForm(ServerRequestInterface $request): ResponseInterface
+    {
+        if ($request->getMethod() === 'POST') {
+            $params = (array)$request->getParsedBody();
+            $name = trim($params['name'] ?? '');
+            $slug = trim($params['slug'] ?? '');
+
+            $errors = [];
+            if (empty($name)) {
+                $errors['name'] = 'O nome é obrigatório';
+            }
+            
+            if (empty($slug)) {
+                $slug = $this->generateSlug($name);
+            }
+
+            // Check if slug already exists
+            $existing = DB::queryFirstRow("SELECT id FROM categories WHERE slug = %s", $slug);
+            if ($existing) {
+                $errors['slug'] = 'Este slug já existe';
+            }
+
+            if (empty($errors)) {
+                try {
+                    DB::insert('categories', [
+                        'name' => $name,
+                        'slug' => $slug
+                    ]);
+
+                    return new RedirectResponse('/admin/categories');
+                } catch (\Exception $e) {
+                    $errors['general'] = 'Erro ao criar categoria: ' . $e->getMessage();
+                }
+            }
+
+            $html = $this->templates->render('admin/category-form', [
+                'title' => 'Nova Categoria',
+                'isEdit' => false,
+                'category' => [
+                    'name' => $name,
+                    'slug' => $slug
+                ],
+                'errors' => $errors
+            ]);
+
+            return new HtmlResponse($html);
+        }
+
+        $html = $this->templates->render('admin/category-form', [
+            'title' => 'Nova Categoria',
+            'isEdit' => false,
+            'category' => null,
+            'errors' => []
+        ]);
+
+        return new HtmlResponse($html);
+    }
+
+    public function editCategoryForm(ServerRequestInterface $request, array $args): ResponseInterface
+    {
+        $id = (int)$args['id'];
+
+        $category = DB::queryFirstRow("SELECT * FROM categories WHERE id = %i", $id);
+        if (!$category) {
+            return new RedirectResponse('/admin/categories');
+        }
+
+        if ($request->getMethod() === 'POST') {
+            $params = (array)$request->getParsedBody();
+            $name = trim($params['name'] ?? '');
+            $slug = trim($params['slug'] ?? '');
+
+            $errors = [];
+            if (empty($name)) {
+                $errors['name'] = 'O nome é obrigatório';
+            }
+
+            if (empty($slug)) {
+                $slug = $this->generateSlug($name);
+            }
+
+            // Check if slug already exists (excluding current category)
+            $existing = DB::queryFirstRow("SELECT id FROM categories WHERE slug = %s AND id != %i", $slug, $id);
+            if ($existing) {
+                $errors['slug'] = 'Este slug já existe';
+            }
+
+            if (empty($errors)) {
+                try {
+                    DB::update('categories', [
+                        'name' => $name,
+                        'slug' => $slug
+                    ], 'id=%i', $id);
+
+                    return new RedirectResponse('/admin/categories');
+                } catch (\Exception $e) {
+                    $errors['general'] = 'Erro ao atualizar categoria: ' . $e->getMessage();
+                }
+            }
+
+            $html = $this->templates->render('admin/category-form', [
+                'title' => 'Editar Categoria',
+                'isEdit' => true,
+                'category' => [
+                    'id' => $id,
+                    'name' => $name,
+                    'slug' => $slug
+                ],
+                'errors' => $errors
+            ]);
+
+            return new HtmlResponse($html);
+        }
+
+        $html = $this->templates->render('admin/category-form', [
+            'title' => 'Editar Categoria',
+            'isEdit' => true,
+            'category' => $category,
+            'errors' => []
+        ]);
+
+        return new HtmlResponse($html);
+    }
+
+    public function createCategory(ServerRequestInterface $request): ResponseInterface
+    {
+        $params = (array)$request->getParsedBody();
+        $name = trim($params['name'] ?? '');
+        $slug = trim($params['slug'] ?? '');
+
+        $errors = [];
+        if (empty($name)) {
+            $errors['name'] = 'O nome é obrigatório';
+        }
+        
+        if (empty($slug)) {
+            $slug = $this->generateSlug($name);
+        }
+
+        // Check if slug already exists
+        $existing = DB::queryFirstRow("SELECT id FROM categories WHERE slug = %s", $slug);
+        if ($existing) {
+            $errors['slug'] = 'Este slug já existe';
+        }
+
+        if (!empty($errors)) {
+            return new JsonResponse([
+                'success' => false,
+                'errors' => $errors
+            ], 400);
+        }
+
+        try {
+            DB::insert('categories', [
+                'name' => $name,
+                'slug' => $slug
+            ]);
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Categoria criada com sucesso'
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erro ao criar categoria: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateCategory(ServerRequestInterface $request, array $args): ResponseInterface
+    {
+        $id = (int)$args['id'];
+        $params = json_decode($request->getBody()->getContents(), true) ?: (array)$request->getParsedBody();
+
+        $category = DB::queryFirstRow("SELECT * FROM categories WHERE id = %i", $id);
+        if (!$category) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Categoria não encontrada'
+            ], 404);
+        }
+
+        $updateData = [];
+        if (isset($params['name'])) {
+            $updateData['name'] = trim($params['name']);
+        }
+        if (isset($params['slug'])) {
+            $slug = trim($params['slug']);
+            $existing = DB::queryFirstRow("SELECT id FROM categories WHERE slug = %s AND id != %i", $slug, $id);
+            if ($existing) {
+                return new JsonResponse([
+                    'success' => false,
+                    'errors' => ['slug' => 'Este slug já existe']
+                ], 400);
+            }
+            $updateData['slug'] = $slug;
+        }
+
+        if (empty($updateData)) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Nenhum campo para atualizar'
+            ], 400);
+        }
+
+        try {
+            DB::update('categories', $updateData, 'id=%i', $id);
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Categoria atualizada com sucesso'
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erro ao atualizar categoria: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function deleteCategory(ServerRequestInterface $request, array $args): ResponseInterface
+    {
+        $id = (int)$args['id'];
+
+        $category = DB::queryFirstRow("SELECT * FROM categories WHERE id = %i", $id);
+        if (!$category) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Categoria não encontrada'
+            ], 404);
+        }
+
+        try {
+            DB::delete('categories', 'id=%i', $id);
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Categoria excluída com sucesso'
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erro ao excluir categoria: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Tags Management
+    public function tags(ServerRequestInterface $request): ResponseInterface
+    {
+        $tags = DB::query("
+            SELECT t.*,
+                   (SELECT COUNT(*) FROM feed_tags WHERE tag_id = t.id) as feed_count
+            FROM tags t
+            ORDER BY t.name
+        ");
+
+        $html = $this->templates->render('admin/tags', [
+            'tags' => $tags,
+            'title' => 'Gerenciar Tags'
+        ]);
+
+        return new HtmlResponse($html);
+    }
+
+    public function newTagForm(ServerRequestInterface $request): ResponseInterface
+    {
+        if ($request->getMethod() === 'POST') {
+            $params = (array)$request->getParsedBody();
+            $name = trim($params['name'] ?? '');
+            $slug = trim($params['slug'] ?? '');
+
+            $errors = [];
+            if (empty($name)) {
+                $errors['name'] = 'O nome é obrigatório';
+            }
+            
+            if (empty($slug)) {
+                $slug = $this->generateSlug($name);
+            }
+
+            // Check if slug already exists
+            $existing = DB::queryFirstRow("SELECT id FROM tags WHERE slug = %s", $slug);
+            if ($existing) {
+                $errors['slug'] = 'Este slug já existe';
+            }
+
+            if (empty($errors)) {
+                try {
+                    DB::insert('tags', [
+                        'name' => $name,
+                        'slug' => $slug
+                    ]);
+
+                    return new RedirectResponse('/admin/tags');
+                } catch (\Exception $e) {
+                    $errors['general'] = 'Erro ao criar tag: ' . $e->getMessage();
+                }
+            }
+
+            $html = $this->templates->render('admin/tag-form', [
+                'title' => 'Nova Tag',
+                'isEdit' => false,
+                'tag' => [
+                    'name' => $name,
+                    'slug' => $slug
+                ],
+                'errors' => $errors
+            ]);
+
+            return new HtmlResponse($html);
+        }
+
+        $html = $this->templates->render('admin/tag-form', [
+            'title' => 'Nova Tag',
+            'isEdit' => false,
+            'tag' => null,
+            'errors' => []
+        ]);
+
+        return new HtmlResponse($html);
+    }
+
+    public function editTagForm(ServerRequestInterface $request, array $args): ResponseInterface
+    {
+        $id = (int)$args['id'];
+
+        $tag = DB::queryFirstRow("SELECT * FROM tags WHERE id = %i", $id);
+        if (!$tag) {
+            return new RedirectResponse('/admin/tags');
+        }
+
+        if ($request->getMethod() === 'POST') {
+            $params = (array)$request->getParsedBody();
+            $name = trim($params['name'] ?? '');
+            $slug = trim($params['slug'] ?? '');
+
+            $errors = [];
+            if (empty($name)) {
+                $errors['name'] = 'O nome é obrigatório';
+            }
+
+            if (empty($slug)) {
+                $slug = $this->generateSlug($name);
+            }
+
+            // Check if slug already exists (excluding current tag)
+            $existing = DB::queryFirstRow("SELECT id FROM tags WHERE slug = %s AND id != %i", $slug, $id);
+            if ($existing) {
+                $errors['slug'] = 'Este slug já existe';
+            }
+
+            if (empty($errors)) {
+                try {
+                    DB::update('tags', [
+                        'name' => $name,
+                        'slug' => $slug
+                    ], 'id=%i', $id);
+
+                    return new RedirectResponse('/admin/tags');
+                } catch (\Exception $e) {
+                    $errors['general'] = 'Erro ao atualizar tag: ' . $e->getMessage();
+                }
+            }
+
+            $html = $this->templates->render('admin/tag-form', [
+                'title' => 'Editar Tag',
+                'isEdit' => true,
+                'tag' => [
+                    'id' => $id,
+                    'name' => $name,
+                    'slug' => $slug
+                ],
+                'errors' => $errors
+            ]);
+
+            return new HtmlResponse($html);
+        }
+
+        $html = $this->templates->render('admin/tag-form', [
+            'title' => 'Editar Tag',
+            'isEdit' => true,
+            'tag' => $tag,
+            'errors' => []
+        ]);
+
+        return new HtmlResponse($html);
+    }
+
+    public function createTag(ServerRequestInterface $request): ResponseInterface
+    {
+        $params = (array)$request->getParsedBody();
+        $name = trim($params['name'] ?? '');
+        $slug = trim($params['slug'] ?? '');
+
+        $errors = [];
+        if (empty($name)) {
+            $errors['name'] = 'O nome é obrigatório';
+        }
+        
+        if (empty($slug)) {
+            $slug = $this->generateSlug($name);
+        }
+
+        // Check if slug already exists
+        $existing = DB::queryFirstRow("SELECT id FROM tags WHERE slug = %s", $slug);
+        if ($existing) {
+            $errors['slug'] = 'Este slug já existe';
+        }
+
+        if (!empty($errors)) {
+            return new JsonResponse([
+                'success' => false,
+                'errors' => $errors
+            ], 400);
+        }
+
+        try {
+            DB::insert('tags', [
+                'name' => $name,
+                'slug' => $slug
+            ]);
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Tag criada com sucesso'
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erro ao criar tag: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateTag(ServerRequestInterface $request, array $args): ResponseInterface
+    {
+        $id = (int)$args['id'];
+        $params = json_decode($request->getBody()->getContents(), true) ?: (array)$request->getParsedBody();
+
+        $tag = DB::queryFirstRow("SELECT * FROM tags WHERE id = %i", $id);
+        if (!$tag) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Tag não encontrada'
+            ], 404);
+        }
+
+        $updateData = [];
+        if (isset($params['name'])) {
+            $updateData['name'] = trim($params['name']);
+        }
+        if (isset($params['slug'])) {
+            $slug = trim($params['slug']);
+            $existing = DB::queryFirstRow("SELECT id FROM tags WHERE slug = %s AND id != %i", $slug, $id);
+            if ($existing) {
+                return new JsonResponse([
+                    'success' => false,
+                    'errors' => ['slug' => 'Este slug já existe']
+                ], 400);
+            }
+            $updateData['slug'] = $slug;
+        }
+
+        if (empty($updateData)) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Nenhum campo para atualizar'
+            ], 400);
+        }
+
+        try {
+            DB::update('tags', $updateData, 'id=%i', $id);
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Tag atualizada com sucesso'
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erro ao atualizar tag: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function deleteTag(ServerRequestInterface $request, array $args): ResponseInterface
+    {
+        $id = (int)$args['id'];
+
+        $tag = DB::queryFirstRow("SELECT * FROM tags WHERE id = %i", $id);
+        if (!$tag) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Tag não encontrada'
+            ], 404);
+        }
+
+        try {
+            DB::delete('tags', 'id=%i', $id);
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Tag excluída com sucesso'
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erro ao excluir tag: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function bulkUpdateFeedCategories(ServerRequestInterface $request): ResponseInterface
+    {
+        $params = json_decode($request->getBody()->getContents(), true) ?: (array)$request->getParsedBody();
+        
+        $feedIds = $params['feed_ids'] ?? [];
+        $categoryIds = $params['category_ids'] ?? [];
+        
+        if (empty($feedIds) || !is_array($feedIds)) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Nenhum feed selecionado'
+            ], 400);
+        }
+        
+        if (empty($categoryIds) || !is_array($categoryIds)) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Nenhuma categoria selecionada'
+            ], 400);
+        }
+        
+        try {
+            // Remove existing categories for selected feeds
+            foreach ($feedIds as $feedId) {
+                DB::delete('feed_categories', 'feed_id=%i', (int)$feedId);
+            }
+            
+            // Add new categories
+            foreach ($feedIds as $feedId) {
+                foreach ($categoryIds as $categoryId) {
+                    DB::insert('feed_categories', [
+                        'feed_id' => (int)$feedId,
+                        'category_id' => (int)$categoryId
+                    ]);
+                }
+            }
+            
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Categorias atualizadas com sucesso para ' . count($feedIds) . ' feed(s)'
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erro ao atualizar categorias: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function bulkUpdateFeedTags(ServerRequestInterface $request): ResponseInterface
+    {
+        $params = json_decode($request->getBody()->getContents(), true) ?: (array)$request->getParsedBody();
+        
+        $feedIds = $params['feed_ids'] ?? [];
+        $tagIds = $params['tag_ids'] ?? [];
+        
+        if (empty($feedIds) || !is_array($feedIds)) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Nenhum feed selecionado'
+            ], 400);
+        }
+        
+        if (empty($tagIds) || !is_array($tagIds)) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Nenhuma tag selecionada'
+            ], 400);
+        }
+        
+        try {
+            // Remove existing tags for selected feeds
+            foreach ($feedIds as $feedId) {
+                DB::delete('feed_tags', 'feed_id=%i', (int)$feedId);
+            }
+            
+            // Add new tags
+            foreach ($feedIds as $feedId) {
+                foreach ($tagIds as $tagId) {
+                    DB::insert('feed_tags', [
+                        'feed_id' => (int)$feedId,
+                        'tag_id' => (int)$tagId
+                    ]);
+                }
+            }
+            
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Tags atualizadas com sucesso para ' . count($feedIds) . ' feed(s)'
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erro ao atualizar tags: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Helper function to generate slug
+    private function generateSlug(string $text): string
+    {
+        $text = mb_strtolower($text, 'UTF-8');
+        
+        // Replace special characters
+        $text = str_replace(
+            ['á', 'à', 'ã', 'â', 'é', 'ê', 'í', 'ó', 'ô', 'õ', 'ú', 'ü', 'ç'],
+            ['a', 'a', 'a', 'a', 'e', 'e', 'i', 'o', 'o', 'o', 'u', 'u', 'c'],
+            $text
+        );
+        
+        // Remove non-alphanumeric characters
+        $text = preg_replace('/[^a-z0-9]+/', '-', $text);
+        
+        // Remove leading/trailing hyphens
+        $text = trim($text, '-');
+        
+        return $text;
     }
 }

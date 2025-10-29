@@ -17,26 +17,47 @@
                         <div class="col-12 col-md-2">
                             <input type="checkbox" id="simplified-view" /> <label for="simplified-view">Simplificado</label>
                         </div>
-                        <div class="col-12 col-md-5">
-                            <select name="feed" class="form-select w-100">
-                                <option value="">
-                                    <i class="bi bi-collection me-1"></i>
-                                    Feeds
-                                </option>
-                                <?php foreach ($feeds as $feed): ?>
-                                    <option value="<?= $feed['id'] ?>" <?= $selectedFeed == $feed['id'] ? 'selected' : '' ?>>
-                                        <?= $this->e($feed['title']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-5">
-                            <div class="input-group w-100">
-                                <input type="text" name="search" value="<?= $this->e($search) ?>" class="form-control" placeholder="...">
-                                <button type="submit" class="btn btn-primary d-flex align-items-center">
-                                    <i class="bi bi-search me-1"></i>
-                                    Pesquisar
-                                </button>
+                        <div class="col-12 col-md-10">
+                            <div class="row g-2">
+                                <div class="col-12 col-md-3">
+                                    <select name="feed" class="form-select">
+                                        <option value="">Todos os Feeds</option>
+                                        <?php foreach ($feeds as $feed): ?>
+                                            <option value="<?= $feed['id'] ?>" <?= $selectedFeed == $feed['id'] ? 'selected' : '' ?>>
+                                                <?= $this->e($feed['title']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <select name="category" class="form-select">
+                                        <option value="">Todas Categorias</option>
+                                        <?php foreach ($categories as $category): ?>
+                                            <option value="<?= $this->e($category['slug']) ?>" <?= ($selectedCategory ?? '') == $category['slug'] ? 'selected' : '' ?>>
+                                                <?= $this->e($category['name']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-2">
+                                    <select name="tag" class="form-select">
+                                        <option value="">Todas Tags</option>
+                                        <?php foreach ($tags as $tag): ?>
+                                            <option value="<?= $this->e($tag['slug']) ?>" <?= ($selectedTag ?? '') == $tag['slug'] ? 'selected' : '' ?>>
+                                                <?= $this->e($tag['name']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <div class="input-group">
+                                        <input type="text" name="search" value="<?= $this->e($search) ?>" class="form-control" placeholder="Pesquisar...">
+                                        <button type="submit" class="btn btn-primary d-flex align-items-center">
+                                            <i class="bi bi-search me-1"></i>
+                                            Buscar
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -105,9 +126,19 @@
                 <div class="d-flex justify-content-center align-items-center w-100">
                     <nav aria-label="Pagination">
                         <ul class="pagination pagination-sm mb-0">
+                            <?php
+                            $queryParams = array_filter([
+                                'search' => $search,
+                                'feed' => $selectedFeed,
+                                'category' => $selectedCategory ?? null,
+                                'tag' => $selectedTag ?? null
+                            ]);
+                            $queryString = !empty($queryParams) ? '?' . http_build_query($queryParams) : '';
+                            ?>
+                            
                             <?php if ($pagination['current'] > 1): ?>
                                 <li class="page-item">
-                                    <a href="<?= $pagination['baseUrl'] . ($pagination['current'] - 1) . ($search || $selectedFeed ? '?' : '') . http_build_query(array_filter(['search' => $search, 'feed' => $selectedFeed])) ?>" class="page-link" aria-label="Previous">
+                                    <a href="<?= $pagination['baseUrl'] . ($pagination['current'] - 1) . $queryString ?>" class="page-link" aria-label="Previous">
                                         <span aria-hidden="true">&laquo;</span>
                                     </a>
                                 </li>
@@ -118,7 +149,7 @@
                             $end = min($pagination['total'], $pagination['current'] + 2);
 
                             if ($start > 1) {
-                                echo '<li class="page-item"><a href="' . $pagination['baseUrl'] . '1' . ($search || $selectedFeed ? '?' : '') . http_build_query(array_filter(['search' => $search, 'feed' => $selectedFeed])) . '" class="page-link">1</a></li>';
+                                echo '<li class="page-item"><a href="' . $pagination['baseUrl'] . '1' . $queryString . '" class="page-link">1</a></li>';
                                 if ($start > 2) {
                                     echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
                                 }
@@ -128,7 +159,7 @@
                                 if ($i == $pagination['current']) {
                                     echo '<li class="page-item active"><span class="page-link">' . $i . '</span></li>';
                                 } else {
-                                    echo '<li class="page-item"><a href="' . $pagination['baseUrl'] . $i . ($search || $selectedFeed ? '?' : '') . http_build_query(array_filter(['search' => $search, 'feed' => $selectedFeed])) . '" class="page-link">' . $i . '</a></li>';
+                                    echo '<li class="page-item"><a href="' . $pagination['baseUrl'] . $i . $queryString . '" class="page-link">' . $i . '</a></li>';
                                 }
                             }
 
@@ -136,13 +167,13 @@
                                 if ($end < $pagination['total'] - 1) {
                                     echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
                                 }
-                                echo '<li class="page-item"><a href="' . $pagination['baseUrl'] . $pagination['total'] . ($search || $selectedFeed ? '?' : '') . http_build_query(array_filter(['search' => $search, 'feed' => $selectedFeed])) . '" class="page-link">' . $pagination['total'] . '</a></li>';
+                                echo '<li class="page-item"><a href="' . $pagination['baseUrl'] . $pagination['total'] . $queryString . '" class="page-link">' . $pagination['total'] . '</a></li>';
                             }
                             ?>
 
                             <?php if ($pagination['current'] < $pagination['total']): ?>
                                 <li class="page-item">
-                                    <a href="<?= $pagination['baseUrl'] . ($pagination['current'] + 1) . ($search || $selectedFeed ? '?' : '') . http_build_query(array_filter(['search' => $search, 'feed' => $selectedFeed])) ?>" class="page-link" aria-label="Next">
+                                    <a href="<?= $pagination['baseUrl'] . ($pagination['current'] + 1) . $queryString ?>" class="page-link" aria-label="Next">
                                         <span aria-hidden="true">&raquo;</span>
                                     </a>
                                 </li>

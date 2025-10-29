@@ -34,11 +34,19 @@
                     <?php if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true): ?>
                         <a href="/admin" class="d-inline-flex align-items-center py-2 me-3 pl-0 pl-md-2 text-decoration-none <?= $this->section('active') === 'admin' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
                             <i class="bi bi-file-earmark-lock-fill me-1"></i>
-                            Feeds
+                            Artigos
                         </a>
                         <a href="/admin/feeds" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'admin-feeds' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
                             <i class="bi bi-grid me-1"></i>
-                            Gerenciar Feeds
+                            Feeds
+                        </a>
+                        <a href="/admin/categories" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'admin-categories' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
+                            <i class="bi bi-folder me-1"></i>
+                            Categorias
+                        </a>
+                        <a href="/admin/tags" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'admin-tags' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
+                            <i class="bi bi-tags me-1"></i>
+                            Tags
                         </a>
                         <a href="/admin/logout" class="d-inline-flex align-items-center px-2 py-2 me-3 text-secondary text-decoration-none hover-text-white">
                             <i class="bi bi-box-arrow-right me-1"></i>
@@ -53,12 +61,10 @@
                             <i class="bi bi-journal-text me-1"></i>
                             Feeds
                         </a>
-                        <?php if (isset($_ENV['ADD_BLOG_LINK']) && !empty($_ENV['ADD_BLOG_LINK'])) : ?>
-                            <a href="<?= $_ENV['ADD_BLOG_LINK'] ?>" target="_blank" class="d-inline-flex align-items-center pe-1 py-2 me-3 text-decoration-none text-secondary hover-text-white">
-                                <i class="bi bi-plus-circle me-1"></i>
-                                Sugerir Blog
-                            </a>
-                        <?php endif; ?>
+                        <a href="/suggest-feed" class="d-inline-flex align-items-center pe-1 py-2 me-3 text-decoration-none <?= $this->section('active') === 'suggest-feed' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
+                            <i class="bi bi-plus-circle me-1"></i>
+                            Sugerir
+                        </a>
                     <?php endif; ?>
                 </nav>
             </div>
@@ -76,6 +82,9 @@
             </div>
         </div>
     </nav>
+    
+    <?php if (file_exists(__DIR__ . '/partner.php')) include __DIR__ . '/partner.php'; ?>
+    
     <main>
         <div class="container py-4">
             <?= $this->section('content') ?>

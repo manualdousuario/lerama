@@ -21,19 +21,95 @@ class FeedController
         $this->templates = new Engine(__DIR__ . '/../../templates');
     }
 
-    public function index(ServerRequestInterface $request): ResponseInterface
+    public function index(ServerRequestInterface $request, array $args = []): ResponseInterface
     {
+        $page = isset($args['page']) ? (int)$args['page'] : 1;
+        if ($page < 1) {
+            $page = 1;
+        }
 
-        $feeds = DB::query("
-            SELECT f.*,
+        $perPage = 50;
+        $offset = ($page - 1) * $perPage;
+
+        $params = $request->getQueryParams();
+        $categorySlug = $params['category'] ?? null;
+        $tagSlug = $params['tag'] ?? null;
+
+        $query = "SELECT f.*,
                   (SELECT COUNT(*) FROM feed_items WHERE feed_id = f.id) as item_count,
                   (SELECT MAX(published_at) FROM feed_items WHERE feed_id = f.id) as latest_item_date
             FROM feeds f
-            ORDER BY f.title
-        ");
+            WHERE 1=1";
+        $countQuery = "SELECT COUNT(*) FROM feeds f WHERE 1=1";
+        $queryParams = [];
+
+        if ($categorySlug) {
+            $query .= " AND EXISTS (
+                SELECT 1 FROM feed_categories fc
+                JOIN categories c ON fc.category_id = c.id
+                WHERE fc.feed_id = f.id AND c.slug = %s
+            )";
+            $countQuery .= " AND EXISTS (
+                SELECT 1 FROM feed_categories fc
+                JOIN categories c ON fc.category_id = c.id
+                WHERE fc.feed_id = f.id AND c.slug = %s
+            )";
+            $queryParams[] = $categorySlug;
+        }
+
+        if ($tagSlug) {
+            $query .= " AND EXISTS (
+                SELECT 1 FROM feed_tags ft
+                JOIN tags t ON ft.tag_id = t.id
+                WHERE ft.feed_id = f.id AND t.slug = %s
+            )";
+            $countQuery .= " AND EXISTS (
+                SELECT 1 FROM feed_tags ft
+                JOIN tags t ON ft.tag_id = t.id
+                WHERE ft.feed_id = f.id AND t.slug = %s
+            )";
+            $queryParams[] = $tagSlug;
+        }
+
+        $totalCount = DB::queryFirstField($countQuery, ...$queryParams);
+        $totalPages = ceil($totalCount / $perPage);
+
+        $query .= " ORDER BY f.title LIMIT %i, %i";
+        $finalQueryParams = [...$queryParams, $offset, $perPage];
+
+        $feeds = DB::query($query, ...$finalQueryParams);
+
+        // Get categories and tags for each feed
+        foreach ($feeds as &$feed) {
+            $feed['categories'] = DB::query("
+                SELECT c.* FROM categories c
+                JOIN feed_categories fc ON c.id = fc.category_id
+                WHERE fc.feed_id = %i
+                ORDER BY c.name
+            ", $feed['id']);
+
+            $feed['tags'] = DB::query("
+                SELECT t.* FROM tags t
+                JOIN feed_tags ft ON t.id = ft.tag_id
+                WHERE ft.feed_id = %i
+                ORDER BY t.name
+            ", $feed['id']);
+        }
+
+        $categories = DB::query("SELECT * FROM categories ORDER BY name");
+        $tags = DB::query("SELECT * FROM tags ORDER BY name");
 
         $html = $this->templates->render('feeds', [
             'feeds' => $feeds,
+            'categories' => $categories,
+            'tags' => $tags,
+            'selectedCategory' => $categorySlug,
+            'selectedTag' => $tagSlug,
+            'pagination' => [
+                'current' => $page,
+                'total' => $totalPages,
+                'baseUrl' => '/feeds/page/'
+            ],
             'title' => 'Feeds'
         ]);
 
@@ -46,8 +122,36 @@ class FeedController
         $page = isset($params['page']) ? max(1, (int)$params['page']) : 1;
         $perPage = isset($params['per_page']) ? min(100, max(1, (int)$params['per_page'])) : 20;
         $offset = ($page - 1) * $perPage;
+        $categorySlug = $params['category'] ?? null;
+        $tagSlug = $params['tag'] ?? null;
 
-        $totalCount = DB::queryFirstField("SELECT COUNT(*) FROM feed_items WHERE is_visible = 1");
+        $whereConditions = ["fi.is_visible = 1"];
+        $queryParams = [];
+
+        if ($categorySlug) {
+            $whereConditions[] = "EXISTS (
+                SELECT 1 FROM feed_categories fc
+                JOIN categories c ON fc.category_id = c.id
+                WHERE fc.feed_id = f.id AND c.slug = %s
+            )";
+            $queryParams[] = $categorySlug;
+        }
+
+        if ($tagSlug) {
+            $whereConditions[] = "EXISTS (
+                SELECT 1 FROM feed_tags ft
+                JOIN tags t ON ft.tag_id = t.id
+                WHERE ft.feed_id = f.id AND t.slug = %s
+            )";
+            $queryParams[] = $tagSlug;
+        }
+
+        $whereClause = implode(' AND ', $whereConditions);
+
+        $totalCount = DB::queryFirstField(
+            "SELECT COUNT(*) FROM feed_items fi JOIN feeds f ON fi.feed_id = f.id WHERE " . $whereClause,
+            ...$queryParams
+        );
         $totalPages = ceil($totalCount / $perPage);
 
         $items = DB::query("
@@ -55,10 +159,10 @@ class FeedController
                    f.title as feed_title, f.site_url as feed_site_url
             FROM feed_items fi
             JOIN feeds f ON fi.feed_id = f.id
-            WHERE fi.is_visible = 1
+            WHERE " . $whereClause . "
             ORDER BY fi.published_at DESC
             LIMIT %i, %i
-        ", $offset, $perPage);
+        ", ...array_merge($queryParams, [$offset, $perPage]));
 
         $formattedItems = [];
         foreach ($items as $item) {
@@ -99,16 +203,41 @@ class FeedController
         $page = isset($params['page']) ? max(1, (int)$params['page']) : 1;
         $perPage = isset($params['per_page']) ? min(100, max(1, (int)$params['per_page'])) : 20;
         $offset = ($page - 1) * $perPage;
+        $categorySlug = $params['category'] ?? null;
+        $tagSlug = $params['tag'] ?? null;
+
+        $whereConditions = ["fi.is_visible = 1"];
+        $queryParams = [];
+
+        if ($categorySlug) {
+            $whereConditions[] = "EXISTS (
+                SELECT 1 FROM feed_categories fc
+                JOIN categories c ON fc.category_id = c.id
+                WHERE fc.feed_id = f.id AND c.slug = %s
+            )";
+            $queryParams[] = $categorySlug;
+        }
+
+        if ($tagSlug) {
+            $whereConditions[] = "EXISTS (
+                SELECT 1 FROM feed_tags ft
+                JOIN tags t ON ft.tag_id = t.id
+                WHERE ft.feed_id = f.id AND t.slug = %s
+            )";
+            $queryParams[] = $tagSlug;
+        }
+
+        $whereClause = implode(' AND ', $whereConditions);
 
         $items = DB::query("
             SELECT fi.id, fi.title, fi.author, fi.content, fi.url, fi.image_url, fi.published_at,
                    f.title as feed_title, f.site_url as feed_site_url
             FROM feed_items fi
             JOIN feeds f ON fi.feed_id = f.id
-            WHERE fi.is_visible = 1
+            WHERE " . $whereClause . "
             ORDER BY fi.published_at DESC
             LIMIT %i, %i
-        ", $offset, $perPage);
+        ", ...array_merge($queryParams, [$offset, $perPage]));
 
         $xml = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"></rss>');
 

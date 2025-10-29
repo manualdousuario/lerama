@@ -13,7 +13,6 @@ services:
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: admin
       ADMIN_EMAIL: 
-      ADD_BLOG_LINK: https:// # optional
       PROXY_LIST: # optional
       SMTP_HOST: smtp.resend.com
       SMTP_PORT: 587

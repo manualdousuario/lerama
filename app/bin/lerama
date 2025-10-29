@@ -33,8 +33,21 @@ if (empty($command)) {
 
 switch ($command) {
     case 'feed:process':
-        // Process all feeds
-        $processor->process(null);
+        $parallel = 1;
+        
+        // Check for --parallel or -p flag
+        for ($i = 2; $i < count($argv); $i++) {
+            if (in_array($argv[$i], ['--parallel', '-p']) && isset($argv[$i + 1])) {
+                $parallel = max(1, min(10, (int)$argv[$i + 1]));
+                break;
+            }
+        }
+        
+        if ($parallel > 1) {
+            $climate->info("Processing feeds with {$parallel} parallel workers");
+        }
+        
+        $processor->process(null, $parallel);
         break;
 
     case 'feed:id':
@@ -46,7 +59,7 @@ switch ($command) {
             exit(1);
         }
 
-        $processor->process((int)$feedId);
+        $processor->process((int)$feedId, 1);
         break;
         
     case 'feed:check-status':
@@ -66,6 +79,26 @@ switch ($command) {
         }
         break;
 
+    case 'db:migrate':
+        // Update database to latest version
+        $climate->info("Updating database to latest version...");
+        $checkDbScript = __DIR__ . '/../../setup/install.php';
+        
+        if (!file_exists($checkDbScript)) {
+            $climate->error("Database migration script not found: {$checkDbScript}");
+            exit(1);
+        }
+        
+        // Execute the install.php script
+        ob_start();
+        require $checkDbScript;
+        $output = ob_get_clean();
+        
+        // Display the output
+        $climate->out($output);
+        $climate->green("Database migration completed successfully");
+        break;
+
     default:
         $climate->error("Unknown command: {$command}");
         showUsage($climate);
@@ -75,8 +108,15 @@ switch ($command) {
 function showUsage(CLImate $climate): void
 {
     $climate->out("Usage:");
-    $climate->out("  php bin/lerama feed:process         Process all feeds");
-    $climate->out("  php bin/lerama feed:id {ID_DO_FEED} Process a specific feed by ID");
-    $climate->out("  php bin/lerama feed:check-status    Check and update status of paused feeds");
-    $climate->out("  php bin/lerama proxy:update         Update proxy list from PROXY_LIST URL");
+    $climate->out("  php bin/lerama feed:process [--parallel|-p N]  Process all feeds (optionally with N parallel workers, max 10)");
+    $climate->out("  php bin/lerama feed:id {ID_DO_FEED}            Process a specific feed by ID");
+    $climate->out("  php bin/lerama feed:check-status               Check and update status of paused feeds");
+    $climate->out("  php bin/lerama proxy:update                    Update proxy list from PROXY_LIST URL");
+    $climate->out("  php bin/lerama db:migrate                      Update database to latest version");
+    $climate->out("");
+    $climate->out("Examples:");
+    $climate->out("  php bin/lerama feed:process                    Process all feeds sequentially");
+    $climate->out("  php bin/lerama feed:process --parallel 5       Process feeds with 5 parallel workers");
+    $climate->out("  php bin/lerama feed:process -p 3               Process feeds with 3 parallel workers");
+    $climate->out("  php bin/lerama db:migrate                      Update database schema and apply migrations");
 }

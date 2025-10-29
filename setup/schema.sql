@@ -11,17 +11,19 @@ CREATE TABLE `feeds` (
     `last_post_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
     `last_checked` datetime NULL DEFAULT NULL,
     `last_updated` datetime NULL DEFAULT NULL,
-    `status` enum('online','offline','paused') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'online',
+    `status` enum('online','offline','paused','pending','rejected') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'online',
     `created_at` datetime NULL DEFAULT current_timestamp(),
     `updated_at` datetime NULL DEFAULT current_timestamp() ON UPDATE CURRENT_TIMESTAMP,
     `language` varchar(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
     PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `feed_url`(`feed_url`(255)) USING,
+    UNIQUE INDEX `feed_url`(`feed_url`(255)) USING BTREE,
     INDEX `idx_feed_status`(`status`) USING BTREE,
     INDEX `idx_feed_type`(`feed_type`) USING BTREE,
     INDEX `idx_last_checked`(`last_checked`) USING BTREE,
     INDEX `idx_last_updated`(`last_updated`) USING BTREE,
-    INDEX `idx_status_checked`(`status`, `last_checked`) USING BTREE
+    INDEX `idx_status_checked`(`status`, `last_checked`) USING BTREE,
+    INDEX `idx_language`(`language`) USING BTREE,
+    INDEX `idx_title`(`title`(100)) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 DROP TABLE IF EXISTS `feed_items`;
@@ -45,6 +47,8 @@ CREATE TABLE `feed_items` (
     INDEX `idx_is_visible`(`is_visible`) USING BTREE,
     INDEX `idx_feed_published`(`feed_id`, `published_at`) USING BTREE,
     INDEX `idx_feed_visible`(`feed_id`, `is_visible`) USING BTREE,
+    INDEX `idx_visible_published`(`is_visible`, `published_at`) USING BTREE,
+    INDEX `idx_feed_visible_published`(`feed_id`, `is_visible`, `published_at`) USING BTREE,
     CONSTRAINT `feed_items_ibfk_1` FOREIGN KEY (`feed_id`) REFERENCES `feeds` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 

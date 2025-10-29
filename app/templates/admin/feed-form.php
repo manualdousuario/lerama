@@ -120,6 +120,50 @@
                     <?php endif; ?>
                 </div>
 
+                <div class="mb-3">
+                    <label for="categories" class="form-label">
+                        Categorias
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-folder"></i>
+                        </span>
+                        <select name="categories[]" id="categories" class="form-select" multiple size="5">
+                            <?php if (isset($allCategories) && !empty($allCategories)): ?>
+                                <?php foreach ($allCategories as $category): ?>
+                                    <option value="<?= $category['id'] ?>"
+                                            <?= in_array($category['id'], $selectedCategories ?? []) ? 'selected' : '' ?>>
+                                        <?= $this->e($category['name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <div class="form-text text-secondary">Mantenha Ctrl/Cmd pressionado para selecionar múltiplas categorias</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="tags" class="form-label">
+                        Tags
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-tags"></i>
+                        </span>
+                        <select name="tags[]" id="tags" class="form-select" multiple size="5">
+                            <?php if (isset($allTags) && !empty($allTags)): ?>
+                                <?php foreach ($allTags as $tag): ?>
+                                    <option value="<?= $tag['id'] ?>"
+                                            <?= in_array($tag['id'], $selectedTags ?? []) ? 'selected' : '' ?>>
+                                        <?= $this->e($tag['name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <div class="form-text text-secondary">Mantenha Ctrl/Cmd pressionado para selecionar múltiplas tags</div>
+                </div>
+
                 <?php if ($isEdit): ?>
                     <div class="mb-3">
                         <label for="status" class="form-label">
@@ -133,6 +177,8 @@
                                 <option value="online" <?= $feed['status'] === 'online' ? 'selected' : '' ?>>Online</option>
                                 <option value="offline" <?= $feed['status'] === 'offline' ? 'selected' : '' ?>>Offline</option>
                                 <option value="paused" <?= $feed['status'] === 'paused' ? 'selected' : '' ?>>Pausado</option>
+                                <option value="pending" <?= $feed['status'] === 'pending' ? 'selected' : '' ?>>Pendente</option>
+                                <option value="rejected" <?= $feed['status'] === 'rejected' ? 'selected' : '' ?>>Rejeitado</option>
                             </select>
                         </div>
                     </div>

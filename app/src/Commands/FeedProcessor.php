@@ -55,7 +55,7 @@ class FeedProcessor
         $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
     }
 
-    public function process(?int $feedId = null): void
+    public function process(?int $feedId = null, int $parallel = 1): void
     {
         if ($feedId) {
             $this->climate->info("Processing feed ID: {$feedId}");
@@ -70,59 +70,99 @@ class FeedProcessor
             return;
         }
 
+        $totalFeeds = count($feeds);
+        $this->climate->info("Total feeds to process: {$totalFeeds}");
+
+        if ($parallel > 1 && $totalFeeds > 1) {
+            $this->climate->info("Using parallel processing with {$parallel} workers");
+            $this->processParallel($feeds, $parallel);
+        } else {
+            $this->climate->info("Using sequential processing");
+            $this->processSequential($feeds);
+        }
+    }
+
+    private function processSequential(array $feeds): void
+    {
         foreach ($feeds as $feed) {
-            $this->climate->out("Processando: {$feed['title']} ({$feed['feed_url']})");
+            $this->processSingleFeed($feed);
+        }
+    }
+
+    private function processParallel(array $feeds, int $maxWorkers): void
+    {
+        $batches = array_chunk($feeds, max(1, ceil(count($feeds) / $maxWorkers)));
+        $this->climate->info("Processing " . count($feeds) . " feeds in " . count($batches) . " batches");
+
+        foreach ($batches as $batchIndex => $batch) {
+            $this->climate->info("Processing batch " . ($batchIndex + 1) . " of " . count($batches) . " (" . count($batch) . " feeds)");
             
-            $useProxy = ($feed['retry_proxy'] ?? 0) == 1;
-            
-            if ($useProxy) {
-                $this->setupProxyClient();
-                $this->climate->info("Using proxy for feed: {$feed['title']}");
-            } else {
-                $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
+            // Process each feed in the batch sequentially (simulated parallelism)
+            // For true parallelism, you'd need pcntl or parallel extensions
+            foreach ($batch as $feed) {
+                $this->processSingleFeed($feed);
             }
             
-            try {
-                $this->processFeed($feed);
-                
+            // Small delay between batches to avoid overwhelming the system
+            if ($batchIndex < count($batches) - 1) {
+                usleep(100000); // 100ms delay between batches
+            }
+        }
+    }
+
+    private function processSingleFeed(array $feed): void
+    {
+        $this->climate->out("Processando: {$feed['title']} ({$feed['feed_url']})");
+        
+        $useProxy = ($feed['retry_proxy'] ?? 0) == 1;
+        
+        if ($useProxy) {
+            $this->setupProxyClient();
+            $this->climate->info("Using proxy for feed: {$feed['title']}");
+        } else {
+            $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
+        }
+        
+        try {
+            $this->processFeed($feed);
+            
+            DB::update('feeds', [
+                'last_checked' => DB::sqleval("NOW()"),
+                'status' => 'online',
+                'retry_count' => 0,
+                'retry_proxy' => 0,
+                'paused_at' => null
+            ], 'id=%i', $feed['id']);
+            
+            $this->climate->green("✓ Feed processed successfully: {$feed['title']}");
+        } catch (\Exception $e) {
+            $this->climate->red("✗ Error processing feed {$feed['title']}: {$e->getMessage()}");
+            
+            $retryCount = ($feed['retry_count'] ?? 0) + 1;
+            $this->climate->info("Attempt {$retryCount} for feed: {$feed['title']}");
+            
+            if ($retryCount > 10) {
+                $this->climate->yellow("Feed {$feed['title']} marked as paused after {$retryCount} attempts");
+                DB::update('feeds', [
+                    'last_checked' => DB::sqleval("NOW()"),
+                    'status' => 'paused',
+                    'retry_count' => $retryCount,
+                    'paused_at' => DB::sqleval("NOW()")
+                ], 'id=%i', $feed['id']);
+            } else if ($retryCount > 3) {
+                $this->climate->yellow("Feed {$feed['title']} will use proxy in next attempts");
                 DB::update('feeds', [
                     'last_checked' => DB::sqleval("NOW()"),
                     'status' => 'online',
-                    'retry_count' => 0,
-                    'retry_proxy' => 0,
-                    'paused_at' => null
+                    'retry_count' => $retryCount,
+                    'retry_proxy' => 1
                 ], 'id=%i', $feed['id']);
-                
-                $this->climate->green("✓ Feed processed successfully: {$feed['title']}");
-            } catch (\Exception $e) {
-                $this->climate->red("✗ Error processing feed {$feed['title']}: {$e->getMessage()}");
-                
-                $retryCount = ($feed['retry_count'] ?? 0) + 1;
-                $this->climate->info("Attempt {$retryCount} for feed: {$feed['title']}");
-                
-                if ($retryCount > 10) {
-                    $this->climate->yellow("Feed {$feed['title']} marked as paused after {$retryCount} attempts");
-                    DB::update('feeds', [
-                        'last_checked' => DB::sqleval("NOW()"),
-                        'status' => 'paused',
-                        'retry_count' => $retryCount,
-                        'paused_at' => DB::sqleval("NOW()")
-                    ], 'id=%i', $feed['id']);
-                } else if ($retryCount > 3) {
-                    $this->climate->yellow("Feed {$feed['title']} will use proxy in next attempts");
-                    DB::update('feeds', [
-                        'last_checked' => DB::sqleval("NOW()"),
-                        'status' => 'online',
-                        'retry_count' => $retryCount,
-                        'retry_proxy' => 1
-                    ], 'id=%i', $feed['id']);
-                } else {
-                    DB::update('feeds', [
-                        'last_checked' => DB::sqleval("NOW()"),
-                        'status' => 'online',
-                        'retry_count' => $retryCount
-                    ], 'id=%i', $feed['id']);
-                }
+            } else {
+                DB::update('feeds', [
+                    'last_checked' => DB::sqleval("NOW()"),
+                    'status' => 'online',
+                    'retry_count' => $retryCount
+                ], 'id=%i', $feed['id']);
             }
         }
     }
