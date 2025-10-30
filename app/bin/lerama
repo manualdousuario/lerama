@@ -7,6 +7,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use League\CLImate\CLImate;
 use Lerama\Commands\FeedProcessor;
+use Lerama\Commands\FeedImporter;
 use Lerama\Services\ProxyService;
 use Lerama\Services\EmailService;
 
@@ -99,6 +100,20 @@ switch ($command) {
         $climate->green("Database migration completed successfully");
         break;
 
+    case 'feed:import':
+        // Import feeds from CSV
+        $csvPath = $argv[2] ?? null;
+        
+        if (empty($csvPath)) {
+            $climate->error("CSV file path is required");
+            $climate->out("Usage: php bin/lerama feed:import <path/to/file.csv>");
+            exit(1);
+        }
+        
+        $importer = new FeedImporter($climate);
+        $importer->import($csvPath);
+        break;
+
     default:
         $climate->error("Unknown command: {$command}");
         showUsage($climate);
@@ -111,6 +126,7 @@ function showUsage(CLImate $climate): void
     $climate->out("  php bin/lerama feed:process [--parallel|-p N]  Process all feeds (optionally with N parallel workers, max 10)");
     $climate->out("  php bin/lerama feed:id {ID_DO_FEED}            Process a specific feed by ID");
     $climate->out("  php bin/lerama feed:check-status               Check and update status of paused feeds");
+    $climate->out("  php bin/lerama feed:import <CSV_FILE>          Import feeds from CSV file (columns: url, tags, category)");
     $climate->out("  php bin/lerama proxy:update                    Update proxy list from PROXY_LIST URL");
     $climate->out("  php bin/lerama db:migrate                      Update database to latest version");
     $climate->out("");
@@ -118,5 +134,6 @@ function showUsage(CLImate $climate): void
     $climate->out("  php bin/lerama feed:process                    Process all feeds sequentially");
     $climate->out("  php bin/lerama feed:process --parallel 5       Process feeds with 5 parallel workers");
     $climate->out("  php bin/lerama feed:process -p 3               Process feeds with 3 parallel workers");
+    $climate->out("  php bin/lerama feed:import feeds.csv           Import feeds from CSV file");
     $climate->out("  php bin/lerama db:migrate                      Update database schema and apply migrations");
 }
