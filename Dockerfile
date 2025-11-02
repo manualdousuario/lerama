@@ -21,11 +21,11 @@ COPY crontab /etc/cron.d/lerama-cron
 RUN chmod 0644 /etc/cron.d/lerama-cron
 
 # Copy setup script
-COPY /autorun/10-env /startup/10-env+
+COPY /startup/10-env /startup/10-env
 RUN chmod +x /startup/10-env
 
 # Copy migration script
-COPY /autorun/20-migration /startup/20-migration
+COPY /startup/20-migration /startup/20-migration
 RUN chmod +x /startup/20-migration
 
 # Set permissions
