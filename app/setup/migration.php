@@ -137,14 +137,14 @@ try {
     
     echo "Connected to database successfully" . PHP_EOL;
 
-    // Check if base tables exist, if not run schema.sql
+    // Check if base tables exist, if not run migration-initial.sql
     $feedsTableExists = tableExists($conn, 'feeds');
     $feedItemsTableExists = tableExists($conn, 'feed_items');
     
     if (!$feedsTableExists || !$feedItemsTableExists) {
-        echo "Database tables do not exist. Running schema.sql..." . PHP_EOL;
+        echo "Database tables do not exist. Running migration-initial.sql..." . PHP_EOL;
 
-        $schemaFile = __DIR__ . '/schema.sql';
+        $schemaFile = __DIR__ . '/migration-initial.sql';
         if (!file_exists($schemaFile)) {
             throw new Exception("Schema file not found: {$schemaFile}");
         }
