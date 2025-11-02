@@ -1,5 +1,7 @@
 <?php $this->layout('layout', ['title' => $title]) ?>
 
+<?php $this->start('active') ?>suggest-feed<?php $this->stop() ?>
+
 <div class="card shadow-sm">
     <div class="card-header">
         <h3 class="fs-5 fw-medium mb-0 mt-1">
