@@ -20,11 +20,13 @@ RUN composer config platform.php-64bit 8.3 && \
 COPY crontab /etc/cron.d/lerama-cron
 RUN chmod 0644 /etc/cron.d/lerama-cron
 
-# Copy setup script
+# Copy startup scripts
+COPY /startup/05-storage /startup/05-storage
+RUN chmod +x /startup/05-storage
+
 COPY /startup/10-env /startup/10-env
 RUN chmod +x /startup/10-env
 
-# Copy migration script
 COPY /startup/20-migration /startup/20-migration
 RUN chmod +x /startup/20-migration
 

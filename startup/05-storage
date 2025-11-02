@@ -1,0 +1,25 @@
+#!/bin/bash
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+log_success() {
+    echo -e "${GREEN}[✓] $1${NC}"
+}
+
+log_info() {
+    echo -e "${YELLOW}[i] $1${NC}"
+}
+
+log_info "Setting up storage directories..."
+
+# Create thumbnails directory
+mkdir -p /app/public/storage/thumbnails
+chown -R www-data:www-data /app/public/storage
+chmod -R 755 /app/public/storage
+
+log_success "Storage directories configured successfully"

@@ -18,7 +18,7 @@ class ThumbnailService
         $this->client = new Client();
         
         if (!is_dir($this->thumbnailDir)) {
-            mkdir($this->thumbnailDir, 0755, true);
+            @mkdir($this->thumbnailDir, 0755, true);
         }
     }
 
