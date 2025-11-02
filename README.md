@@ -40,7 +40,7 @@ Configure pelo menos:
 docker-compose up -d
 ```
 
-4. Acesse: `http://localhost:8077`
+4. Acesse: `http://localhost:80`
 
 ## 🎯 CLI
 

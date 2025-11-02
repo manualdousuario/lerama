@@ -105,7 +105,7 @@ function executeSqlFile($conn, $filePath, $migrationName = null) {
 }
 
 try {
-    $envFile = '../app/.env';
+    $envFile = '/app/.env';
     $env = parseEnvFile($envFile);
     
     if (empty($env)) {

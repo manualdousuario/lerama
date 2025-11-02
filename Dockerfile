@@ -1,54 +1,36 @@
-FROM php:8.3-fpm AS base
+FROM shinsenter/php:8.3-fpm-nginx
 
-RUN apt-get update && apt-get install -y \
-    nginx \
-    nano \
-    procps \
-    psmisc \
-    git \
-    htop \
-    nano \
-    cron \
-    openssl \
-    libonig-dev \
-    libxml2-dev \
-    libssl-dev \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libgmp-dev \
-    libzip-dev \
-    && docker-php-ext-configure gd --with-jpeg --with-freetype \
-    && docker-php-ext-install mysqli pdo_mysql sockets gd zip gmp bcmath \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-FROM base AS builder
-
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-COPY app/ /app/
-
-WORKDIR /app
-
-RUN composer config platform.php-64bit 8.3
-RUN composer install --no-interaction --optimize-autoloader
-
-FROM base
-
-COPY --from=builder /usr/local/bin/composer /usr/local/bin/composer
-COPY --from=builder /app /app
-
-COPY default.conf /etc/nginx/sites-available/default
-COPY setup/ /setup/
-
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-RUN chown -R www-data:www-data /app \
-    && chmod -R 755 /app
-
+# Default application envs
+ENV ENABLE_CRONTAB=1
+ENV APP_PATH=/app
+ENV DOCUMENT_ROOT=public
 ENV TZ=UTC
 
-EXPOSE 8077
+# Copy application files
+COPY app/ ${APP_PATH}/
+WORKDIR ${APP_PATH}
 
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+# Install composer dependencies
+RUN composer config platform.php-64bit 8.3 && \
+    composer install --no-interaction --optimize-autoloader --no-dev
+
+# Create autorun scripts
+COPY setup/ /setup/
+RUN mkdir -p /startup && \
+    ln -sf /setup/start.php /startup/20-migrations.php
+
+# Copy cron jobs configuration
+COPY crontab /etc/cron.d/lerama-cron
+RUN chmod 0644 /etc/cron.d/lerama-cron
+
+# Copy setup script
+COPY docker-entrypoint.sh /startup/10-setup-env.sh
+RUN chmod +x /startup/10-setup-env.sh
+
+# Set permissions
+RUN chown -R www-data:www-data ${APP_PATH} && \
+    chmod -R 755 ${APP_PATH} && \
+    mkdir -p ${APP_PATH}/${DOCUMENT_ROOT}/storage/thumbnails && \
+    chown -R www-data:www-data ${APP_PATH}/${DOCUMENT_ROOT}/storage
+
+EXPOSE 80

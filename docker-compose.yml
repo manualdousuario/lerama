@@ -22,7 +22,7 @@ services:
       SMTP_FROM_EMAIL: lerama@lerama.lab
       SMTP_FROM_NAME: Lerama
     ports:
-      - 8077:8077
+      - 80:80
     volumes:
       - ./lerama/storage:/app/public/storage
     restart: unless-stopped
