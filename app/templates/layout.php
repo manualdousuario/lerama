@@ -99,11 +99,11 @@
                 <a href="https://github.com/manualdousuario/lerama" target="_blank" class="btn btn-sm btn-outline-secondary mx-1" title="GitHub">
                     <i class="bi bi-github"></i> GitHub
                 </a>
-                <a href="/categories">
+                <a href="/categories"class="btn btn-sm btn-outline-secondary mx-1" title="Categorias">
                     <i class="bi bi-folder me-1"></i>
                     Categorias
                 </a>
-                <a href="/tags">
+                <a href="/tags"class="btn btn-sm btn-outline-secondary mx-1" title="Tópicos">
                     <i class="bi bi-tags me-1"></i>
                     Tópicos
                 </a>
