@@ -7,6 +7,7 @@ namespace Lerama\Services;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
+use Lerama\Config\HttpClientConfig;
 use DB;
 
 class FeedTypeDetector
@@ -15,27 +16,7 @@ class FeedTypeDetector
 
     public function __construct()
     {
-        $this->httpClient = new \GuzzleHttp\Client([
-            'timeout' => 15,
-            'connect_timeout' => 10,
-            'http_errors' => false,
-            'allow_redirects' => [
-                'max' => 5,
-                'strict' => false,
-                'referer' => true,
-                'protocols' => ['http', 'https'],
-                'track_redirects' => false
-            ],
-            'headers' => [
-                'User-Agent' => 'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/W.X.Y.Z Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language' => 'en-US,en;q=0.5',
-                'Accept-Encoding' => 'gzip, deflate',
-                'Cache-Control' => 'no-cache'
-            ],
-            'verify' => true,
-            'decode_content' => 'gzip'
-        ]);
+        $this->httpClient = new \GuzzleHttp\Client(HttpClientConfig::getDefaultConfig());
     }
 
     public function detectType(string $url, ?int $feedId = null): ?string
@@ -43,14 +24,14 @@ class FeedTypeDetector
         try {
             $response = $this->httpClient->get($url);
             $statusCode = $response->getStatusCode();
-            
+
             if ($statusCode !== 200) {
                 if ($feedId) {
                     $this->pauseFeedWithError($feedId, "HTTP error: Status code {$statusCode}");
                 }
                 return null;
             }
-            
+
             $content = (string) $response->getBody();
             if (empty($content)) {
                 if ($feedId) {

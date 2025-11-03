@@ -7,6 +7,7 @@ namespace Lerama\Commands;
 use League\CLImate\CLImate;
 use DB;
 use Lerama\Services\FeedTypeDetector;
+use Lerama\Config\HttpClientConfig;
 use GuzzleHttp\Client;
 
 class FeedImporter
@@ -19,27 +20,7 @@ class FeedImporter
     {
         $this->climate = $climate;
         $this->feedDetector = new FeedTypeDetector();
-        $this->httpClient = new Client([
-            'timeout' => 15,
-            'connect_timeout' => 10,
-            'http_errors' => false,
-            'allow_redirects' => [
-                'max' => 5,
-                'strict' => false,
-                'referer' => true,
-                'protocols' => ['http', 'https'],
-                'track_redirects' => false
-            ],
-            'headers' => [
-                'User-Agent' => 'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/W.X.Y.Z Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language' => 'en-US,en;q=0.5',
-                'Accept-Encoding' => 'gzip, deflate',
-                'Cache-Control' => 'no-cache'
-            ],
-            'verify' => true,
-            'decode_content' => 'gzip'
-        ]);
+        $this->httpClient = new Client(HttpClientConfig::getDefaultConfig());
     }
 
     public function import(string $csvPath): void
