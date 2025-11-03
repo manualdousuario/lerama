@@ -59,7 +59,7 @@ class FeedImporter
         }
 
         // Read header
-        $header = fgetcsv($handle, 0, ',', '"', '');
+        $header = fgetcsv($handle, 0, ';', '"', '');
         if (!$header || !in_array('url', $header)) {
             $this->climate->error("CSV must have at least 'url' column");
             fclose($handle);
@@ -67,15 +67,21 @@ class FeedImporter
         }
 
         // Get column indexes
+        $nameIndex = array_search('name', $header);
         $urlIndex = array_search('url', $header);
         $tagsIndex = array_search('tags', $header);
         $categoryIndex = array_search('category', $header);
+        
+        // Also support 'tag' as alternative to 'tags'
+        if ($tagsIndex === false) {
+            $tagsIndex = array_search('tag', $header);
+        }
 
         $results = [];
-        $lineNumber = 1;
+        $lineNumber = 0;
 
         // Process each line
-        while (($row = fgetcsv($handle, 0, ',', '"', '')) !== false) {
+        while (($row = fgetcsv($handle, 0, ';', '"', '')) !== false) {
             $lineNumber++;
             
             if (empty($row[$urlIndex])) {
@@ -90,12 +96,13 @@ class FeedImporter
             }
 
             $url = trim($row[$urlIndex]);
+            $name = $nameIndex !== false && !empty($row[$nameIndex]) ? trim($row[$nameIndex]) : '';
             $tags = $tagsIndex !== false && !empty($row[$tagsIndex]) ? trim($row[$tagsIndex]) : '';
             $category = $categoryIndex !== false && !empty($row[$categoryIndex]) ? trim($row[$categoryIndex]) : '';
 
             $this->climate->out("Line {$lineNumber}: Processing {$url}");
 
-            $result = $this->importFeed($url, $tags, $category);
+            $result = $this->importFeed($url, $name, $tags, $category);
             $results[] = [
                 'line' => $lineNumber,
                 'url' => $url,
@@ -124,7 +131,7 @@ class FeedImporter
         $this->climate->red("Errors: {$errorCount}");
     }
 
-    private function importFeed(string $url, string $tags, string $category): array
+    private function importFeed(string $url, string $name, string $tags, string $category): array
     {
         try {
             // 1. Discover feed URL
@@ -158,8 +165,8 @@ class FeedImporter
                 ];
             }
 
-            // 4. Get feed title
-            $feedTitle = $this->getFeedTitle($feedUrl, $feedType);
+            // 4. Use provided name or get feed title
+            $feedTitle = !empty($name) ? $name : $this->getFeedTitle($feedUrl, $feedType);
 
             // 5. Insert feed
             DB::insert('feeds', [
@@ -200,6 +207,18 @@ class FeedImporter
     private function discoverFeedUrl(string $url): ?string
     {
         try {
+            $url = trim($url);
+            
+            // Handle Substack URLs
+            if (stripos($url, 'substack.com') !== false) {
+                return rtrim($url, '/') . '/feed';
+            }
+
+            // Handle Buttondown URLs
+            if (stripos($url, 'buttondown') !== false) {
+                return rtrim($url, '/') . '/rss';
+            }
+
             // First, try the URL directly
             $feedType = $this->feedDetector->detectType($url);
             if ($feedType) {
@@ -412,7 +431,7 @@ class FeedImporter
         }
 
         // Write header
-        fputcsv($handle, ['line', 'url', 'status', 'message'], ',', '"', '');
+        fputcsv($handle, ['line', 'url', 'status', 'message'], ';', '"', '');
 
         // Write results
         foreach ($results as $result) {
@@ -421,7 +440,7 @@ class FeedImporter
                 $result['url'],
                 $result['status'],
                 $result['message']
-            ], ',', '"', '');
+            ], ';', '"', '');
         }
 
         fclose($handle);
