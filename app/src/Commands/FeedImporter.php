@@ -23,8 +23,25 @@ class FeedImporter
             'timeout' => 10,
             'connect_timeout' => 5,
             'http_errors' => false,
+            'allow_redirects' => [
+                'max' => 2,
+                'strict' => true,
+                'referer' => true,
+                'protocols' => ['http', 'https'],
+                'track_redirects' => true
+            ],
             'headers' => [
-                'User-Agent' => 'Mozilla/5.0 (compatible; Lerama Feed Importer/1.0)'
+                'User-Agent' => 'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/W.X.Y.Z Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language' => 'en-US,en;q=0.5',
+                'Cache-Control' => 'no-cache',
+                'Pragma' => 'no-cache',
+                'DNT' => '1',
+                'X-Forwarded-For' => '66.249.' . rand(64, 95) . '.' . rand(1, 254),
+                'From' => 'googlebot(at)googlebot.com'
+            ],
+            'curl' => [
+                CURLOPT_DNS_SERVERS => '8.8.8.8'
             ]
         ]);
     }
