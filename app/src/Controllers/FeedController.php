@@ -181,7 +181,6 @@ class FeedController
 
         $formattedItems = [];
         foreach ($items as $item) {
-            // Se o campo author estiver vazio, preencher com o nome do source
             $author = !empty($item['author'])
                 ? $item['author'] . ' em ' . $item['feed_title']
                 : $item['feed_title'];
