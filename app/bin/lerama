@@ -80,26 +80,6 @@ switch ($command) {
         }
         break;
 
-    case 'db:migrate':
-        // Update database to latest version
-        $climate->info("Updating database to latest version...");
-        $checkDbScript = __DIR__ . '/../../setup/install.php';
-        
-        if (!file_exists($checkDbScript)) {
-            $climate->error("Database migration script not found: {$checkDbScript}");
-            exit(1);
-        }
-        
-        // Execute the install.php script
-        ob_start();
-        require $checkDbScript;
-        $output = ob_get_clean();
-        
-        // Display the output
-        $climate->out($output);
-        $climate->green("Database migration completed successfully");
-        break;
-
     case 'feed:import':
         // Import feeds from CSV
         $csvPath = $argv[2] ?? null;
@@ -128,12 +108,10 @@ function showUsage(CLImate $climate): void
     $climate->out("  php bin/lerama feed:check-status               Check and update status of paused feeds");
     $climate->out("  php bin/lerama feed:import <CSV_FILE>          Import feeds from CSV file (columns: url, tags, category)");
     $climate->out("  php bin/lerama proxy:update                    Update proxy list from PROXY_LIST URL");
-    $climate->out("  php bin/lerama db:migrate                      Update database to latest version");
     $climate->out("");
     $climate->out("Examples:");
     $climate->out("  php bin/lerama feed:process                    Process all feeds sequentially");
     $climate->out("  php bin/lerama feed:process --parallel 5       Process feeds with 5 parallel workers");
     $climate->out("  php bin/lerama feed:process -p 3               Process feeds with 3 parallel workers");
     $climate->out("  php bin/lerama feed:import feeds.csv           Import feeds from CSV file");
-    $climate->out("  php bin/lerama db:migrate                      Update database schema and apply migrations");
 }
