@@ -49,12 +49,46 @@ function registerMigration($conn, $migrationName) {
 
 function executeSqlFile($conn, $filePath, $migrationName = null) {
     $sql = file_get_contents($filePath);
-    $queries = explode(';', $sql);
+    
+    $queries = [];
+    $currentQuery = '';
+    $inTrigger = false;
+    
+    $lines = explode("\n", $sql);
+    foreach ($lines as $line) {
+        $trimmedLine = trim($line);
+        
+        if (empty($trimmedLine) || strpos($trimmedLine, '--') === 0) {
+            continue;
+        }
+        
+        if (preg_match('/CREATE\s+(TRIGGER|PROCEDURE|FUNCTION)/i', $trimmedLine)) {
+            $inTrigger = true;
+        }
+        
+        $currentQuery .= $line . "\n";
+        
+        if ($inTrigger) {
+            if (preg_match('/END\s*;/i', $trimmedLine)) {
+                $queries[] = trim($currentQuery);
+                $currentQuery = '';
+                $inTrigger = false;
+            }
+        } else {
+            if (substr($trimmedLine, -1) === ';') {
+                $queries[] = trim($currentQuery);
+                $currentQuery = '';
+            }
+        }
+    }
+    
+    if (!empty(trim($currentQuery))) {
+        $queries[] = trim($currentQuery);
+    }
 
     try {
         $containsDDL = false;
         foreach ($queries as $query) {
-            $query = trim($query);
             if (!empty($query)) {
                 $upperQuery = strtoupper($query);
                 if (preg_match('/^\s*(ALTER|CREATE|DROP)\s+/i', $upperQuery)) {
@@ -69,12 +103,10 @@ function executeSqlFile($conn, $filePath, $migrationName = null) {
         }
         
         foreach ($queries as $index => $query) {
-            $query = trim($query);
             if (!empty($query)) {
                 try {
-                    $conn->exec($query . ';');
+                    $conn->exec($query);
                 } catch (PDOException $queryEx) {
-                    // Show which query failed for debugging
                     echo "Query #" . ($index + 1) . " failed: " . substr($query, 0, 100) . "..." . PHP_EOL;
                     throw $queryEx;
                 }
@@ -85,7 +117,6 @@ function executeSqlFile($conn, $filePath, $migrationName = null) {
             $conn->commit();
         }
         
-        // Register migration if name provided
         if ($migrationName !== null && tableExists($conn, 'migrations')) {
             registerMigration($conn, $migrationName);
         }
@@ -96,7 +127,7 @@ function executeSqlFile($conn, $filePath, $migrationName = null) {
             try {
                 $conn->rollBack();
             } catch (PDOException $rollbackEx) {
-                // Ignore rollback errors (e.g., if no active transaction)
+                // Ignore rollback errors
             }
         }
         echo "Error executing query: " . $e->getMessage() . PHP_EOL;
@@ -105,7 +136,7 @@ function executeSqlFile($conn, $filePath, $migrationName = null) {
 }
 
 try {
-    $envFile = '/app/.env';
+    $envFile = '../.env';
     $env = parseEnvFile($envFile);
     
     if (empty($env)) {
@@ -137,67 +168,53 @@ try {
     
     echo "Connected to database successfully" . PHP_EOL;
 
-    // Check if base tables exist, if not run migration-initial.sql
-    $feedsTableExists = tableExists($conn, 'feeds');
-    $feedItemsTableExists = tableExists($conn, 'feed_items');
+    $stmt = $conn->query("SHOW TABLES");
+    $tables = $stmt->fetchAll();
+    $hasAnyTables = count($tables) > 0;
     
-    if (!$feedsTableExists || !$feedItemsTableExists) {
-        echo "Database tables do not exist. Running migration-initial.sql..." . PHP_EOL;
-
-        $schemaFile = __DIR__ . '/migration-initial.sql';
-        if (!file_exists($schemaFile)) {
-            throw new Exception("Schema file not found: {$schemaFile}");
+    if (!$hasAnyTables) {
+        echo "No migrations registered. Running initial.sql..." . PHP_EOL;
+        
+        $initialFile = __DIR__ . '/initial.sql';
+        if (!file_exists($initialFile)) {
+            throw new Exception("Initial schema file not found: {$initialFile}");
         }
         
-        if (executeSqlFile($conn, $schemaFile)) {
-            echo "Schema executed successfully" . PHP_EOL;
+        if (executeSqlFile($conn, $initialFile)) {
+            echo "Initial schema executed successfully" . PHP_EOL;
         } else {
-            throw new Exception("Failed to execute schema");
+            throw new Exception("Failed to execute initial schema");
         }
     }
     
-    // Define migrations to run in order
-    $migrations = [
-        'migration-20250527.sql' => '2025-05-27',
-        'migration-20251029.sql' => '2025-10-29'
-    ];
-
-    echo "Registering previously applied migrations..." . PHP_EOL;
+    $migrationFiles = glob(__DIR__ . '/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].sql');
     
-    $stmt = $conn->query("SHOW COLUMNS FROM feeds LIKE 'retry_count'");
-    if ($stmt->rowCount() > 0) {
-        registerMigration($conn, '2025-05-27');
-        echo "Registered migration: 2025-05-27-retry-fields (already applied)" . PHP_EOL;
-    }
-    
-    if (tableExists($conn, 'categories') && tableExists($conn, 'tags') && tableExists($conn, 'migrations')) {
-        registerMigration($conn, '2025-10-29');
-        echo "Registered migration: 2025-10-29 (already applied)" . PHP_EOL;
-    }
-    
-    // Run pending migrations
-    foreach ($migrations as $file => $name) {
-        if (!migrationExists($conn, $name)) {
-            $migrationFile = __DIR__ . '/' . $file;
+    if (empty($migrationFiles)) {
+        echo "No migration files found" . PHP_EOL;
+    } else {
+        sort($migrationFiles);
+        
+        echo "Found " . count($migrationFiles) . " migration file(s)" . PHP_EOL;
+        
+        foreach ($migrationFiles as $filePath) {
+            $fileName = basename($filePath);
+            $migrationKey = pathinfo($fileName, PATHINFO_FILENAME);
             
-            if (!file_exists($migrationFile)) {
-                echo "Migration file not found: {$migrationFile}" . PHP_EOL;
-                continue;
-            }
-            
-            echo "Running migration: {$name}..." . PHP_EOL;
-            
-            if (executeSqlFile($conn, $migrationFile, $name)) {
-                echo "Migration {$name} executed successfully" . PHP_EOL;
+            if (!migrationExists($conn, $migrationKey)) {
+                echo "Running migration: {$migrationKey}..." . PHP_EOL;
+                
+                if (executeSqlFile($conn, $filePath, $migrationKey)) {
+                    echo "Migration {$migrationKey} executed successfully" . PHP_EOL;
+                } else {
+                    throw new Exception("Failed to execute migration: {$migrationKey}");
+                }
             } else {
-                throw new Exception("Failed to execute migration: {$name}");
+                echo "Migration {$migrationKey} already applied" . PHP_EOL;
             }
-        } else {
-            echo "Migration {$name} already applied" . PHP_EOL;
         }
     }
     
-    echo "Database check completed successfully" . PHP_EOL;
+    echo "Database migration completed successfully" . PHP_EOL;
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage() . PHP_EOL;
     exit(1);
