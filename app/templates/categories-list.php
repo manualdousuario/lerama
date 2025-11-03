@@ -20,14 +20,14 @@
                 <a href="/?category=<?= $this->e($category['slug']) ?>" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                     <div>
                         <h5 class="m-0 fs-6 d-flex justify-content-center align-items-center">
-                            <i class="bi bi-folder me-2 text-info"></i>
+                            <i class="bi bi-folder me-2"></i>
                             <span><?= $this->e($category['name']) ?></span>
                         </h5>
                         <?php if (!empty($category['description'])): ?>
                             <p class="mb-0 text-secondary small"><?= $this->e($category['description']) ?></p>
                         <?php endif; ?>
                     </div>
-                    <span class="badge bg-info text-dark rounded-pill">
+                    <span class="badge bg-secondary text-dark rounded-pill">
                         <?= $category['item_count'] ?> 
                         <?= $category['item_count'] == 1 ? 'artigo' : 'artigos' ?>
                     </span>

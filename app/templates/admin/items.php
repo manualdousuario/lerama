@@ -5,8 +5,8 @@
 <div class="card shadow-sm">
     <div class="card-header">
         <div class="row">
-            <div class="col-12 col-md-6">
-                <h3 class="fs-5 fw-medium mb-0 mt-1 mt-md-2">
+            <div class="col-12 col-md-6  d-flex align-items-center">
+                <h3 class="fs-5 fw-medium m-0">
                     <i class="bi bi-collection me-1"></i>
                     Gerenciar Artigos
                 </h3>

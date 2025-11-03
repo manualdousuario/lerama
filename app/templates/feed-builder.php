@@ -23,7 +23,7 @@
                                 <input class="form-check-input me-2 category-checkbox" type="checkbox" value="<?= $this->e($category['slug']) ?>" data-name="<?= $this->e($category['name']) ?>">
                                 <span><?= $this->e($category['name']) ?></span>
                             </div>
-                            <span class="badge bg-info text-dark rounded-pill"><?= $category['item_count'] ?></span>
+                            <span class="badge bg-secondary text-dark rounded-pill"><?= $category['item_count'] ?></span>
                         </label>
                     <?php endforeach; ?>
                 </div>

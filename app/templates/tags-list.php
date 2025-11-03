@@ -20,7 +20,7 @@
                 <a href="/?tag=<?= $this->e($tag['slug']) ?>" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                     <div>
                         <h5 class="m-0 fs-6 d-flex justify-content-center align-items-center">
-                            <i class="bi bi-tag me-2 text-secondary"></i>
+                            <i class="bi bi-tag me-2"></i>
                             <span><?= $this->e($tag['name']) ?></span>
                         </h5>
                         <?php if (!empty($tag['description'])): ?>

@@ -4,7 +4,7 @@
 
 <div class="card shadow-sm">
     <div class="card-header">
-        <h3 class="fs-5 fw-medium mb-0 mt-1">
+        <h3 class="fs-5 fw-medium mb-0">
             <?php if ($isEdit): ?>
                 <i class="bi bi-pencil me-1"></i>
                 Editar Feed

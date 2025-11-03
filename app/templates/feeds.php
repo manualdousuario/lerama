@@ -83,13 +83,7 @@
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center text-truncate">
                                     <i class="bi bi-clock-history me-1"></i>
-                                    Última Verificação
-                                </div>
-                            </th>
-                            <th scope="col" class="small text-uppercase">
-                                <div class="d-flex align-items-center text-truncate">
-                                    <i class="bi bi-arrow-repeat me-1"></i>
-                                    Última Atualização
+                                    Verificação/Atualização
                                 </div>
                             </th>
                             <th scope="col" class="small text-uppercase">
@@ -125,7 +119,7 @@
                                     <?php if (!empty($feed['categories'])): ?>
                                         <div class="d-flex flex-wrap gap-1">
                                             <?php foreach ($feed['categories'] as $category): ?>
-                                                <span class="badge bg-info text-dark">
+                                                <span class="badge bg-primary text-dark">
                                                     <?= $this->e($category['name']) ?>
                                                 </span>
                                             <?php endforeach; ?>
@@ -166,10 +160,12 @@
                                     <?php endif; ?>
                                 </td>
                                 <td class="align-middle small text-secondary">
-                                    <?= $feed['last_checked'] ? date('d/m/Y \à\s H:i', strtotime($feed['last_checked'])) : 'Nunca' ?>
-                                </td>
-                                <td class="align-middle small text-secondary">
-                                    <?= $feed['last_updated'] ? date('d/m/Y \à\s H:i', strtotime($feed['last_updated'])) : 'Nunca' ?>
+                                    <div>
+                                        <strong>Verif:</strong> <?= $feed['last_checked'] ? date('d/m/Y H:i', strtotime($feed['last_checked'])) : 'Nunca' ?>
+                                    </div>
+                                    <div>
+                                        <strong>Atual:</strong> <?= $feed['last_updated'] ? date('d/m/Y H:i', strtotime($feed['last_updated'])) : 'Nunca' ?>
+                                    </div>
                                 </td>
                                 <td class="align-middle small text-secondary">
                                     <?= $feed['item_count'] ?? 0 ?>
