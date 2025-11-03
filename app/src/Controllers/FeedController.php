@@ -184,11 +184,13 @@ class FeedController
             // Se o campo author estiver vazio, preencher com o nome do source
             $author = !empty($item['author']) ? $item['author'] : $item['feed_title'];
             
+            $contentWithLink = '<p>Leia no <a href="' . htmlspecialchars($item['url']) . '">' . htmlspecialchars($item['feed_title']) . '</a></p>' . $item['content'];
+            
             $formattedItems[] = [
                 'id' => $item['id'],
                 'title' => $item['title'],
                 'author' => $author,
-                'content' => $item['content'],
+                'content' => $contentWithLink,
                 'url' => $item['url'],
                 'image_url' => $item['image_url'],
                 'published_at' => $item['published_at'],
@@ -297,10 +299,12 @@ class FeedController
                 $enclosure->addAttribute('type', 'image/jpeg');
             }
 
+            $contentWithLink = '<p>Leia no <a href="' . htmlspecialchars($item['url']) . '">' . htmlspecialchars($item['feed_title']) . '</a></p>' . $item['content'];
+            
             $description = $xmlItem->addChild('description');
             $node = dom_import_simplexml($description);
             $owner = $node->ownerDocument;
-            $node->appendChild($owner->createCDATASection($item['content']));
+            $node->appendChild($owner->createCDATASection($contentWithLink));
 
             $source = $xmlItem->addChild('source', htmlspecialchars($item['feed_title']));
             $source->addAttribute('url', htmlspecialchars($item['feed_site_url']));
