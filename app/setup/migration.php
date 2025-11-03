@@ -136,7 +136,12 @@ function executeSqlFile($conn, $filePath, $migrationName = null) {
 }
 
 try {
+    // Check if ENV_SOURCE is provided as command-line argument
     $envFile = '../.env';
+    if (isset($argv[1]) && strpos($argv[1], 'ENV_SOURCE=') === 0) {
+        $envFile = substr($argv[1], strlen('ENV_SOURCE='));
+    }
+    
     $env = parseEnvFile($envFile);
     
     if (empty($env)) {

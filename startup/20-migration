@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Running database migrations..."
-php /app/setup/migration.php
+php /app/setup/migration.php ENV_SOURCE=/app/.env
 
 if [ $? -eq 0 ]; then
     echo "Database migrations completed successfully"
