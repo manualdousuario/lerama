@@ -182,7 +182,9 @@ class FeedController
         $formattedItems = [];
         foreach ($items as $item) {
             // Se o campo author estiver vazio, preencher com o nome do source
-            $author = !empty($item['author']) ? $item['author'] : $item['feed_title'];
+            $author = !empty($item['author'])
+                ? $item['author'] . ' em ' . $item['feed_title']
+                : $item['feed_title'];
             
             $contentWithLink = '<p>Leia no <a href="' . htmlspecialchars($item['url']) . '">' . htmlspecialchars($item['feed_title']) . '</a></p>' . $item['content'];
             
@@ -286,7 +288,9 @@ class FeedController
             $xmlItem->addChild('title', htmlspecialchars($item['title']));
 
             // Se o campo author estiver vazio, preencher com o nome do source
-            $author = !empty($item['author']) ? $item['author'] : $item['feed_title'];
+            $author = !empty($item['author'])
+                ? $item['author'] . ' em ' . $item['feed_title']
+                : $item['feed_title'];
             $xmlItem->addChild('author', htmlspecialchars($author));
 
             $xmlItem->addChild('link', htmlspecialchars($item['url']));
