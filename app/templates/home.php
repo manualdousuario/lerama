@@ -19,7 +19,7 @@
                         </div>
                         <div class="col-12 col-md-10">
                             <div class="row g-2">
-                                <div class="col-6 col-md-3">
+                                <div class="col-6 col-md-4">
                                     <select name="category" class="form-select">
                                         <option value="">Todas Categorias</option>
                                         <?php foreach ($categories as $category): ?>
@@ -29,7 +29,7 @@
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                <div class="col-6 col-md-2">
+                                <div class="col-6 col-md-4">
                                     <select name="tag" class="form-select">
                                         <option value="">Todos Tópicos</option>
                                         <?php foreach ($tags as $tag): ?>
