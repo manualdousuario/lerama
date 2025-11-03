@@ -4,7 +4,7 @@
 
 <div class="card shadow-sm">
     <div class="card-header">
-        <h3 class="fs-5 fw-medium mb-0 mt-1">
+        <h3 class="fs-5 fw-medium mb-0">
             <i class="bi bi-tags me-1"></i>
             <?= $this->e($title) ?>
         </h3>
