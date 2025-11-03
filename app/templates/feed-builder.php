@@ -32,7 +32,7 @@
             <div class="col-md-6 mb-4">
                 <h5 class="fs-6 fw-medium mb-3">
                     <i class="bi bi-tags me-1"></i>
-                    Tags
+                    Tópicos
                 </h5>
                 <div class="list-group" style="max-height: 292px; overflow-y: auto;">
                     <?php foreach ($tags as $tag): ?>

@@ -1,4 +1,4 @@
-<?php $this->layout('layout', ['title' => 'Tags']) ?>
+<?php $this->layout('layout', ['title' => 'Tópicos']) ?>
 
 <?php $this->start('active') ?>tags<?php $this->stop() ?>
 
@@ -6,7 +6,7 @@
     <div class="card-header">
         <h3 class="fs-5 fw-medium mb-1 mt-1">
             <i class="bi bi-tags me-1"></i>
-            Tags
+            Tópicos
         </h3>
     </div>
     

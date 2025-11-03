@@ -311,13 +311,13 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="bulk-tags-title">Editar Tags em Lote</h5>
+                <h5 class="modal-title" id="bulk-tags-title">Editar Tópicos em Lote</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p class="text-secondary mb-3">
-                    Selecione as tags que deseja aplicar aos <span id="bulk-tag-count">0</span> feed(s) selecionado(s).
-                    As tags atuais serão substituídas.
+                    Selecione as tópicos que deseja aplicar aos <span id="bulk-tag-count">0</span> feed(s) selecionado(s).
+                    Os tópicos atuais serão substituídas.
                 </p>
                 <div id="tags-list">
                     <?php foreach ($allTags as $tag): ?>

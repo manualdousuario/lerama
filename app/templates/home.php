@@ -19,16 +19,6 @@
                         </div>
                         <div class="col-12 col-md-10">
                             <div class="row g-2">
-                                <div class="col-12 col-md-3">
-                                    <select name="feed" class="form-select">
-                                        <option value="">Todos os Feeds</option>
-                                        <?php foreach ($feeds as $feed): ?>
-                                            <option value="<?= $feed['id'] ?>" <?= $selectedFeed == $feed['id'] ? 'selected' : '' ?>>
-                                                <?= $this->e($feed['title']) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
                                 <div class="col-6 col-md-3">
                                     <select name="category" class="form-select">
                                         <option value="">Todas Categorias</option>
@@ -41,7 +31,7 @@
                                 </div>
                                 <div class="col-6 col-md-2">
                                     <select name="tag" class="form-select">
-                                        <option value="">Todas Tags</option>
+                                        <option value="">Todos Tópicos</option>
                                         <?php foreach ($tags as $tag): ?>
                                             <option value="<?= $this->e($tag['slug']) ?>" <?= ($selectedTag ?? '') == $tag['slug'] ? 'selected' : '' ?>>
                                                 <?= $this->e($tag['name']) ?>

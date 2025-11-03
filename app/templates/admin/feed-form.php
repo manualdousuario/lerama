@@ -144,7 +144,7 @@
 
                 <div class="mb-3">
                     <label for="tags" class="form-label">
-                        Tags
+                        Tópicos
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">

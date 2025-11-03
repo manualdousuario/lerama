@@ -46,7 +46,7 @@
                         </a>
                         <a href="/admin/tags" class="d-inline-flex align-items-center px-2 py-2 me-3 text-decoration-none <?= $this->section('active') === 'admin-tags' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
                             <i class="bi bi-tags me-1"></i>
-                            Tags
+                            Tópicos
                         </a>
                         <a href="/admin/logout" class="d-inline-flex align-items-center px-2 py-2 me-3 text-secondary text-decoration-none hover-text-white">
                             <i class="bi bi-box-arrow-right me-1"></i>
@@ -60,14 +60,6 @@
                         <a href="/feeds" class="d-inline-flex align-items-center pe-1 py-2 me-3 text-decoration-none <?= $this->section('active') === 'feeds' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
                             <i class="bi bi-journal-text me-1"></i>
                             Feeds
-                        </a>
-                        <a href="/categories" class="d-inline-flex align-items-center pe-1 py-2 me-3 text-decoration-none <?= $this->section('active') === 'categories' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
-                            <i class="bi bi-folder me-1"></i>
-                            Categorias
-                        </a>
-                        <a href="/tags" class="d-inline-flex align-items-center pe-1 py-2 me-3 text-decoration-none <?= $this->section('active') === 'tags' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
-                            <i class="bi bi-tags me-1"></i>
-                            Tags
                         </a>
                         <a href="/suggest-feed" class="d-inline-flex align-items-center pe-1 py-2 me-3 text-decoration-none <?= $this->section('active') === 'suggest-feed' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
                             <i class="bi bi-plus-circle me-1"></i>
@@ -106,6 +98,14 @@
                 </a>
                 <a href="https://github.com/manualdousuario/lerama" target="_blank" class="btn btn-sm btn-outline-secondary mx-1" title="GitHub">
                     <i class="bi bi-github"></i> GitHub
+                </a>
+                <a href="/categories">
+                    <i class="bi bi-folder me-1"></i>
+                    Categorias
+                </a>
+                <a href="/tags">
+                    <i class="bi bi-tags me-1"></i>
+                    Tópicos
                 </a>
                 <button id="copySeloLerama" class="btn btn-sm btn-outline-secondary mx-1" title="Copiar código do Selo Lerama">
                     <i class="bi bi-clipboard"></i> Selo Lerama

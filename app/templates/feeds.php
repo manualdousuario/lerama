@@ -26,7 +26,7 @@
                         </div>
                         <div class="col-6 col-md-5">
                             <select name="tag" class="form-select">
-                                <option value="">Todas Tags</option>
+                                <option value="">Todos Tópicos</option>
                                 <?php foreach ($tags as $tag): ?>
                                     <option value="<?= $this->e($tag['slug']) ?>" <?= ($selectedTag ?? '') == $tag['slug'] ? 'selected' : '' ?>>
                                         <?= $this->e($tag['name']) ?>
@@ -71,7 +71,7 @@
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-tags me-1"></i>
-                                    Tags
+                                    Tópicos
                                 </div>
                             </th>
                             <th scope="col" class="small text-uppercase">

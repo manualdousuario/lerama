@@ -153,7 +153,7 @@ class HomeController
 
         $html = $this->templates->render('tags-list', [
             'tags' => $tags,
-            'title' => 'Tags'
+            'title' => 'Tópicos'
         ]);
 
         return new HtmlResponse($html);
