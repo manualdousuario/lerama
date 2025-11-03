@@ -122,28 +122,43 @@ class FeedController
         $page = isset($params['page']) ? max(1, (int)$params['page']) : 1;
         $perPage = isset($params['per_page']) ? min(100, max(1, (int)$params['per_page'])) : 20;
         $offset = ($page - 1) * $perPage;
-        $categorySlug = $params['category'] ?? null;
-        $tagSlug = $params['tag'] ?? null;
+        
+        // Support both single and multiple categories/tags
+        $categorySlugs = [];
+        if (isset($params['category'])) {
+            $categorySlugs = [$params['category']];
+        } elseif (isset($params['categories'])) {
+            $categorySlugs = array_filter(explode(',', $params['categories']));
+        }
+        
+        $tagSlugs = [];
+        if (isset($params['tag'])) {
+            $tagSlugs = [$params['tag']];
+        } elseif (isset($params['tags'])) {
+            $tagSlugs = array_filter(explode(',', $params['tags']));
+        }
 
         $whereConditions = ["fi.is_visible = 1"];
         $queryParams = [];
 
-        if ($categorySlug) {
+        if (!empty($categorySlugs)) {
+            $placeholders = implode(',', array_fill(0, count($categorySlugs), '%s'));
             $whereConditions[] = "EXISTS (
                 SELECT 1 FROM feed_categories fc
                 JOIN categories c ON fc.category_id = c.id
-                WHERE fc.feed_id = f.id AND c.slug = %s
+                WHERE fc.feed_id = f.id AND c.slug IN ($placeholders)
             )";
-            $queryParams[] = $categorySlug;
+            $queryParams = array_merge($queryParams, $categorySlugs);
         }
 
-        if ($tagSlug) {
+        if (!empty($tagSlugs)) {
+            $placeholders = implode(',', array_fill(0, count($tagSlugs), '%s'));
             $whereConditions[] = "EXISTS (
                 SELECT 1 FROM feed_tags ft
                 JOIN tags t ON ft.tag_id = t.id
-                WHERE ft.feed_id = f.id AND t.slug = %s
+                WHERE ft.feed_id = f.id AND t.slug IN ($placeholders)
             )";
-            $queryParams[] = $tagSlug;
+            $queryParams = array_merge($queryParams, $tagSlugs);
         }
 
         $whereClause = implode(' AND ', $whereConditions);
@@ -203,28 +218,43 @@ class FeedController
         $page = isset($params['page']) ? max(1, (int)$params['page']) : 1;
         $perPage = isset($params['per_page']) ? min(100, max(1, (int)$params['per_page'])) : 20;
         $offset = ($page - 1) * $perPage;
-        $categorySlug = $params['category'] ?? null;
-        $tagSlug = $params['tag'] ?? null;
+        
+        // Support both single and multiple categories/tags
+        $categorySlugs = [];
+        if (isset($params['category'])) {
+            $categorySlugs = [$params['category']];
+        } elseif (isset($params['categories'])) {
+            $categorySlugs = array_filter(explode(',', $params['categories']));
+        }
+        
+        $tagSlugs = [];
+        if (isset($params['tag'])) {
+            $tagSlugs = [$params['tag']];
+        } elseif (isset($params['tags'])) {
+            $tagSlugs = array_filter(explode(',', $params['tags']));
+        }
 
         $whereConditions = ["fi.is_visible = 1"];
         $queryParams = [];
 
-        if ($categorySlug) {
+        if (!empty($categorySlugs)) {
+            $placeholders = implode(',', array_fill(0, count($categorySlugs), '%s'));
             $whereConditions[] = "EXISTS (
                 SELECT 1 FROM feed_categories fc
                 JOIN categories c ON fc.category_id = c.id
-                WHERE fc.feed_id = f.id AND c.slug = %s
+                WHERE fc.feed_id = f.id AND c.slug IN ($placeholders)
             )";
-            $queryParams[] = $categorySlug;
+            $queryParams = array_merge($queryParams, $categorySlugs);
         }
 
-        if ($tagSlug) {
+        if (!empty($tagSlugs)) {
+            $placeholders = implode(',', array_fill(0, count($tagSlugs), '%s'));
             $whereConditions[] = "EXISTS (
                 SELECT 1 FROM feed_tags ft
                 JOIN tags t ON ft.tag_id = t.id
-                WHERE ft.feed_id = f.id AND t.slug = %s
+                WHERE ft.feed_id = f.id AND t.slug IN ($placeholders)
             )";
-            $queryParams[] = $tagSlug;
+            $queryParams = array_merge($queryParams, $tagSlugs);
         }
 
         $whereClause = implode(' AND ', $whereConditions);
@@ -247,6 +277,7 @@ class FeedController
         $channel->addChild('description', 'Feed agregado de múltiplas fontes');
         $channel->addChild('language', 'pt-br');
         $channel->addChild('pubDate', date('r'));
+
 
         foreach ($items as $item) {
             $xmlItem = $channel->addChild('item');
@@ -278,5 +309,22 @@ class FeedController
         $xmlString = $xml->asXML();
 
         return new XmlResponse($xmlString);
+    }
+
+    public function feedBuilder(ServerRequestInterface $request): ResponseInterface
+    {
+        // Get all categories with item counts from the cached column
+        $categories = DB::query("SELECT * FROM categories ORDER BY name");
+
+        // Get all tags with item counts from the cached column
+        $tags = DB::query("SELECT * FROM tags ORDER BY name");
+
+        $html = $this->templates->render('feed-builder', [
+            'categories' => $categories,
+            'tags' => $tags,
+            'title' => 'Construtor de Feed'
+        ]);
+
+        return new HtmlResponse($html);
     }
 }
