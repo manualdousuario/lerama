@@ -134,22 +134,34 @@ class FeedImporter
     private function importFeed(string $url, string $name, string $tags, string $category): array
     {
         try {
-            // 1. Discover feed URL
-            $feedUrl = $this->discoverFeedUrl($url);
-            if (!$feedUrl) {
-                return [
-                    'status' => 'error',
-                    'message' => 'Could not discover feed URL'
-                ];
-            }
+            // 1. Detect platform and set feed URL and type
+            $isSubstack = stripos($url, 'substack.com') !== false;
+            $isButtondown = stripos($url, 'buttondown') !== false;
+            
+            if ($isSubstack) {
+                $feedUrl = rtrim($url, '/') . '/feed';
+                $feedType = 'rss2';
+            } elseif ($isButtondown) {
+                $feedUrl = rtrim($url, '/') . '/rss';
+                $feedType = 'rss2';
+            } else {
+                // Discover feed URL for other platforms
+                $feedUrl = $this->discoverFeedUrl($url);
+                if (!$feedUrl) {
+                    return [
+                        'status' => 'error',
+                        'message' => 'Could not discover feed URL'
+                    ];
+                }
 
-            // 2. Detect feed type
-            $feedType = $this->feedDetector->detectType($feedUrl);
-            if (!$feedType) {
-                return [
-                    'status' => 'error',
-                    'message' => 'Could not detect feed type'
-                ];
+                // Detect feed type
+                $feedType = $this->feedDetector->detectType($feedUrl);
+                if (!$feedType) {
+                    return [
+                        'status' => 'error',
+                        'message' => 'Could not detect feed type'
+                    ];
+                }
             }
 
             // 3. Check if feed already exists
@@ -207,18 +219,6 @@ class FeedImporter
     private function discoverFeedUrl(string $url): ?string
     {
         try {
-            $url = trim($url);
-            
-            // Handle Substack URLs
-            if (stripos($url, 'substack.com') !== false) {
-                return rtrim($url, '/') . '/feed';
-            }
-
-            // Handle Buttondown URLs
-            if (stripos($url, 'buttondown') !== false) {
-                return rtrim($url, '/') . '/rss';
-            }
-
             // First, try the URL directly
             $feedType = $this->feedDetector->detectType($url);
             if ($feedType) {
