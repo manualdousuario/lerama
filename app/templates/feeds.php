@@ -14,7 +14,7 @@
             <div class="col-12 col-md-8 pb-1 pb-md-0 pt-3 pt-md-0">
                 <form action="/feeds" method="GET">
                     <div class="row g-2">
-                        <div class="col-12 col-md-5">
+                        <div class="col-6 col-md-5">
                             <select name="category" class="form-select">
                                 <option value="">Todas Categorias</option>
                                 <?php foreach ($categories as $category): ?>
@@ -24,7 +24,7 @@
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-12 col-md-5">
+                        <div class="col-6 col-md-5">
                             <select name="tag" class="form-select">
                                 <option value="">Todas Tags</option>
                                 <?php foreach ($tags as $tag): ?>

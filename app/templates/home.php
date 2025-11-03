@@ -29,7 +29,7 @@
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                <div class="col-12 col-md-3">
+                                <div class="col-6 col-md-3">
                                     <select name="category" class="form-select">
                                         <option value="">Todas Categorias</option>
                                         <?php foreach ($categories as $category): ?>
@@ -39,7 +39,7 @@
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                <div class="col-12 col-md-2">
+                                <div class="col-6 col-md-2">
                                     <select name="tag" class="form-select">
                                         <option value="">Todas Tags</option>
                                         <?php foreach ($tags as $tag): ?>
@@ -68,7 +68,7 @@
 
     <?php if (empty($items)): ?>
         <div class="card-body text-center p-4">
-            <p class="text-secondary">
+            <p class="text-secondary mb-0">
                 <i class="bi bi-exclamation-circle me-1"></i>
                 Nenhum item encontrado. Tente ajustar sua pesquisa ou filtro.
             </p>

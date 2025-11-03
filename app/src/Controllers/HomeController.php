@@ -134,4 +134,28 @@ class HomeController
 
         return '?' . http_build_query($params);
     }
+
+    public function categories(ServerRequestInterface $request): ResponseInterface
+    {
+        $categories = DB::query("SELECT * FROM categories ORDER BY name");
+
+        $html = $this->templates->render('categories-list', [
+            'categories' => $categories,
+            'title' => 'Categorias'
+        ]);
+
+        return new HtmlResponse($html);
+    }
+
+    public function tags(ServerRequestInterface $request): ResponseInterface
+    {
+        $tags = DB::query("SELECT * FROM tags ORDER BY name");
+
+        $html = $this->templates->render('tags-list', [
+            'tags' => $tags,
+            'title' => 'Tags'
+        ]);
+
+        return new HtmlResponse($html);
+    }
 }

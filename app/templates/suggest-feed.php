@@ -4,7 +4,7 @@
 
 <div class="card shadow-sm">
     <div class="card-header">
-        <h3 class="fs-5 fw-medium mb-0 mt-1">
+        <h3 class="fs-5 fw-medium mb-1 mt-1">
             <i class="bi bi-megaphone me-1"></i>
             Sugerir
         </h3>
@@ -31,13 +31,12 @@
 
         <p class="text-secondary mb-4">
             Conhece um blog interessante que deveria estar no nosso agregador? Sugira aqui!
-            Valide que o feed é acessível antes de enviar a sugestão.
         </p>
 
         <form id="suggest-form" method="POST" action="/suggest-feed">
             <div class="mb-3">
                 <label for="title" class="form-label">
-                    Título do Site
+                    Título
                 </label>
                 <div class="input-group">
                     <span class="input-group-text">
@@ -74,7 +73,7 @@
 
             <div class="mb-3">
                 <label for="site_url" class="form-label">
-                    URL do Blog
+                    URL do Site
                 </label>
                 <div class="input-group">
                     <span class="input-group-text">

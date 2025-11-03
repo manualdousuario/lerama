@@ -61,6 +61,14 @@
                             <i class="bi bi-journal-text me-1"></i>
                             Feeds
                         </a>
+                        <a href="/categories" class="d-inline-flex align-items-center pe-1 py-2 me-3 text-decoration-none <?= $this->section('active') === 'categories' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
+                            <i class="bi bi-folder me-1"></i>
+                            Categorias
+                        </a>
+                        <a href="/tags" class="d-inline-flex align-items-center pe-1 py-2 me-3 text-decoration-none <?= $this->section('active') === 'tags' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
+                            <i class="bi bi-tags me-1"></i>
+                            Tags
+                        </a>
                         <a href="/suggest-feed" class="d-inline-flex align-items-center pe-1 py-2 me-3 text-decoration-none <?= $this->section('active') === 'suggest-feed' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
                             <i class="bi bi-plus-circle me-1"></i>
                             Sugerir
@@ -69,11 +77,8 @@
                 </nav>
             </div>
             <div class="d-flex align-items-center">
-                <a href="/feed/rss" target="_blank" class="btn btn-sm btn-outline-secondary me-2" title="Feed RSS">
-                    <i class="bi bi-rss"></i> RSS
-                </a>
-                <a href="/feed/json" target="_blank" class="btn btn-sm btn-outline-secondary me-2" title="Feed JSON">
-                    <i class="bi bi-braces"></i> JSON
+                <a href="/feed-builder" class="btn btn-sm btn-outline-secondary me-2" title="Construtor de Feed">
+                    <i class="bi bi-braces"></i> Feed
                 </a>
                 <button id="darkModeToggle" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-sun d-none" id="lightIcon"></i>
@@ -96,11 +101,8 @@
                 &copy; <?= date('Y') ?> - Diretório e buscador de blogs pessoais atualizado em tempo real.
             </p>
             <p class="text-center mt-2 mb-0">
-                <a href="/feed/rss" target="_blank" class="btn btn-sm btn-outline-secondary mx-1" title="Feed RSS">
-                    <i class="bi bi-rss"></i> RSS
-                </a>
-                <a href="/feed/json" target="_blank" class="btn btn-sm btn-outline-secondary mx-1" title="Feed JSON">
-                    <i class="bi bi-braces"></i> JSON
+                <a href="/feed-builder" class="btn btn-sm btn-outline-secondary mx-1" title="Construtor de Feed">
+                    <i class="bi bi-braces"></i> Feed
                 </a>
                 <a href="https://github.com/manualdousuario/lerama" target="_blank" class="btn btn-sm btn-outline-secondary mx-1" title="GitHub">
                     <i class="bi bi-github"></i> GitHub
