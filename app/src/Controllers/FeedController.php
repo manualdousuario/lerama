@@ -276,9 +276,9 @@ class FeedController
         $xml = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"></rss>');
 
         $channel = $xml->addChild('channel');
-        $channel->addChild('title', $_ENV['APP_NAME'] . ' Feed');
+        $channel->addChild('title', $_ENV['APP_NAME']);
         $channel->addChild('link', $_ENV['APP_URL']);
-        $channel->addChild('description', 'Feed agregado de múltiplas fontes');
+        $channel->addChild('description', 'Diretório e buscador de blogs pessoais atualizado em tempo real.');
         $channel->addChild('language', 'pt-br');
         $channel->addChild('pubDate', date('r'));
 
