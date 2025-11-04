@@ -1,8 +1,8 @@
-# Process feeds every hour
-0 * * * * /usr/local/bin/php /app/bin/lerama feed:process 2>&1
+# Process feeds
+* */4 * * * /usr/local/bin/php /app/bin/lerama feed:process 2>&1 | tee -a /proc/1/fd/1
 
-# Check feed status every hour at :30
-30 * * * * /usr/local/bin/php /app/bin/lerama feed:check-status 2>&1
+# Check feed status
+* */2 * * * /usr/local/bin/php /app/bin/lerama feed:check-status 2>&1 | tee -a /proc/1/fd/1
 
-# Update proxy list daily at midnight
-0 0 * * * /usr/local/bin/php /app/bin/lerama proxy:update 2>&1
+# Update proxy list
+0 0 * * * /usr/local/bin/php /app/bin/lerama proxy:update 2>&1 | tee -a /proc/1/fd/1

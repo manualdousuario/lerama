@@ -17,8 +17,8 @@ RUN composer config platform.php-64bit 8.3 && \
     composer install --no-interaction --optimize-autoloader --no-dev
 
 # Copy cron jobs configuration
-COPY crontab /etc/cron.d/lerama-cron
-RUN chmod 0644 /etc/cron.d/lerama-cron
+COPY crontab /etc/crontab.d/lerama
+RUN chmod 0644 /etc/crontab.d/lerama
 
 # Copy startup scripts
 COPY /startup/05-storage /startup/05-storage
