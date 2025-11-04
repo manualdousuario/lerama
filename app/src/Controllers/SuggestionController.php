@@ -29,8 +29,11 @@ class SuggestionController
             session_start();
         }
 
+        $categories = DB::query("SELECT * FROM categories ORDER BY name");
+
         $html = $this->templates->render('suggest-feed', [
-            'title' => 'Sugerir Blog/Feed'
+            'title' => 'Sugerir Blog/Feed',
+            'categories' => $categories
         ]);
 
         return new HtmlResponse($html);
@@ -65,6 +68,7 @@ class SuggestionController
         $language = trim($params['language'] ?? 'en');
         $email = trim($params['email'] ?? '');
         $captcha = trim($params['captcha'] ?? '');
+        $categoryId = !empty($params['category']) ? (int)$params['category'] : null;
 
         $errors = [];
         
@@ -108,6 +112,11 @@ class SuggestionController
             $errors['email'] = 'Email inválido';
         }
 
+        $availableCategories = DB::query("SELECT * FROM categories ORDER BY name");
+        if (!empty($availableCategories) && empty($categoryId)) {
+            $errors['category'] = 'A categoria é obrigatória';
+        }
+
         $existingFeed = DB::queryFirstRow("SELECT id, status FROM feeds WHERE feed_url = %s", $feedUrl);
         if ($existingFeed) {
             if ($existingFeed['status'] == 'pending') {
@@ -118,7 +127,7 @@ class SuggestionController
         }
 
         if (!empty($errors)) {
-            if ($request->getHeaderLine('Accept') === 'application/json' || 
+            if ($request->getHeaderLine('Accept') === 'application/json' ||
                 $request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
                 return new JsonResponse([
                     'success' => false,
@@ -126,15 +135,19 @@ class SuggestionController
                 ], 400);
             }
 
+            $categories = DB::query("SELECT * FROM categories ORDER BY name");
+
             $html = $this->templates->render('suggest-feed', [
                 'title' => 'Sugerir Blog/Feed',
+                'categories' => $categories,
                 'errors' => $errors,
                 'data' => [
                     'title' => $title,
                     'feed_url' => $feedUrl,
                     'site_url' => $siteUrl,
                     'language' => $language,
-                    'email' => $email
+                    'email' => $email,
+                    'selected_category' => $categoryId
                 ]
             ]);
 
@@ -148,7 +161,7 @@ class SuggestionController
                 $feedType = $feedValidation['type'];
             }
 
-            DB::insert('feeds', [
+            $feedId = DB::insert('feeds', [
                 'title' => $title,
                 'feed_url' => $feedUrl,
                 'site_url' => $siteUrl,
@@ -157,6 +170,13 @@ class SuggestionController
                 'submitter_email' => !empty($email) ? $email : null,
                 'status' => 'pending'
             ]);
+
+            if ($categoryId !== null) {
+                DB::insert('feed_categories', [
+                    'feed_id' => $feedId,
+                    'category_id' => $categoryId
+                ]);
+            }
 
             if ($request->getHeaderLine('Accept') === 'application/json' || 
                 $request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
@@ -181,15 +201,19 @@ class SuggestionController
                 ], 500);
             }
 
+            $categories = DB::query("SELECT * FROM categories ORDER BY name");
+
             $html = $this->templates->render('suggest-feed', [
                 'title' => 'Sugerir Blog/Feed',
+                'categories' => $categories,
                 'errors' => ['general' => 'Erro ao enviar sugestão: ' . $e->getMessage()],
                 'data' => [
                     'title' => $title,
                     'feed_url' => $feedUrl,
                     'site_url' => $siteUrl,
                     'language' => $language,
-                    'email' => $email
+                    'email' => $email,
+                    'selected_category' => $categoryId
                 ]
             ]);
 

@@ -34,94 +34,120 @@
         </p>
 
         <form id="suggest-form" method="POST" action="/suggest-feed">
-            <div class="mb-3">
-                <label for="title" class="form-label">
-                    Título
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text">
-                        <i class="bi bi-file-text"></i>
-                    </span>
-                    <input type="text" name="title" id="title"
-                           value="<?= $this->e($data['title'] ?? '') ?>"
-                           class="form-control" required
-                           placeholder="Ex: Blog do João">
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <label for="title" class="form-label">
+                        Título
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-file-text"></i>
+                        </span>
+                        <input type="text" name="title" id="title"
+                            value="<?= $this->e($data['title'] ?? '') ?>"
+                            class="form-control" required
+                            placeholder="Ex: Blog do João">
+                    </div>
+                    <?php if (isset($errors['title'])): ?>
+                        <div class="form-text text-danger"><?= $this->e($errors['title']) ?></div>
+                    <?php endif; ?>
                 </div>
-                <?php if (isset($errors['title'])): ?>
-                    <div class="form-text text-danger"><?= $this->e($errors['title']) ?></div>
-                <?php endif; ?>
-            </div>
 
-            <div class="mb-3">
-                <label for="feed_url" class="form-label">
-                    URL do Feed (RSS/Atom)
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text">
-                        <i class="bi bi-journal-text"></i>
-                    </span>
-                    <input type="url" name="feed_url" id="feed_url"
-                           value="<?= $this->e($data['feed_url'] ?? '') ?>"
-                           class="form-control" required
-                           placeholder="https://exemplo.com/feed.xml">
+                <div class="col-12 col-md-6 mb-3">
+                    <label for="site_url" class="form-label">
+                        URL do Site
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-link-45deg"></i>
+                        </span>
+                        <input type="url" name="site_url" id="site_url"
+                            value="<?= $this->e($data['site_url'] ?? '') ?>"
+                            class="form-control" required
+                            placeholder="https://exemplo.com">
+                    </div>
+                    <div class="form-text text-secondary">A URL principal do site/blog</div>
+                    <?php if (isset($errors['site_url'])): ?>
+                        <div class="form-text text-danger"><?= $this->e($errors['site_url']) ?></div>
+                    <?php endif; ?>
                 </div>
-                <div class="form-text text-secondary">A URL do arquivo RSS/Atom do blog</div>
-                <?php if (isset($errors['feed_url'])): ?>
-                    <div class="form-text text-danger"><?= $this->e($errors['feed_url']) ?></div>
-                <?php endif; ?>
-            </div>
 
-            <div class="mb-3">
-                <label for="site_url" class="form-label">
-                    URL do Site
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text">
-                        <i class="bi bi-link-45deg"></i>
-                    </span>
-                    <input type="url" name="site_url" id="site_url"
-                           value="<?= $this->e($data['site_url'] ?? '') ?>"
-                           class="form-control" required
-                           placeholder="https://exemplo.com">
+                <div class="col-12 col-md-6 mb-3">
+                    <label for="feed_url" class="form-label">
+                        URL do Feed (RSS/Atom)
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-journal-text"></i>
+                        </span>
+                        <input type="url" name="feed_url" id="feed_url"
+                            value="<?= $this->e($data['feed_url'] ?? '') ?>"
+                            class="form-control" required
+                            placeholder="https://exemplo.com/feed.xml">
+                    </div>
+                    <div class="form-text text-secondary">A URL do arquivo RSS/Atom do blog</div>
+                    <?php if (isset($errors['feed_url'])): ?>
+                        <div class="form-text text-danger"><?= $this->e($errors['feed_url']) ?></div>
+                    <?php endif; ?>
                 </div>
-                <div class="form-text text-secondary">A URL principal do site/blog</div>
-                <?php if (isset($errors['site_url'])): ?>
-                    <div class="form-text text-danger"><?= $this->e($errors['site_url']) ?></div>
-                <?php endif; ?>
-            </div>
 
-            <div class="mb-3">
-                <label for="language" class="form-label">
-                    Idioma
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text">
-                        <i class="bi bi-translate"></i>
-                    </span>
-                    <select name="language" id="language" class="form-select" required>
-                        <option value="pt-BR" <?= ($data['language'] ?? 'pt-BR') === 'pt-BR' ? 'selected' : '' ?>>Português (Brasil)</option>
-                        <option value="en" <?= ($data['language'] ?? '') === 'en' ? 'selected' : '' ?>>Inglês</option>
-                        <option value="es" <?= ($data['language'] ?? '') === 'es' ? 'selected' : '' ?>>Espanhol</option>
-                    </select>
+                <div class="col-12 <?= empty($categories) ? 'col-md-12' : 'col-md-6' ?> mb-3">
+                    <label for="language" class="form-label">
+                        Idioma
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-translate"></i>
+                        </span>
+                        <select name="language" id="language" class="form-select" required>
+                            <option value="pt-BR" <?= ($data['language'] ?? 'pt-BR') === 'pt-BR' ? 'selected' : '' ?>>Português (Brasil)</option>
+                            <option value="en" <?= ($data['language'] ?? '') === 'en' ? 'selected' : '' ?>>Inglês</option>
+                            <option value="es" <?= ($data['language'] ?? '') === 'es' ? 'selected' : '' ?>>Espanhol</option>
+                        </select>
+                    </div>
+                    <?php if (isset($errors['language'])): ?>
+                        <div class="form-text text-danger"><?= $this->e($errors['language']) ?></div>
+                    <?php endif; ?>
                 </div>
-                <?php if (isset($errors['language'])): ?>
-                    <div class="form-text text-danger"><?= $this->e($errors['language']) ?></div>
-                <?php endif; ?>
-            </div>
 
-            <div class="mb-3">
-                <label for="captcha" class="form-label">
-                    Código de Verificação
-                </label>
-                <div>
+                <?php if (!empty($categories)): ?>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label for="category" class="form-label">
+                            Categoria
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-folder"></i>
+                            </span>
+                            <select name="category" id="category" class="form-select" required>
+                                <option value="">Selecione uma categoria</option>
+                                <?php foreach ($categories as $category): ?>
+                                    <option value="<?= $category['id'] ?>"
+                                        <?= ($data['selected_category'] ?? '') == $category['id'] ? 'selected' : '' ?>>
+                                        <?= $this->e($category['name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <?php if (isset($errors['category'])): ?>
+                            <div class="form-text text-danger"><?= $this->e($errors['category']) ?></div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
+                <div class="col-12 mb-3">
+                    <label for="captcha" class="form-label">
+                        Código de Verificação
+                    </label>
+                    <div>
                         <div class="input-group">
                             <span class="input-group-text">
                                 <img src="/captcha" alt="CAPTCHA" id="captcha-image" class="rounded" style="cursor: pointer;" title="Clique para atualizar">
                             </span>
                             <input type="text" name="captcha" id="captcha"
-                                   class="form-control" required
-                                   placeholder="Digite o código ao lado"
-                                   autocomplete="off">
+                                class="form-control" required
+                                placeholder="Digite o código ao lado"
+                                autocomplete="off">
                         </div>
                         <div class="form-text text-secondary">
                             <small>Clique na imagem para gerar um novo código</small>
@@ -129,14 +155,15 @@
                         <?php if (isset($errors['captcha'])): ?>
                             <div class="form-text text-danger"><?= $this->e($errors['captcha']) ?></div>
                         <?php endif; ?>
+                    </div>
                 </div>
-            </div>
 
-            <div class="d-flex justify-content-end gap-2 mt-4">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-send me-1"></i>
-                    Enviar Sugestão
-                </button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send me-1"></i>
+                        Enviar Sugestão
+                    </button>
+                </div>
             </div>
         </form>
     </div>
