@@ -1,0 +1,19 @@
+{
+  "name": "lerama",
+  "version": "1.0.0",
+  "description": "Lerama",
+  "scripts": {
+    "build": "gulp",
+    "watch": "gulp watch"
+  },
+  "devDependencies": {
+    "gulp": "^5.0.0",
+    "gulp-concat": "^2.6.1",
+    "gulp-clean-css": "^4.3.0",
+    "gulp-rename": "^2.0.0"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.8",
+    "bootstrap-icons": "^1.13.1"
+  }
+}

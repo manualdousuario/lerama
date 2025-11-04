@@ -16,10 +16,7 @@
     <meta property="og:url" content="<?= $_ENV['APP_URL'] ?>">
     <meta property="og:image" content="/assets/ogimage.png">
     <meta property="og:description" content="<?= __('meta.description') ?>">
-
-    <link href="//cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="//cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <script src="//cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="/assets/css/lerama.min.css" rel="stylesheet">
 </head>
 
 <body class="bg-light min-vh-100">
