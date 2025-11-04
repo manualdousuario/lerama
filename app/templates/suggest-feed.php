@@ -120,7 +120,6 @@
                                 <i class="bi bi-folder"></i>
                             </span>
                             <select name="category" id="category" class="form-select" required>
-                                <option value="">Selecione uma categoria</option>
                                 <?php foreach ($categories as $category): ?>
                                     <option value="<?= $category['id'] ?>"
                                         <?= ($data['selected_category'] ?? '') == $category['id'] ? 'selected' : '' ?>>
@@ -131,6 +130,38 @@
                         </div>
                         <?php if (isset($errors['category'])): ?>
                             <div class="form-text text-danger"><?= $this->e($errors['category']) ?></div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($tags)): ?>
+                    <div class="col-12 mb-3">
+                        <label class="form-label">
+                            Tópicos
+                        </label>
+                        <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                            <div class="row g-2">
+                                <?php foreach ($tags as $tag): ?>
+                                    <div class="col-12 col-md-6 col-lg-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox"
+                                                name="tags[]"
+                                                value="<?= $tag['id'] ?>"
+                                                id="tag-<?= $tag['id'] ?>"
+                                                <?= in_array($tag['id'], $data['selected_tags'] ?? []) ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="tag-<?= $tag['id'] ?>">
+                                                <?= $this->e($tag['name']) ?>
+                                            </label>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <div class="form-text text-secondary">
+                            Selecione uma ou mais tópicos que descrevem o conteúdo do blog
+                        </div>
+                        <?php if (isset($errors['tags'])): ?>
+                            <div class="form-text text-danger"><?= $this->e($errors['tags']) ?></div>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>

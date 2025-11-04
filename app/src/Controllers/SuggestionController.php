@@ -30,10 +30,12 @@ class SuggestionController
         }
 
         $categories = DB::query("SELECT * FROM categories ORDER BY name");
+        $tags = DB::query("SELECT * FROM tags ORDER BY name");
 
         $html = $this->templates->render('suggest-feed', [
             'title' => 'Sugerir Blog/Feed',
-            'categories' => $categories
+            'categories' => $categories,
+            'tags' => $tags
         ]);
 
         return new HtmlResponse($html);
@@ -69,6 +71,7 @@ class SuggestionController
         $email = trim($params['email'] ?? '');
         $captcha = trim($params['captcha'] ?? '');
         $categoryId = !empty($params['category']) ? (int)$params['category'] : null;
+        $tagIds = $params['tags'] ?? [];
 
         $errors = [];
         
@@ -136,10 +139,12 @@ class SuggestionController
             }
 
             $categories = DB::query("SELECT * FROM categories ORDER BY name");
+            $tags = DB::query("SELECT * FROM tags ORDER BY name");
 
             $html = $this->templates->render('suggest-feed', [
                 'title' => 'Sugerir Blog/Feed',
                 'categories' => $categories,
+                'tags' => $tags,
                 'errors' => $errors,
                 'data' => [
                     'title' => $title,
@@ -147,7 +152,8 @@ class SuggestionController
                     'site_url' => $siteUrl,
                     'language' => $language,
                     'email' => $email,
-                    'selected_category' => $categoryId
+                    'selected_category' => $categoryId,
+                    'selected_tags' => $tagIds
                 ]
             ]);
 
@@ -178,6 +184,16 @@ class SuggestionController
                 ]);
             }
 
+            // Insert tags
+            if (!empty($tagIds)) {
+                foreach ($tagIds as $tagId) {
+                    DB::insert('feed_tags', [
+                        'feed_id' => $feedId,
+                        'tag_id' => (int)$tagId
+                    ]);
+                }
+            }
+
             if ($request->getHeaderLine('Accept') === 'application/json' || 
                 $request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
                 return new JsonResponse([
@@ -202,10 +218,12 @@ class SuggestionController
             }
 
             $categories = DB::query("SELECT * FROM categories ORDER BY name");
+            $tags = DB::query("SELECT * FROM tags ORDER BY name");
 
             $html = $this->templates->render('suggest-feed', [
                 'title' => 'Sugerir Blog/Feed',
                 'categories' => $categories,
+                'tags' => $tags,
                 'errors' => ['general' => 'Erro ao enviar sugestão: ' . $e->getMessage()],
                 'data' => [
                     'title' => $title,
@@ -213,7 +231,8 @@ class SuggestionController
                     'site_url' => $siteUrl,
                     'language' => $language,
                     'email' => $email,
-                    'selected_category' => $categoryId
+                    'selected_category' => $categoryId,
+                    'selected_tags' => $tagIds
                 ]
             ]);
 
