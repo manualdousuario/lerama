@@ -6,13 +6,13 @@
     <div class="card-header">
         <h3 class="fs-5 fw-medium mb-1 mt-1">
             <i class="bi bi-tags me-1"></i>
-            Tópicos
+            <?= __('tags.title') ?>
         </h3>
     </div>
     
     <?php if (empty($tags)): ?>
         <div class="card-body text-center p-4">
-            <p class="text-secondary mb-0">Nenhuma tag encontrada.</p>
+            <p class="text-secondary mb-0"><?= __('tags.no_tags') ?></p>
         </div>
     <?php else: ?>
         <div class="list-group list-group-flush">
@@ -28,8 +28,8 @@
                         <?php endif; ?>
                     </div>
                     <span class="badge bg-secondary rounded-pill">
-                        <?= $tag['item_count'] ?> 
-                        <?= $tag['item_count'] == 1 ? 'artigo' : 'artigos' ?>
+                        <?= $tag['item_count'] ?>
+                        <?= $tag['item_count'] == 1 ? __('tags.article') : __('tags.articles') ?>
                     </span>
                 </a>
             <?php endforeach; ?>

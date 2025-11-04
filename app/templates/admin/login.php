@@ -26,7 +26,7 @@
                         <span class="input-group-text">
                             <i class="bi bi-person"></i>
                         </span>
-                        <input id="username" name="username" type="text" required class="form-control" placeholder="Nome de usuário">
+                        <input id="username" name="username" type="text" required class="form-control" placeholder="<?= __('admin.login.username') ?>">
                     </div>
                 </div>
                 <div class="mb-4">
@@ -34,14 +34,14 @@
                         <span class="input-group-text">
                             <i class="bi bi-lock"></i>
                         </span>
-                        <input id="password" name="password" type="password" required class="form-control" placeholder="Senha">
+                        <input id="password" name="password" type="password" required class="form-control" placeholder="<?= __('admin.login.password') ?>">
                     </div>
                 </div>
 
                 <div class="d-grid">
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-box-arrow-in-right me-2"></i>
-                        Entrar
+                        <?= __('admin.login.submit') ?>
                     </button>
                 </div>
             </form>

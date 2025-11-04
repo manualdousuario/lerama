@@ -7,13 +7,13 @@
         <div>
             <h3 class="fs-5 fw-medium m-0">
                 <i class="bi bi-tags me-1"></i>
-                Gerenciar Tags
+                <?= __('admin.tags.title') ?>
             </h3>
         </div>
         <div class="pt-2 pb-1 pt-md-0 pb-md-0">
             <a href="/admin/tags/new" class="btn btn-primary d-inline-flex align-items-center">
                 <i class="bi bi-plus-lg me-1"></i>
-                Nova Tag
+                <?= __('admin.tags.new') ?>
             </a>
         </div>
     </div>
@@ -22,7 +22,7 @@
         <div class="card-body text-center p-4">
             <p class="text-secondary mb-0 mt-1">
                 <i class="bi bi-exclamation-circle me-1"></i>
-                Nenhuma tag cadastrada
+                <?= __('admin.tags.no_tags') ?>
             </p>
         </div>
     <?php else: ?>
@@ -31,9 +31,9 @@
                 <table class="table table-striped table-hover mb-0">
                     <thead>
                         <tr>
-                            <th scope="col" class="small text-uppercase">Nome</th>
-                            <th scope="col" class="small text-uppercase">Slug</th>
-                            <th scope="col" class="small text-uppercase">Feeds</th>
+                            <th scope="col" class="small text-uppercase"><?= __('common.name') ?></th>
+                            <th scope="col" class="small text-uppercase"><?= __('common.slug') ?></th>
+                            <th scope="col" class="small text-uppercase"><?= __('admin.tags.feeds') ?></th>
                             <th scope="col"></th>
                         </tr>
                     </thead>
@@ -48,7 +48,7 @@
                                 </td>
                                 <td class="align-middle">
                                     <span class="badge bg-success">
-                                        <?= $tag['feed_count'] ?> feeds
+                                        <?= $tag['feed_count'] ?> <?= __('admin.tags.feeds') ?>
                                     </span>
                                 </td>
                                 <td class="align-middle text-end">
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const id = this.dataset.id;
-            if (confirm('Tem certeza que deseja excluir esta tag?')) {
+            if (confirm('<?= __('admin.tags.delete_confirm') ?>')) {
                 fetch(`/admin/tags/${id}`, {
                     method: 'DELETE',
                     headers: {

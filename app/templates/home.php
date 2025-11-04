@@ -8,20 +8,20 @@
             <div class="col-12 col-md-4">
                 <h3 class="fs-5 fw-medium mb-0 mt-1 mt-md-2">
                     <i class="bi bi-grid me-1"></i>
-                    Últimos artigos
+                    <?= __('home.title') ?>
                 </h3>
             </div>
             <div class="col-12 col-md-8 pb-1 pb-md-0 pt-3 pt-md-0">
                 <form action="<?= isset($pagination) && $pagination['current'] > 1 ? $pagination['baseUrl'] . $pagination['current'] : '/' ?>" method="GET">
                     <div class="row align-items-center g-2">
                         <div class="col-12 col-md-2">
-                            <input type="checkbox" id="simplified-view" /> <label for="simplified-view">Simplificado</label>
+                            <input type="checkbox" id="simplified-view" /> <label for="simplified-view"><?= __('common.simplified') ?></label>
                         </div>
                         <div class="col-12 col-md-10">
                             <div class="row g-2">
                                 <div class="col-6 col-md-4">
                                     <select name="category" class="form-select">
-                                        <option value="">Todas Categorias</option>
+                                        <option value=""><?= __('common.all_categories') ?></option>
                                         <?php foreach ($categories as $category): ?>
                                             <option value="<?= $this->e($category['slug']) ?>" <?= ($selectedCategory ?? '') == $category['slug'] ? 'selected' : '' ?>>
                                                 <?= $this->e($category['name']) ?>
@@ -31,7 +31,7 @@
                                 </div>
                                 <div class="col-6 col-md-4">
                                     <select name="tag" class="form-select">
-                                        <option value="">Todos Tópicos</option>
+                                        <option value=""><?= __('common.all_topics') ?></option>
                                         <?php foreach ($tags as $tag): ?>
                                             <option value="<?= $this->e($tag['slug']) ?>" <?= ($selectedTag ?? '') == $tag['slug'] ? 'selected' : '' ?>>
                                                 <?= $this->e($tag['name']) ?>
@@ -41,10 +41,10 @@
                                 </div>
                                 <div class="col-12 col-md-4">
                                     <div class="input-group">
-                                        <input type="text" name="search" value="<?= $this->e($search) ?>" class="form-control" placeholder="Pesquisar...">
+                                        <input type="text" name="search" value="<?= $this->e($search) ?>" class="form-control" placeholder="<?= __('common.search_placeholder') ?>">
                                         <button type="submit" class="btn btn-primary d-flex align-items-center">
                                             <i class="bi bi-search me-1"></i>
-                                            Buscar
+                                            <?= __('common.search') ?>
                                         </button>
                                     </div>
                                 </div>
@@ -60,7 +60,7 @@
         <div class="card-body text-center p-4">
             <p class="text-secondary mb-0">
                 <i class="bi bi-exclamation-circle me-1"></i>
-                Nenhum item encontrado. Tente ajustar sua pesquisa ou filtro.
+                <?= __('home.no_items') ?>
             </p>
         </div>
     <?php else: ?>
@@ -81,7 +81,7 @@
                                     </a>
                                 </h4>
                                 <div class="d-block">
-                                    <span>em</span>
+                                    <span><?= __('common.in') ?></span>
                                     <a href="<?= $this->e($item['site_url']) ?>" target="_blank" class="text-truncate">
                                         <?= $this->e($item['feed_title']) ?>
                                     </a>

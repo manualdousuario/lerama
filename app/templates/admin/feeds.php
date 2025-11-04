@@ -7,13 +7,13 @@
         <div>
             <h3 class="fs-5 fw-medium m-0">
                 <i class="bi bi-grid me-1"></i>
-                Gerenciar Feeds
+                <?= __('admin.feeds.title') ?>
             </h3>
         </div>
         <div class="pt-2 pb-1 pt-md-0 pb-md-0">
             <a href="/admin/feeds/new" class="btn btn-primary d-inline-flex align-items-center">
                 <i class="bi bi-plus-lg me-1"></i>
-                Adicionar Novo Feed
+                <?= __('admin.feeds.add_new') ?>
             </a>
         </div>
     </div>
@@ -23,14 +23,14 @@
         <div class="row g-3 align-items-end">
             <!-- Status Filter -->
             <div class="col-md-4">
-                <label for="status-filter" class="form-label small fw-medium">Filtrar por Status</label>
+                <label for="status-filter" class="form-label small fw-medium"><?= __('admin.feeds.filter_status') ?></label>
                 <select id="status-filter" class="form-select" onchange="window.location.href='/admin/feeds?status=' + this.value">
-                    <option value="">Todos os Status</option>
-                    <option value="online" <?= $currentStatus === 'online' ? 'selected' : '' ?>>Online</option>
-                    <option value="offline" <?= $currentStatus === 'offline' ? 'selected' : '' ?>>Offline</option>
-                    <option value="paused" <?= $currentStatus === 'paused' ? 'selected' : '' ?>>Pausado</option>
-                    <option value="pending" <?= $currentStatus === 'pending' ? 'selected' : '' ?>>Pendente</option>
-                    <option value="rejected" <?= $currentStatus === 'rejected' ? 'selected' : '' ?>>Rejeitado</option>
+                    <option value=""><?= __('admin.feeds.all_status') ?></option>
+                    <option value="online" <?= $currentStatus === 'online' ? 'selected' : '' ?>><?= __('status.online') ?></option>
+                    <option value="offline" <?= $currentStatus === 'offline' ? 'selected' : '' ?>><?= __('status.offline') ?></option>
+                    <option value="paused" <?= $currentStatus === 'paused' ? 'selected' : '' ?>><?= __('status.paused') ?></option>
+                    <option value="pending" <?= $currentStatus === 'pending' ? 'selected' : '' ?>><?= __('status.pending') ?></option>
+                    <option value="rejected" <?= $currentStatus === 'rejected' ? 'selected' : '' ?>><?= __('status.rejected') ?></option>
                 </select>
             </div>
 
@@ -39,14 +39,14 @@
                 <div class="d-flex gap-2 flex-wrap">
                     <button id="bulk-categories-btn" class="btn btn-outline-primary" disabled>
                         <i class="bi bi-folder me-1"></i>
-                        Editar Categorias
+                        <?= __('admin.feeds.bulk_categories') ?>
                     </button>
                     <button id="bulk-tags-btn" class="btn btn-outline-primary" disabled>
                         <i class="bi bi-tags me-1"></i>
-                        Editar Tags
+                        <?= __('admin.feeds.bulk_tags') ?>
                     </button>
                     <span id="selection-count" class="align-self-center text-secondary small" style="display: none;">
-                        <span id="count-number">0</span> selecionado(s)
+                        <span id="count-number">0</span> <?= __('admin.feeds.selected') ?>
                     </span>
                 </div>
             </div>
@@ -57,7 +57,7 @@
         <div class="card-body text-center p-4">
             <p class="text-secondary mb-0 mt-1">
                 <i class="bi bi-exclamation-circle me-1"></i>
-                Nenhum feed encontrado. <?= $currentStatus ? 'Tente outro filtro ou ' : '' ?>Adicione seu primeiro feed usando o botão acima.
+                <?= __('admin.feeds.no_feeds') ?> <?= $currentStatus ? __('admin.feeds.try_filter') : '' ?><?= __('admin.feeds.add_first') ?>
             </p>
         </div>
     <?php else: ?>
@@ -69,13 +69,13 @@
                             <th scope="col" style="width: 40px;">
                                 <input type="checkbox" id="select-all" class="form-check-input">
                             </th>
-                            <th scope="col" class="small text-uppercase">Feed</th>
-                            <th scope="col" class="small text-uppercase">Categorias</th>
-                            <th scope="col" class="small text-uppercase">Tags</th>
-                            <th scope="col" class="small text-uppercase">Idioma</th>
-                            <th scope="col" class="small text-uppercase">Status</th>
-                            <th scope="col" class="small text-uppercase text-truncate">Verificação/Atualização</th>
-                            <th scope="col" class="small text-uppercase">Itens</th>
+                            <th scope="col" class="small text-uppercase"><?= __('feeds.feed') ?></th>
+                            <th scope="col" class="small text-uppercase"><?= __('feeds.categories') ?></th>
+                            <th scope="col" class="small text-uppercase"><?= __('feeds.tags') ?></th>
+                            <th scope="col" class="small text-uppercase"><?= __('common.language') ?></th>
+                            <th scope="col" class="small text-uppercase"><?= __('common.status') ?></th>
+                            <th scope="col" class="small text-uppercase text-truncate"><?= __('feeds.verification') ?>/<?= __('feeds.update') ?></th>
+                            <th scope="col" class="small text-uppercase"><?= __('feeds.items') ?></th>
                             <th scope="col"></th>
                         </tr>
                     </thead>
@@ -122,30 +122,23 @@
                                     <?php endif; ?>
                                 </td>
                                 <td class="align-middle">
-                                    <?php
-                                    $languages = [
-                                        'en' => 'Inglês',
-                                        'pt-BR' => 'Português-Brasil',
-                                        'es' => 'Espanhol'
-                                    ];
-                                    echo $this->e($languages[$feed['language']] ?? $feed['language']);
-                                    ?>
+                                    <?= __('lang.' . $feed['language']) ?>
                                 </td>
                                 <td class="align-middle">
                                     <select class="form-select form-select-sm status-select" data-feed-id="<?= $feed['id'] ?>" data-original-value="<?= $feed['status'] ?>">
-                                        <option value="online" <?= $feed['status'] === 'online' ? 'selected' : '' ?>>Online</option>
-                                        <option value="offline" <?= $feed['status'] === 'offline' ? 'selected' : '' ?>>Offline</option>
-                                        <option value="paused" <?= $feed['status'] === 'paused' ? 'selected' : '' ?>>Pausado</option>
-                                        <option value="pending" <?= $feed['status'] === 'pending' ? 'selected' : '' ?>>Pendente</option>
-                                        <option value="rejected" <?= $feed['status'] === 'rejected' ? 'selected' : '' ?>>Rejeitado</option>
+                                        <option value="online" <?= $feed['status'] === 'online' ? 'selected' : '' ?>><?= __('status.online') ?></option>
+                                        <option value="offline" <?= $feed['status'] === 'offline' ? 'selected' : '' ?>><?= __('status.offline') ?></option>
+                                        <option value="paused" <?= $feed['status'] === 'paused' ? 'selected' : '' ?>><?= __('status.paused') ?></option>
+                                        <option value="pending" <?= $feed['status'] === 'pending' ? 'selected' : '' ?>><?= __('status.pending') ?></option>
+                                        <option value="rejected" <?= $feed['status'] === 'rejected' ? 'selected' : '' ?>><?= __('status.rejected') ?></option>
                                     </select>
                                 </td>
                                 <td class="align-middle small text-secondary">
                                     <div>
-                                        <strong>Verif:</strong> <?= $feed['last_checked'] ? date('d/m/Y H:i', strtotime($feed['last_checked'])) : 'Nunca' ?>
+                                        <strong><?= __('feeds.verified') ?>:</strong> <?= $feed['last_checked'] ? date('d/m/Y H:i', strtotime($feed['last_checked'])) : __('feeds.never') ?>
                                     </div>
                                     <div>
-                                        <strong>Atual:</strong> <?= $feed['last_updated'] ? date('d/m/Y H:i', strtotime($feed['last_updated'])) : 'Nunca' ?>
+                                        <strong><?= __('feeds.updated') ?>:</strong> <?= $feed['last_updated'] ? date('d/m/Y H:i', strtotime($feed['last_updated'])) : __('feeds.never') ?>
                                     </div>
                                 </td>
                                 <td class="align-middle small text-secondary">
@@ -236,7 +229,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modal-title">Excluir Feed</h5>
+                <h5 class="modal-title" id="modal-title"><?= __('admin.feeds.delete_modal_title') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -246,7 +239,7 @@
                     </div>
                     <div>
                         <p class="mb-0">
-                            Tem certeza que deseja excluir este feed? Todos os itens do feed também serão excluídos. Esta ação não pode ser desfeita.
+                            <?= __('admin.feeds.delete_confirm') ?>
                         </p>
                     </div>
                 </div>
@@ -254,11 +247,11 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="cancel-delete" data-bs-dismiss="modal">
                     <i class="bi bi-x-lg me-1"></i>
-                    Cancelar
+                    <?= __('common.cancel') ?>
                 </button>
                 <button type="button" class="btn btn-danger" id="confirm-delete">
                     <i class="bi bi-trash me-1"></i>
-                    Excluir
+                    <?= __('common.delete') ?>
                 </button>
             </div>
         </div>
@@ -270,13 +263,12 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="bulk-categories-title">Editar Categorias em Lote</h5>
+                <h5 class="modal-title" id="bulk-categories-title"><?= __('admin.feeds.bulk_categories_modal_title') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p class="text-secondary mb-3">
-                    Selecione as categorias que deseja aplicar aos <span id="bulk-cat-count">0</span> feed(s) selecionado(s).
-                    As categorias atuais serão substituídas.
+                    <?= __('admin.feeds.bulk_categories_description') ?> <span id="bulk-cat-count">0</span> <?= __('admin.feeds.bulk_categories_note') ?>
                 </p>
                 <div id="categories-list">
                     <?php foreach ($allCategories as $category): ?>
@@ -295,11 +287,11 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-x-lg me-1"></i>
-                    Cancelar
+                    <?= __('common.cancel') ?>
                 </button>
                 <button type="button" class="btn btn-primary" id="confirm-bulk-categories">
                     <i class="bi bi-check-lg me-1"></i>
-                    Aplicar Categorias
+                    <?= __('admin.feeds.apply_categories') ?>
                 </button>
             </div>
         </div>
@@ -311,13 +303,12 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="bulk-tags-title">Editar Tópicos em Lote</h5>
+                <h5 class="modal-title" id="bulk-tags-title"><?= __('admin.feeds.bulk_tags_modal_title') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p class="text-secondary mb-3">
-                    Selecione as tópicos que deseja aplicar aos <span id="bulk-tag-count">0</span> feed(s) selecionado(s).
-                    Os tópicos atuais serão substituídas.
+                    <?= __('admin.feeds.bulk_tags_description') ?> <span id="bulk-tag-count">0</span> <?= __('admin.feeds.bulk_tags_note') ?>
                 </p>
                 <div id="tags-list">
                     <?php foreach ($allTags as $tag): ?>
@@ -333,11 +324,11 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-x-lg me-1"></i>
-                    Cancelar
+                    <?= __('common.cancel') ?>
                 </button>
                 <button type="button" class="btn btn-primary" id="confirm-bulk-tags">
                     <i class="bi bi-check-lg me-1"></i>
-                    Aplicar Tags
+                    <?= __('admin.feeds.apply_tags') ?>
                 </button>
             </div>
         </div>
@@ -552,7 +543,7 @@
                     .then(data => {
                         if (data.success) {
                             this.dataset.originalValue = newStatus;
-                            alert('Status do feed atualizado com sucesso para: ' + newStatus);
+                            alert('<?= __('admin.feeds.status_updated') ?> ' + newStatus);
                         } else {
                             this.value = originalValue;
                             alert('Erro ao atualizar status do feed: ' + data.message);

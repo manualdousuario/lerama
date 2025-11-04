@@ -17,6 +17,10 @@ use Lerama\Middleware\AuthMiddleware;
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
 
+// Initialize translator
+require_once __DIR__ . '/../src/Services/Translator.php';
+\App\Services\Translator::getInstance();
+
 // Initialize database connection
 DB::$host = $_ENV['LERAMA_DB_HOST'];
 DB::$user = $_ENV['LERAMA_DB_USER'];

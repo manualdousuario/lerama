@@ -21,7 +21,7 @@
 
             <div class="mb-3">
                 <label class="form-label fw-medium" for="name">
-                    Nome *
+                    <?= __('admin.category_form.name') ?> *
                 </label>
                 <div class="input-group">
                     <span class="input-group-text">
@@ -45,7 +45,7 @@
             
             <div class="mb-3">
                 <label class="form-label fw-medium" for="slug">
-                    Slug
+                    <?= __('admin.category_form.slug') ?>
                 </label>
                 <div class="input-group">
                     <span class="input-group-text">
@@ -59,7 +59,7 @@
                         value="<?= $this->e($category['slug'] ?? '') ?>"
                     >
                 </div>
-                <div class="form-text text-secondary">Deixe em branco para gerar automaticamente</div>
+                <div class="form-text text-secondary"><?= __('admin.category_form.slug_help') ?></div>
                 <?php if (!empty($errors['slug'])): ?>
                     <div class="invalid-feedback d-block">
                         <?= $this->e($errors['slug']) ?>
@@ -70,11 +70,11 @@
             <div class="d-flex gap-2 justify-content-end">
                 <a href="/admin/categories" class="btn btn-secondary">
                     <i class="bi bi-x-lg me-1"></i>
-                    Cancelar
+                    <?= __('common.cancel') ?>
                 </a>
                 <button class="btn btn-primary" type="submit">
                     <i class="bi bi-check-lg me-1"></i>
-                    Salvar
+                    <?= __('common.save') ?>
                 </button>
             </div>
         </form>

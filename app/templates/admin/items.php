@@ -8,14 +8,14 @@
             <div class="col-12 col-md-6  d-flex align-items-center">
                 <h3 class="fs-5 fw-medium m-0">
                     <i class="bi bi-collection me-1"></i>
-                    Gerenciar Artigos
+                    <?= __('admin.items.title') ?>
                 </h3>
             </div>
             <div class="col-12 col-md-6 pb-1 pb-md-0 pt-3 pt-md-0">
                 <form action="/admin" method="GET" class="d-flex gap-2">
                     <div>
                         <select name="feed" class="form-select">
-                            <option value="">Feeds</option>
+                            <option value=""><?= __('admin.items.feeds') ?></option>
                             <?php foreach ($feeds as $feed): ?>
                                 <option value="<?= $feed['id'] ?>" <?= $selectedFeed == $feed['id'] ? 'selected' : '' ?>>
                                     <?= $this->e($feed['title']) ?>
@@ -24,10 +24,10 @@
                         </select>
                     </div>
                     <div class="input-group">
-                        <input type="text" name="search" value="<?= $this->e($search) ?>" class="form-control" placeholder="...">
+                        <input type="text" name="search" value="<?= $this->e($search) ?>" class="form-control" placeholder="<?= __('common.search_placeholder') ?>">
                         <button type="submit" class="btn btn-primary d-flex align-items-center">
                             <i class="bi bi-search me-1"></i>
-                            Pesquisar
+                            <?= __('common.search') ?>
                         </button>
                     </div>
                 </form>
@@ -39,7 +39,7 @@
         <div class="card-body text-center p-4">
             <p class="text-secondary mb-0">
                 <i class="bi bi-exclamation-circle me-1"></i>
-                Nenhum item encontrado. Tente ajustar sua pesquisa ou filtro.
+                <?= __('admin.items.no_items') ?>
             </p>
         </div>
     <?php else: ?>
@@ -51,25 +51,25 @@
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-file-text me-1"></i>
-                                    Título
+                                    <?= __('suggest.form.title') ?>
                                 </div>
                             </th>
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-journal-text me-1"></i>
-                                    Feed
+                                    <?= __('admin.items.feed') ?>
                                 </div>
                             </th>
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-person me-1"></i>
-                                    Autor
+                                    <?= __('admin.items.author') ?>
                                 </div>
                             </th>
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-calendar me-1"></i>
-                                    Publicado
+                                    <?= __('admin.items.published') ?>
                                 </div>
                             </th>
                             <th scope="col"></th>
@@ -88,7 +88,7 @@
                                     <?= $this->e($item['feed_title']) ?>
                                 </td>
                                 <td class="align-middle">
-                                    <?= $this->e($item['author'] ?? 'Desconhecido') ?>
+                                    <?= $this->e($item['author'] ?? __('admin.items.unknown_author')) ?>
                                 </td>
                                 <td class="small text-secondary align-middle">
                                     <?= $item['published_at'] ? date('d/m/Y \à\s H:i', strtotime($item['published_at'])) : 'Nunca' ?>

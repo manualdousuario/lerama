@@ -6,7 +6,7 @@
     <div class="card-header">
         <h3 class="fs-5 fw-medium mb-1 mt-1">
             <i class="bi bi-braces me-1"></i>
-            Construtor de Feed
+            <?= __('feed_builder.title') ?>
         </h3>
     </div>
     <div class="card-body">
@@ -14,7 +14,7 @@
             <div class="col-md-6 mb-4">
                 <h5 class="fs-6 fw-medium mb-3">
                     <i class="bi bi-folder me-1"></i>
-                    Categorias
+                    <?= __('feed_builder.categories') ?>
                 </h5>
                 <div class="list-group" style="max-height: 292px; overflow-y: auto;">
                     <?php foreach ($categories as $category): ?>
@@ -32,7 +32,7 @@
             <div class="col-md-6 mb-4">
                 <h5 class="fs-6 fw-medium mb-3">
                     <i class="bi bi-tags me-1"></i>
-                    Tópicos
+                    <?= __('feed_builder.topics') ?>
                 </h5>
                 <div class="list-group" style="max-height: 292px; overflow-y: auto;">
                     <?php foreach ($tags as $tag): ?>
@@ -52,7 +52,7 @@
             <div class="col-12 col-md-6">
                 <label class="form-label fw-medium">
                     <i class="bi bi-rss me-1"></i>
-                    Feed RSS
+                    <?= __('feed_builder.rss_feed') ?>
                 </label>
                 <div class="input-group">
                     <input type="text" class="form-control" id="rssUrl" readonly value="<?= $_ENV['APP_URL'] ?>/feed/rss">
@@ -68,7 +68,7 @@
             <div class="col-12 col-md-6">
                 <label class="form-label fw-medium">
                     <i class="bi bi-braces me-1"></i>
-                    Feed JSON
+                    <?= __('feed_builder.json_feed') ?>
                 </label>
                 <div class="input-group">
                     <input type="text" class="form-control" id="jsonUrl" readonly value="<?= $_ENV['APP_URL'] ?>/feed/json">

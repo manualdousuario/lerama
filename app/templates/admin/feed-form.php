@@ -7,10 +7,10 @@
         <h3 class="fs-5 fw-medium mb-0">
             <?php if ($isEdit): ?>
                 <i class="bi bi-pencil me-1"></i>
-                Editar Feed
+                <?= __('admin.feed_form.edit_title') ?>
             <?php else: ?>
                 <i class="bi bi-plus-lg me-1"></i>
-                Adicionar Novo Feed
+                <?= __('admin.feed_form.add_title') ?>
             <?php endif; ?>
         </h3>
     </div>
@@ -33,7 +33,7 @@
             <div>
                 <div class="mb-3">
                     <label for="title" class="form-label">
-                        Título do Site
+                        <?= __('admin.feed_form.site_title') ?>
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
@@ -48,7 +48,7 @@
 
                 <div class="mb-3">
                     <label for="feed_url" class="form-label">
-                        URL do Feed
+                        <?= __('admin.feed_form.feed_url') ?>
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
@@ -63,7 +63,7 @@
 
                 <div class="mb-3">
                     <label for="site_url" class="form-label">
-                        URL do Site
+                        <?= __('admin.feed_form.site_url') ?>
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
@@ -78,16 +78,16 @@
 
                 <div class="mb-3">
                     <label for="language" class="form-label">
-                        Idioma
+                        <?= __('common.language') ?>
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
                             <i class="bi bi-translate"></i>
                         </span>
                         <select name="language" id="language" class="form-select" required>
-                            <option value="pt-BR" <?= $isEdit && $feed['language'] === 'pt-BR' ? 'selected' : '' ?>>Português (Brasil)</option>
-                            <option value="en" <?= $isEdit && $feed['language'] === 'en' ? 'selected' : '' ?>>Inglês</option>
-                            <option value="es" <?= $isEdit && $feed['language'] === 'es' ? 'selected' : '' ?>>Espanhol</option>
+                            <option value="pt-BR" <?= $isEdit && $feed['language'] === 'pt-BR' ? 'selected' : '' ?>><?= __('lang.pt-BR') ?></option>
+                            <option value="en" <?= $isEdit && $feed['language'] === 'en' ? 'selected' : '' ?>><?= __('lang.en') ?></option>
+                            <option value="es" <?= $isEdit && $feed['language'] === 'es' ? 'selected' : '' ?>><?= __('lang.es') ?></option>
                         </select>
                     </div>
                     <?php if (isset($errors['language'])): ?>
@@ -97,14 +97,14 @@
 
                 <div class="mb-3">
                     <label for="feed_type" class="form-label">
-                        Tipo de Feed
+                        <?= __('admin.feed_form.feed_type') ?>
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
                             <i class="bi bi-book"></i>
                         </span>
                         <select name="feed_type" id="feed_type" class="form-select">
-                            <option value="">Auto-detectar tipo de feed</option>
+                            <option value=""><?= __('admin.feed_form.auto_detect') ?></option>
                             <option value="rss1" <?= $isEdit && $feed['feed_type'] === 'rss1' ? 'selected' : '' ?>>RSS 1.0</option>
                             <option value="rss2" <?= $isEdit && $feed['feed_type'] === 'rss2' ? 'selected' : '' ?>>RSS 2.0</option>
                             <option value="atom" <?= $isEdit && $feed['feed_type'] === 'atom' ? 'selected' : '' ?>>Atom</option>
@@ -114,7 +114,7 @@
                             <option value="xml" <?= $isEdit && $feed['feed_type'] === 'xml' ? 'selected' : '' ?>>XML</option>
                         </select>
                     </div>
-                    <div class="form-text text-secondary">Se não for selecionado, o sistema detectará automaticamente o tipo de feed.</div>
+                    <div class="form-text text-secondary"><?= __('admin.feed_form.feed_type_help') ?></div>
                     <?php if (isset($errors['feed_type'])): ?>
                         <div class="form-text text-danger"><?= $this->e($errors['feed_type']) ?></div>
                     <?php endif; ?>
@@ -122,7 +122,7 @@
 
                 <div class="mb-3">
                     <label for="categories" class="form-label">
-                        Categorias
+                        <?= __('admin.feed_form.categories') ?>
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
@@ -139,12 +139,12 @@
                             <?php endif; ?>
                         </select>
                     </div>
-                    <div class="form-text text-secondary">Mantenha Ctrl/Cmd pressionado para selecionar múltiplas categorias</div>
+                    <div class="form-text text-secondary"><?= __('admin.feed_form.categories_help') ?></div>
                 </div>
 
                 <div class="mb-3">
                     <label for="tags" class="form-label">
-                        Tópicos
+                        <?= __('admin.feed_form.tags') ?>
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
@@ -161,24 +161,24 @@
                             <?php endif; ?>
                         </select>
                     </div>
-                    <div class="form-text text-secondary">Mantenha Ctrl/Cmd pressionado para selecionar múltiplas tags</div>
+                    <div class="form-text text-secondary"><?= __('admin.feed_form.tags_help') ?></div>
                 </div>
 
                 <?php if ($isEdit): ?>
                     <div class="mb-3">
                         <label for="status" class="form-label">
-                            Status
+                            <?= __('common.status') ?>
                         </label>
                         <div class="input-group">
                             <span class="input-group-text">
                                 <i class="bi bi-clock"></i>
                             </span>
                             <select name="status" id="status" class="form-select">
-                                <option value="online" <?= $feed['status'] === 'online' ? 'selected' : '' ?>>Online</option>
-                                <option value="offline" <?= $feed['status'] === 'offline' ? 'selected' : '' ?>>Offline</option>
-                                <option value="paused" <?= $feed['status'] === 'paused' ? 'selected' : '' ?>>Pausado</option>
-                                <option value="pending" <?= $feed['status'] === 'pending' ? 'selected' : '' ?>>Pendente</option>
-                                <option value="rejected" <?= $feed['status'] === 'rejected' ? 'selected' : '' ?>>Rejeitado</option>
+                                <option value="online" <?= $feed['status'] === 'online' ? 'selected' : '' ?>><?= __('status.online') ?></option>
+                                <option value="offline" <?= $feed['status'] === 'offline' ? 'selected' : '' ?>><?= __('status.offline') ?></option>
+                                <option value="paused" <?= $feed['status'] === 'paused' ? 'selected' : '' ?>><?= __('status.paused') ?></option>
+                                <option value="pending" <?= $feed['status'] === 'pending' ? 'selected' : '' ?>><?= __('status.pending') ?></option>
+                                <option value="rejected" <?= $feed['status'] === 'rejected' ? 'selected' : '' ?>><?= __('status.rejected') ?></option>
                             </select>
                         </div>
                     </div>
@@ -187,15 +187,15 @@
                 <div class="d-flex justify-content-end gap-2 mt-4">
                     <a href="/admin/feeds" class="btn btn-secondary">
                         <i class="bi bi-x-lg me-1"></i>
-                        Cancelar
+                        <?= __('common.cancel') ?>
                     </a>
                     <button type="submit" class="btn btn-primary">
                         <?php if ($isEdit): ?>
                             <i class="bi bi-arrow-repeat me-1"></i>
-                            Atualizar Feed
+                            <?= __('admin.feed_form.update') ?>
                         <?php else: ?>
                             <i class="bi bi-plus-lg me-1"></i>
-                            Adicionar Feed
+                            <?= __('admin.feed_form.add') ?>
                         <?php endif; ?>
                     </button>
                 </div>
@@ -211,7 +211,7 @@
 
         feedForm.addEventListener('submit', function() {
             const submitButton = feedForm.querySelector('button[type="submit"]');
-            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Salvando...';
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> <?= __('admin.feed_form.saving') ?>';
             submitButton.disabled = true;
         });
     });

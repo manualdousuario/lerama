@@ -8,7 +8,7 @@
             <div class="col-12 col-md-4">
                 <h3 class="fs-5 fw-medium mb-0 mt-1 mt-md-2">
                     <i class="bi bi-journal-text me-1"></i>
-                    Feeds
+                    <?= __('feeds.title') ?>
                 </h3>
             </div>
             <div class="col-12 col-md-8 pb-1 pb-md-0 pt-3 pt-md-0">
@@ -16,7 +16,7 @@
                     <div class="row g-2">
                         <div class="col-6 col-md-5">
                             <select name="category" class="form-select">
-                                <option value="">Todas Categorias</option>
+                                <option value=""><?= __('common.all_categories') ?></option>
                                 <?php foreach ($categories as $category): ?>
                                     <option value="<?= $this->e($category['slug']) ?>" <?= ($selectedCategory ?? '') == $category['slug'] ? 'selected' : '' ?>>
                                         <?= $this->e($category['name']) ?>
@@ -26,7 +26,7 @@
                         </div>
                         <div class="col-6 col-md-5">
                             <select name="tag" class="form-select">
-                                <option value="">Todos Tópicos</option>
+                                <option value=""><?= __('common.all_topics') ?></option>
                                 <?php foreach ($tags as $tag): ?>
                                     <option value="<?= $this->e($tag['slug']) ?>" <?= ($selectedTag ?? '') == $tag['slug'] ? 'selected' : '' ?>>
                                         <?= $this->e($tag['name']) ?>
@@ -37,7 +37,7 @@
                         <div class="col-12 col-md-2">
                             <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center">
                                 <i class="bi bi-funnel me-1"></i>
-                                Filtrar
+                                <?= __('common.filter') ?>
                             </button>
                         </div>
                     </div>
@@ -48,7 +48,7 @@
 
     <?php if (empty($feeds)): ?>
         <div class="card-body text-center p-4">
-            <p class="text-secondary mb-0">Nenhum feed encontrado.</p>
+            <p class="text-secondary mb-0"><?= __('feeds.no_feeds') ?></p>
         </div>
     <?php else: ?>
         <div class="card-body p-0">
@@ -59,37 +59,37 @@
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-journal-text me-1"></i>
-                                    Feed
+                                    <?= __('feeds.feed') ?>
                                 </div>
                             </th>
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-folder me-1"></i>
-                                    Categorias
+                                    <?= __('feeds.categories') ?>
                                 </div>
                             </th>
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-tags me-1"></i>
-                                    Tópicos
+                                    <?= __('feeds.topics') ?>
                                 </div>
                             </th>
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-clock me-1"></i>
-                                    Status
+                                    <?= __('common.status') ?>
                                 </div>
                             </th>
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center text-truncate">
                                     <i class="bi bi-clock-history me-1"></i>
-                                    Verificação/Atualização
+                                    <?= __('feeds.verification') ?>/<?= __('feeds.update') ?>
                                 </div>
                             </th>
                             <th scope="col" class="small text-uppercase">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-collection me-1"></i>
-                                    Artigos
+                                    <?= __('feeds.articles') ?>
                                 </div>
                             </th>
                         </tr>
@@ -145,26 +145,26 @@
                                     <?php if ($feed['status'] === 'online'): ?>
                                         <span class="badge bg-success">
                                             <i class="bi bi-check-circle me-1"></i>
-                                            Online
+                                            <?= __('status.online') ?>
                                         </span>
                                     <?php elseif ($feed['status'] === 'offline'): ?>
                                         <span class="badge bg-danger">
                                             <i class="bi bi-x-circle me-1"></i>
-                                            Offline
+                                            <?= __('status.offline') ?>
                                         </span>
                                     <?php else: ?>
                                         <span class="badge bg-warning text-dark">
                                             <i class="bi bi-pause-circle me-1"></i>
-                                            Pausado
+                                            <?= __('status.paused') ?>
                                         </span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="align-middle small text-secondary">
                                     <div>
-                                        <strong>Verif:</strong> <?= $feed['last_checked'] ? date('d/m/Y H:i', strtotime($feed['last_checked'])) : 'Nunca' ?>
+                                        <strong><?= __('feeds.verified') ?>:</strong> <?= $feed['last_checked'] ? date('d/m/Y H:i', strtotime($feed['last_checked'])) : __('feeds.never') ?>
                                     </div>
                                     <div>
-                                        <strong>Atual:</strong> <?= $feed['last_updated'] ? date('d/m/Y H:i', strtotime($feed['last_updated'])) : 'Nunca' ?>
+                                        <strong><?= __('feeds.updated') ?>:</strong> <?= $feed['last_updated'] ? date('d/m/Y H:i', strtotime($feed['last_updated'])) : __('feeds.never') ?>
                                     </div>
                                 </td>
                                 <td class="align-middle small text-secondary">

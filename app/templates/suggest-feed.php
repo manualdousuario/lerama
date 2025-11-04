@@ -6,7 +6,7 @@
     <div class="card-header">
         <h3 class="fs-5 fw-medium mb-1 mt-1">
             <i class="bi bi-megaphone me-1"></i>
-            Sugerir
+            <?= __('suggest.heading') ?>
         </h3>
     </div>
 
@@ -30,14 +30,14 @@
         <?php endif; ?>
 
         <p class="text-secondary mb-4">
-            Conhece um blog interessante que deveria estar no nosso agregador? Sugira aqui!
+            <?= __('suggest.description') ?>
         </p>
 
         <form id="suggest-form" method="POST" action="/suggest-feed">
             <div class="row">
                 <div class="col-12 mb-3">
                     <label for="title" class="form-label">
-                        Título
+                        <?= __('suggest.form.title') ?>
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
@@ -46,7 +46,7 @@
                         <input type="text" name="title" id="title"
                             value="<?= $this->e($data['title'] ?? '') ?>"
                             class="form-control" required
-                            placeholder="Ex: Blog do João">
+                            placeholder="<?= __('suggest.form.title_placeholder') ?>">
                     </div>
                     <?php if (isset($errors['title'])): ?>
                         <div class="form-text text-danger"><?= $this->e($errors['title']) ?></div>
@@ -55,7 +55,7 @@
 
                 <div class="col-12 col-md-6 mb-3">
                     <label for="site_url" class="form-label">
-                        URL do Site
+                        <?= __('suggest.form.site_url') ?>
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
@@ -66,7 +66,7 @@
                             class="form-control" required
                             placeholder="https://exemplo.com">
                     </div>
-                    <div class="form-text text-secondary">A URL principal do site/blog</div>
+                    <div class="form-text text-secondary"><?= __('suggest.form.site_url_help') ?></div>
                     <?php if (isset($errors['site_url'])): ?>
                         <div class="form-text text-danger"><?= $this->e($errors['site_url']) ?></div>
                     <?php endif; ?>
@@ -74,7 +74,7 @@
 
                 <div class="col-12 col-md-6 mb-3">
                     <label for="feed_url" class="form-label">
-                        URL do Feed (RSS/Atom)
+                        <?= __('suggest.form.feed_url') ?>
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
@@ -85,7 +85,7 @@
                             class="form-control" required
                             placeholder="https://exemplo.com/feed.xml">
                     </div>
-                    <div class="form-text text-secondary">A URL do arquivo RSS/Atom do blog</div>
+                    <div class="form-text text-secondary"><?= __('suggest.form.feed_url_help') ?></div>
                     <?php if (isset($errors['feed_url'])): ?>
                         <div class="form-text text-danger"><?= $this->e($errors['feed_url']) ?></div>
                     <?php endif; ?>
@@ -93,16 +93,16 @@
 
                 <div class="col-12 <?= empty($categories) ? 'col-md-12' : 'col-md-6' ?> mb-3">
                     <label for="language" class="form-label">
-                        Idioma
+                        <?= __('common.language') ?>
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
                             <i class="bi bi-translate"></i>
                         </span>
                         <select name="language" id="language" class="form-select" required>
-                            <option value="pt-BR" <?= ($data['language'] ?? 'pt-BR') === 'pt-BR' ? 'selected' : '' ?>>Português (Brasil)</option>
-                            <option value="en" <?= ($data['language'] ?? '') === 'en' ? 'selected' : '' ?>>Inglês</option>
-                            <option value="es" <?= ($data['language'] ?? '') === 'es' ? 'selected' : '' ?>>Espanhol</option>
+                            <option value="pt-BR" <?= ($data['language'] ?? 'pt-BR') === 'pt-BR' ? 'selected' : '' ?>><?= __('lang.pt-BR') ?></option>
+                            <option value="en" <?= ($data['language'] ?? '') === 'en' ? 'selected' : '' ?>><?= __('lang.en') ?></option>
+                            <option value="es" <?= ($data['language'] ?? '') === 'es' ? 'selected' : '' ?>><?= __('lang.es') ?></option>
                         </select>
                     </div>
                     <?php if (isset($errors['language'])): ?>
@@ -113,7 +113,7 @@
                 <?php if (!empty($categories)): ?>
                     <div class="col-12 col-md-6 mb-3">
                         <label for="category" class="form-label">
-                            Categoria
+                            <?= __('suggest.form.category') ?>
                         </label>
                         <div class="input-group">
                             <span class="input-group-text">
@@ -137,7 +137,7 @@
                 <?php if (!empty($tags)): ?>
                     <div class="col-12 mb-3">
                         <label class="form-label">
-                            Tópicos
+                            <?= __('suggest.form.tags') ?>
                         </label>
                         <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
                             <div class="row g-2">
@@ -158,7 +158,7 @@
                             </div>
                         </div>
                         <div class="form-text text-secondary">
-                            Selecione uma ou mais tópicos que descrevem o conteúdo do blog
+                            <?= __('suggest.form.tags_help') ?>
                         </div>
                         <?php if (isset($errors['tags'])): ?>
                             <div class="form-text text-danger"><?= $this->e($errors['tags']) ?></div>
@@ -168,7 +168,7 @@
 
                 <div class="col-12 mb-3">
                     <label for="captcha" class="form-label">
-                        Código de Verificação
+                        <?= __('suggest.form.captcha') ?>
                     </label>
                     <div>
                         <div class="input-group">
@@ -177,11 +177,11 @@
                             </span>
                             <input type="text" name="captcha" id="captcha"
                                 class="form-control" required
-                                placeholder="Digite o código ao lado"
+                                placeholder="<?= __('suggest.form.captcha_placeholder') ?>"
                                 autocomplete="off">
                         </div>
                         <div class="form-text text-secondary">
-                            <small>Clique na imagem para gerar um novo código</small>
+                            <small><?= __('suggest.form.captcha_help') ?></small>
                         </div>
                         <?php if (isset($errors['captcha'])): ?>
                             <div class="form-text text-danger"><?= $this->e($errors['captcha']) ?></div>
@@ -192,7 +192,7 @@
                 <div class="d-flex justify-content-end gap-2 mt-4">
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-send me-1"></i>
-                        Enviar Sugestão
+                        <?= __('suggest.form.submit') ?>
                     </button>
                 </div>
             </div>
@@ -216,7 +216,7 @@
 
         suggestForm.addEventListener('submit', function() {
             const submitButton = suggestForm.querySelector('button[type="submit"]');
-            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Validando feed...';
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> <?= __('suggest.form.validating') ?>';
             submitButton.disabled = true;
         });
     });

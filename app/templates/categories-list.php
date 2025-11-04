@@ -6,13 +6,13 @@
     <div class="card-header">
         <h3 class="fs-5 fw-medium mb-1 mt-1">
             <i class="bi bi-folder me-1"></i>
-            Categorias
+            <?= __('categories.title') ?>
         </h3>
     </div>
     
     <?php if (empty($categories)): ?>
         <div class="card-body text-center p-4">
-            <p class="text-secondary mb-0">Nenhuma categoria encontrada.</p>
+            <p class="text-secondary mb-0"><?= __('categories.no_categories') ?></p>
         </div>
     <?php else: ?>
         <div class="list-group list-group-flush">
@@ -28,8 +28,8 @@
                         <?php endif; ?>
                     </div>
                     <span class="badge bg-secondary text-dark rounded-pill">
-                        <?= $category['item_count'] ?> 
-                        <?= $category['item_count'] == 1 ? 'artigo' : 'artigos' ?>
+                        <?= $category['item_count'] ?>
+                        <?= $category['item_count'] == 1 ? __('categories.article') : __('categories.articles') ?>
                     </span>
                 </a>
             <?php endforeach; ?>

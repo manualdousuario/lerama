@@ -57,7 +57,7 @@ php bin/lerama import feeds.csv
 
 ## 🔧 Configuração
 
-### Variáveis de Ambiente Principais
+### Variáveis de ambiente
 
 ```env
 # Banco de dados
