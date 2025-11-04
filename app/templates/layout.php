@@ -95,9 +95,6 @@
                 &copy; <?= date('Y') ?> - <?= __('footer.description') ?>
             </p>
             <p class="text-center mt-2 mb-0">
-                <a href="/feed-builder" class="btn btn-sm btn-outline-secondary mx-1" title="<?= __('nav.feed_builder') ?>">
-                    <i class="bi bi-braces"></i> Feed
-                </a>
                 <a href="https://github.com/manualdousuario/lerama" target="_blank" class="btn btn-sm btn-outline-secondary mx-1" title="GitHub">
                     <i class="bi bi-github"></i> GitHub
                 </a>
@@ -109,8 +106,9 @@
                     <i class="bi bi-tags me-1"></i>
                     <?= __('nav.topics') ?>
                 </a>
-                <button id="copySeloLerama" class="btn btn-sm btn-outline-secondary mx-1" title="<?= __('footer.seal') ?>">
-                    <i class="bi bi-clipboard"></i> <?= __('footer.seal') ?>
+                <button id="copySeloLerama" class="btn btn-sm btn-outline-secondary mx-1" title="<?= __('footer.badge') ?>">
+                    <i class="bi bi-clipboard"></i>
+                    <?= __('footer.badge') ?>
                 </button>
             </p>
         </div>

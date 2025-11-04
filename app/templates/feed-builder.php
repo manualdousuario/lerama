@@ -23,7 +23,7 @@
                                 <input class="form-check-input me-2 category-checkbox" type="checkbox" value="<?= $this->e($category['slug']) ?>" data-name="<?= $this->e($category['name']) ?>">
                                 <span><?= $this->e($category['name']) ?></span>
                             </div>
-                            <span class="badge bg-secondary text-dark rounded-pill"><?= $category['item_count'] ?></span>
+                            <span class="badge bg-secondary rounded-pill"><?= $category['item_count'] ?></span>
                         </label>
                     <?php endforeach; ?>
                 </div>
@@ -65,7 +65,7 @@
                 </div>
             </div>
 
-            <div class="col-12 col-md-6">
+            <div class="col-12 mt-3 mt-md-0 col-md-6">
                 <label class="form-label fw-medium">
                     <i class="bi bi-braces me-1"></i>
                     <?= __('feed_builder.json_feed') ?>

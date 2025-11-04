@@ -119,7 +119,7 @@
                                     <?php if (!empty($feed['categories'])): ?>
                                         <div class="d-flex flex-wrap gap-1">
                                             <?php foreach ($feed['categories'] as $category): ?>
-                                                <span class="badge bg-primary text-dark">
+                                                <span class="badge bg-primary">
                                                     <?= $this->e($category['name']) ?>
                                                 </span>
                                             <?php endforeach; ?>

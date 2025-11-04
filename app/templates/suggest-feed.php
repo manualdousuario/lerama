@@ -91,7 +91,7 @@
                     <?php endif; ?>
                 </div>
 
-                <div class="col-12 <?= empty($categories) ? 'col-md-12' : 'col-md-6' ?> mb-3">
+                <div class="col-12 <?= empty($categories) ? 'col-md-12' : 'col-md-4' ?> mb-3">
                     <label for="language" class="form-label">
                         <?= __('common.language') ?>
                     </label>
@@ -111,7 +111,7 @@
                 </div>
 
                 <?php if (!empty($categories)): ?>
-                    <div class="col-12 col-md-6 mb-3">
+                    <div class="col-12 col-md-4 mb-3">
                         <label for="category" class="form-label">
                             <?= __('suggest.form.category') ?>
                         </label>
@@ -135,33 +135,26 @@
                 <?php endif; ?>
 
                 <?php if (!empty($tags)): ?>
-                    <div class="col-12 mb-3">
-                        <label class="form-label">
+                    <div class="col-12 col-md-4 mb-3">
+                        <label for="tag" class="form-label">
                             <?= __('suggest.form.tags') ?>
                         </label>
-                        <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
-                            <div class="row g-2">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-tag"></i>
+                            </span>
+                            <select name="tag" id="tag" class="form-select">
+                                <option value=""><?= __('suggest.form.select_tag') ?></option>
                                 <?php foreach ($tags as $tag): ?>
-                                    <div class="col-12 col-md-6 col-lg-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox"
-                                                name="tags[]"
-                                                value="<?= $tag['id'] ?>"
-                                                id="tag-<?= $tag['id'] ?>"
-                                                <?= in_array($tag['id'], $data['selected_tags'] ?? []) ? 'checked' : '' ?>>
-                                            <label class="form-check-label" for="tag-<?= $tag['id'] ?>">
-                                                <?= $this->e($tag['name']) ?>
-                                            </label>
-                                        </div>
-                                    </div>
+                                    <option value="<?= $tag['id'] ?>"
+                                        <?= ($data['selected_tag'] ?? '') == $tag['id'] ? 'selected' : '' ?>>
+                                        <?= $this->e($tag['name']) ?>
+                                    </option>
                                 <?php endforeach; ?>
-                            </div>
+                            </select>
                         </div>
-                        <div class="form-text text-secondary">
-                            <?= __('suggest.form.tags_help') ?>
-                        </div>
-                        <?php if (isset($errors['tags'])): ?>
-                            <div class="form-text text-danger"><?= $this->e($errors['tags']) ?></div>
+                        <?php if (isset($errors['tag'])): ?>
+                            <div class="form-text text-danger"><?= $this->e($errors['tag']) ?></div>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>

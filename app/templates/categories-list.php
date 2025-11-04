@@ -27,7 +27,7 @@
                             <p class="mb-0 text-secondary small"><?= $this->e($category['description']) ?></p>
                         <?php endif; ?>
                     </div>
-                    <span class="badge bg-secondary text-dark rounded-pill">
+                    <span class="badge bg-secondary rounded-pill">
                         <?= $category['item_count'] ?>
                         <?= $category['item_count'] == 1 ? __('categories.article') : __('categories.articles') ?>
                     </span>

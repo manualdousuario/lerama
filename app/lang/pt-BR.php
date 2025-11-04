@@ -80,7 +80,7 @@ return [
     'suggest.form.feed_url_help' => 'A URL do arquivo RSS/Atom do blog',
     'suggest.form.category' => 'Categoria',
     'suggest.form.tags' => 'Tópicos',
-    'suggest.form.tags_help' => 'Selecione uma ou mais tópicos que descrevem o conteúdo do blog',
+    'suggest.form.select_tag' => 'Selecione Tópico',
     'suggest.form.captcha' => 'Código de Verificação',
     'suggest.form.captcha_placeholder' => 'Digite o código ao lado',
     'suggest.form.captcha_help' => 'Clique na imagem para gerar um novo código',
@@ -183,7 +183,7 @@ return [
     
     // Footer
     'footer.description' => 'Diretório e buscador de blogs pessoais atualizado em tempo real.',
-    'footer.seal' => 'Selo Lerama',
+    'footer.badge' => 'Selo',
     'footer.copied' => 'Copiado!',
     'footer.copy_error' => 'Não foi possível copiar o código. Por favor, tente novamente.',
     
