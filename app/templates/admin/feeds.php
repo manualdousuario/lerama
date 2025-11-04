@@ -338,9 +338,33 @@
 <?php $this->start('scripts') ?>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const deleteModal = new bootstrap.Modal(document.getElementById('delete-modal'));
-        const bulkCategoriesModal = new bootstrap.Modal(document.getElementById('bulk-categories-modal'));
-        const bulkTagsModal = new bootstrap.Modal(document.getElementById('bulk-tags-modal'));
+        function showModal(modalElement) {
+            modalElement.classList.add('show');
+            modalElement.style.display = 'block';
+            modalElement.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('modal-open');
+            
+            const backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            backdrop.id = modalElement.id + '-backdrop';
+            document.body.appendChild(backdrop);
+        }
+
+        function hideModal(modalElement) {
+            modalElement.classList.remove('show');
+            modalElement.style.display = 'none';
+            modalElement.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('modal-open');
+            
+            const backdrop = document.getElementById(modalElement.id + '-backdrop');
+            if (backdrop) {
+                backdrop.remove();
+            }
+        }
+
+        const deleteModalElement = document.getElementById('delete-modal');
+        const bulkCategoriesModalElement = document.getElementById('bulk-categories-modal');
+        const bulkTagsModalElement = document.getElementById('bulk-tags-modal');
 
         const cancelDeleteButton = document.getElementById('cancel-delete');
         const confirmDeleteButton = document.getElementById('confirm-delete');
@@ -368,6 +392,23 @@
             checkbox.addEventListener('change', updateBulkButtons);
         });
 
+        document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(button => {
+            button.addEventListener('click', function() {
+                const modal = this.closest('.modal');
+                if (modal) {
+                    hideModal(modal);
+                }
+            });
+        });
+
+        [deleteModalElement, bulkCategoriesModalElement, bulkTagsModalElement].forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideModal(this);
+                }
+            });
+        });
+
         function updateBulkButtons() {
             const selectedCount = Array.from(feedCheckboxes).filter(cb => cb.checked).length;
             const hasSelection = selectedCount > 0;
@@ -391,7 +432,7 @@
         bulkCategoriesBtn.addEventListener('click', function() {
             const selectedCount = Array.from(feedCheckboxes).filter(cb => cb.checked).length;
             document.getElementById('bulk-cat-count').textContent = selectedCount;
-            bulkCategoriesModal.show();
+            showModal(bulkCategoriesModalElement);
         });
 
         document.getElementById('confirm-bulk-categories').addEventListener('click', function() {
@@ -420,7 +461,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    bulkCategoriesModal.hide();
+                    hideModal(bulkCategoriesModalElement);
                     alert(data.message);
                     // Uncheck all
                     feedCheckboxes.forEach(cb => cb.checked = false);
@@ -440,7 +481,7 @@
         bulkTagsBtn.addEventListener('click', function() {
             const selectedCount = Array.from(feedCheckboxes).filter(cb => cb.checked).length;
             document.getElementById('bulk-tag-count').textContent = selectedCount;
-            bulkTagsModal.show();
+            showModal(bulkTagsModalElement);
         });
 
         document.getElementById('confirm-bulk-tags').addEventListener('click', function() {
@@ -469,7 +510,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    bulkTagsModal.hide();
+                    hideModal(bulkTagsModalElement);
                     alert(data.message);
                     // Uncheck all
                     feedCheckboxes.forEach(cb => cb.checked = false);
@@ -490,7 +531,7 @@
             button.addEventListener('click', function() {
                 const feedId = this.dataset.feedId;
                 confirmDeleteButton.dataset.feedId = feedId;
-                deleteModal.show();
+                showModal(deleteModalElement);
             });
         });
 
@@ -506,7 +547,7 @@
                         const row = document.querySelector(`tr[data-feed-id="${feedId}"]`);
                         row.remove();
 
-                        deleteModal.hide();
+                        hideModal(deleteModalElement);
 
                         if (document.querySelectorAll('tbody tr').length === 0) {
                             window.location.reload();
