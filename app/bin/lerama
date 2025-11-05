@@ -34,9 +34,10 @@ if (empty($command)) {
 
 switch ($command) {
     case 'feed:process':
-        $parallel = 1;
+        // Default to FEED_WORKERS env variable, or 1 if not set
+        $parallel = isset($_ENV['FEED_WORKERS']) ? max(1, min(10, (int)$_ENV['FEED_WORKERS'])) : 1;
         
-        // Check for --parallel or -p flag
+        // Check for --parallel or -p flag (overrides env variable)
         for ($i = 2; $i < count($argv); $i++) {
             if (in_array($argv[$i], ['--parallel', '-p']) && isset($argv[$i + 1])) {
                 $parallel = max(1, min(10, (int)$argv[$i + 1]));
