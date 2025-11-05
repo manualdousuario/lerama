@@ -5,48 +5,54 @@
 <div class="card shadow-sm">
     <div class="card-header">
         <div class="row">
-            <div class="col-12 col-md-4">
-                <h3 class="fs-5 fw-medium mb-0 mt-1 mt-md-2">
+            <div class="col-12">
+                <h3 class="fs-5 fw-medium m-0 py-1">
                     <i class="bi bi-grid me-1"></i>
                     <?= __('home.title') ?>
                 </h3>
             </div>
-            <div class="col-12 col-md-8 pb-1 pb-md-0 pt-3 pt-md-0">
+            <div class="border-top col-12 pb-0 pt-2 mt-2">
                 <form action="<?= isset($pagination) && $pagination['current'] > 1 ? $pagination['baseUrl'] . $pagination['current'] : '/' ?>" method="GET">
-                    <div class="row align-items-center g-2">
-                        <div class="col-12 col-md-2">
+                    <div class="d-md-flex justify-content-between align-items-center">
+                        <div class="me-md-2 mb-2 mb-md-0">
                             <input type="checkbox" id="simplified-view" /> <label for="simplified-view"><?= __('common.simplified') ?></label>
                         </div>
-                        <div class="col-12 col-md-10">
-                            <div class="row g-2">
-                                <div class="col-6 col-md-4">
-                                    <select name="category" class="form-select">
-                                        <option value=""><?= __('common.all_categories') ?></option>
-                                        <?php foreach ($categories as $category): ?>
-                                            <option value="<?= $this->e($category['slug']) ?>" <?= ($selectedCategory ?? '') == $category['slug'] ? 'selected' : '' ?>>
-                                                <?= $this->e($category['name']) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
+                        <div class="d-md-flex">
+                            <div class="d-md-flex me-md-2 mb-3 mb-md-0">
+                                <select name="category" id="category-select" class="form-select me-md-2 mb-2 mb-md-0">
+                                    <option value=""><?= __('common.all_categories') ?></option>
+                                    <?php foreach ($categories as $category): ?>
+                                        <option value="<?= $this->e($category['slug']) ?>" <?= ($selectedCategory ?? '') == $category['slug'] ? 'selected' : '' ?>>
+                                            <?= $this->e($category['name']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+
+                                <select name="tag" id="tag-select" class="form-select me-md-2 mb-2 mb-md-0">
+                                    <option value=""><?= __('common.all_topics') ?></option>
+                                    <?php foreach ($tags as $tag): ?>
+                                        <option value="<?= $this->e($tag['slug']) ?>" <?= ($selectedTag ?? '') == $tag['slug'] ? 'selected' : '' ?>>
+                                            <?= $this->e($tag['name']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+
+                                <div class="input-group flex-nowrap">
+                                    <button type="button" id="save-filter-btn" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center" title="<?= __('common.save_filter') ?>">
+                                        <span class="text-nowrap"></i><?= __('common.save_filter') ?></span>
+                                    </button>
+                                    <button type="button" id="clear-filter-btn" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center" title="<?= __('common.clear_filters') ?>">
+                                        <span class="text-nowrap"></i><?= __('common.clear_filters') ?></span>
+                                    </button>
                                 </div>
-                                <div class="col-6 col-md-4">
-                                    <select name="tag" class="form-select">
-                                        <option value=""><?= __('common.all_topics') ?></option>
-                                        <?php foreach ($tags as $tag): ?>
-                                            <option value="<?= $this->e($tag['slug']) ?>" <?= ($selectedTag ?? '') == $tag['slug'] ? 'selected' : '' ?>>
-                                                <?= $this->e($tag['name']) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <div class="col-12 col-md-4">
-                                    <div class="input-group">
-                                        <input type="text" name="search" value="<?= $this->e($search) ?>" class="form-control" placeholder="<?= __('common.search_placeholder') ?>">
-                                        <button type="submit" class="btn btn-primary d-flex align-items-center">
-                                            <i class="bi bi-search me-1"></i>
-                                            <?= __('common.search') ?>
-                                        </button>
-                                    </div>
+                            </div>
+                            <div>
+                                <div class="input-group">
+                                    <input type="text" name="search" value="<?= $this->e($search) ?>" class="form-control" placeholder="<?= __('common.search_placeholder') ?>">
+                                    <button type="submit" class="btn btn-primary d-flex align-items-center">
+                                        <i class="bi bi-search me-1"></i>
+                                        <?= __('common.search') ?>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -179,6 +185,7 @@
 <?php $this->start('scripts') ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Simplified view functionality
     const simplifiedCheckbox = document.getElementById('simplified-view');
     const imageThumbnails = document.querySelectorAll('.image-thumbnail');
     const contentDivs = document.querySelectorAll('.content');
@@ -208,6 +215,79 @@ document.addEventListener('DOMContentLoaded', function() {
         
         localStorage.setItem('simplifiedView', isChecked);
     });
+
+    // Filter save/load functionality
+    const categorySelect = document.getElementById('category-select');
+    const tagSelect = document.getElementById('tag-select');
+    const saveFilterBtn = document.getElementById('save-filter-btn');
+    const clearFilterBtn = document.getElementById('clear-filter-btn');
+    const filterForm = categorySelect.closest('form');
+    
+    // Auto-submit form when category or tag changes
+    categorySelect.addEventListener('change', function() {
+        filterForm.submit();
+    });
+    
+    tagSelect.addEventListener('change', function() {
+        filterForm.submit();
+    });
+        
+    // Load saved filters on page load
+    function loadSavedFilters() {
+        const savedCategory = localStorage.getItem('savedFilterCategory');
+        const savedTag = localStorage.getItem('savedFilterTag');
+        
+        const hasCurrentFilters = categorySelect.value || tagSelect.value;
+        
+        if (!hasCurrentFilters && (savedCategory || savedTag)) {
+            if (savedCategory) {
+                categorySelect.value = savedCategory;
+            }
+            if (savedTag) {
+                tagSelect.value = savedTag;
+            }
+            
+            if (savedCategory || savedTag) {
+                filterForm.submit();
+            }
+        }
+    }
+    
+    function saveFilters() {
+        const category = categorySelect.value;
+        const tag = tagSelect.value;
+        
+        localStorage.setItem('savedFilterCategory', category);
+        localStorage.setItem('savedFilterTag', tag);
+        
+        const icon = saveFilterBtn.querySelector('i');
+        const originalClass = icon.className;
+        icon.className = 'bi bi-bookmark-check-fill';
+        saveFilterBtn.classList.remove('btn-outline-secondary');
+        saveFilterBtn.classList.add('btn-success');
+        
+        setTimeout(function() {
+            icon.className = originalClass;
+            saveFilterBtn.classList.remove('btn-success');
+            saveFilterBtn.classList.add('btn-outline-secondary');
+        }, 2000);
+    }
+    
+    // Clear saved filters
+    function clearFilters() {
+        localStorage.removeItem('savedFilterCategory');
+        localStorage.removeItem('savedFilterTag');
+        
+        categorySelect.value = '';
+        tagSelect.value = '';
+        
+        window.location.href = '/';
+    }
+    
+    saveFilterBtn.addEventListener('click', saveFilters);
+    clearFilterBtn.addEventListener('click', clearFilters);
+    
+    loadSavedFilters();
 });
 </script>
 <?php $this->stop() ?>

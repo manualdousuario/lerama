@@ -20,6 +20,8 @@ return [
     'common.all_tags' => 'Todos Tópicos',
     'common.all_topics' => 'Todos Tópicos',
     'common.simplified' => 'Simplificado',
+    'common.save_filter' => 'Salvar Filtro',
+    'common.clear_filters' => 'Limpar Filtros',
     'common.cancel' => 'Cancelar',
     'common.save' => 'Salvar',
     'common.delete' => 'Excluir',

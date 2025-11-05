@@ -20,6 +20,8 @@ return [
     'common.all_tags' => 'Todas las Etiquetas',
     'common.all_topics' => 'Todos los Temas',
     'common.simplified' => 'Simplificado',
+    'common.save_filter' => 'Guardar Filtro',
+    'common.clear_filters' => 'Limpiar Filtros',
     'common.cancel' => 'Cancelar',
     'common.save' => 'Guardar',
     'common.delete' => 'Eliminar',

@@ -20,6 +20,8 @@ return [
     'common.all_tags' => 'All Tags',
     'common.all_topics' => 'All Topics',
     'common.simplified' => 'Simplified',
+    'common.save_filter' => 'Save Filter',
+    'common.clear_filters' => 'Clear Filters',
     'common.cancel' => 'Cancel',
     'common.save' => 'Save',
     'common.delete' => 'Delete',
