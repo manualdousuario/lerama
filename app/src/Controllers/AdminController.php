@@ -1222,6 +1222,16 @@ class AdminController
         }
         
         try {
+            $affectedCategoryIds = [];
+            foreach ($feedIds as $feedId) {
+                $oldCategories = DB::query("SELECT category_id FROM feed_categories WHERE feed_id = %i", (int)$feedId);
+                foreach ($oldCategories as $cat) {
+                    $affectedCategoryIds[] = $cat['category_id'];
+                }
+            }
+            $affectedCategoryIds = array_merge($affectedCategoryIds, $categoryIds);
+            $affectedCategoryIds = array_unique($affectedCategoryIds);
+            
             // Remove existing categories for selected feeds
             foreach ($feedIds as $feedId) {
                 DB::delete('feed_categories', 'feed_id=%i', (int)$feedId);
@@ -1236,6 +1246,8 @@ class AdminController
                     ]);
                 }
             }
+            
+            $this->recalculateCategoryItemCounts($affectedCategoryIds);
             
             return new JsonResponse([
                 'success' => true,
@@ -1271,6 +1283,16 @@ class AdminController
         }
         
         try {
+            $affectedTagIds = [];
+            foreach ($feedIds as $feedId) {
+                $oldTags = DB::query("SELECT tag_id FROM feed_tags WHERE feed_id = %i", (int)$feedId);
+                foreach ($oldTags as $tag) {
+                    $affectedTagIds[] = $tag['tag_id'];
+                }
+            }
+            $affectedTagIds = array_merge($affectedTagIds, $tagIds);
+            $affectedTagIds = array_unique($affectedTagIds);
+            
             // Remove existing tags for selected feeds
             foreach ($feedIds as $feedId) {
                 DB::delete('feed_tags', 'feed_id=%i', (int)$feedId);
@@ -1286,6 +1308,8 @@ class AdminController
                 }
             }
             
+            $this->recalculateTagItemCounts($affectedTagIds);
+            
             return new JsonResponse([
                 'success' => true,
                 'message' => 'Tags atualizadas com sucesso para ' . count($feedIds) . ' feed(s)'
@@ -1295,6 +1319,60 @@ class AdminController
                 'success' => false,
                 'message' => 'Erro ao atualizar tags: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Recalculate item counts for specified categories
+     *
+     * @param array $categoryIds Array of category IDs to recalculate
+     */
+    private function recalculateCategoryItemCounts(array $categoryIds): void
+    {
+        if (empty($categoryIds)) {
+            return;
+        }
+        
+        foreach ($categoryIds as $categoryId) {
+            $count = DB::queryFirstField("
+                SELECT COUNT(DISTINCT fi.id)
+                FROM feed_items fi
+                JOIN feeds f ON fi.feed_id = f.id
+                JOIN feed_categories fc ON f.id = fc.feed_id
+                WHERE fc.category_id = %i
+                AND fi.is_visible = 1
+            ", (int)$categoryId);
+            
+            DB::update('categories', [
+                'item_count' => $count ?: 0
+            ], 'id=%i', (int)$categoryId);
+        }
+    }
+    
+    /**
+     * Recalculate item counts for specified tags
+     *
+     * @param array $tagIds Array of tag IDs to recalculate
+     */
+    private function recalculateTagItemCounts(array $tagIds): void
+    {
+        if (empty($tagIds)) {
+            return;
+        }
+        
+        foreach ($tagIds as $tagId) {
+            $count = DB::queryFirstField("
+                SELECT COUNT(DISTINCT fi.id)
+                FROM feed_items fi
+                JOIN feeds f ON fi.feed_id = f.id
+                JOIN feed_tags ft ON f.id = ft.feed_id
+                WHERE ft.tag_id = %i
+                AND fi.is_visible = 1
+            ", (int)$tagId);
+            
+            DB::update('tags', [
+                'item_count' => $count ?: 0
+            ], 'id=%i', (int)$tagId);
         }
     }
 

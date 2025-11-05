@@ -463,10 +463,7 @@
                 if (data.success) {
                     hideModal(bulkCategoriesModalElement);
                     alert(data.message);
-                    // Uncheck all
-                    feedCheckboxes.forEach(cb => cb.checked = false);
-                    document.querySelectorAll('.category-checkbox').forEach(cb => cb.checked = false);
-                    updateBulkButtons();
+                    window.location.reload();
                 } else {
                     alert('Erro: ' + data.message);
                 }
@@ -512,10 +509,7 @@
                 if (data.success) {
                     hideModal(bulkTagsModalElement);
                     alert(data.message);
-                    // Uncheck all
-                    feedCheckboxes.forEach(cb => cb.checked = false);
-                    document.querySelectorAll('.tag-checkbox').forEach(cb => cb.checked = false);
-                    updateBulkButtons();
+                    window.location.reload();
                 } else {
                     alert('Erro: ' + data.message);
                 }
