@@ -25,7 +25,7 @@
             <div class="d-block d-md-flex">
                 <div class="me-3">
                     <?php if(isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) { ?>
-                        <i class="bi bi-file-earmark-lock-fill fs-5 me-2"></i>
+                        <i class="bi bi-file-earmark-lock-fill text-white fs-5 me-2"></i>
                     <?php } else { ?>
                         <i class="bi bi-book-half text-white fs-5 me-2"></i>
                     <?php } ?>
