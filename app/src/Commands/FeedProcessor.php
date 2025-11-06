@@ -69,7 +69,7 @@ class FeedProcessor
 
     private function processParallel(array $feeds, int $maxWorkers): void
     {
-        $batches = array_chunk($feeds, max(1, ceil(count($feeds) / $maxWorkers)));
+        $batches = array_chunk($feeds, max(1, (int)ceil(count($feeds) / $maxWorkers)));
         $this->climate->info("Processing " . count($feeds) . " feeds in " . count($batches) . " batches");
 
         foreach ($batches as $batchIndex => $batch) {
