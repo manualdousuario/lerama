@@ -171,8 +171,14 @@ class FeedProcessor
 
                     $this->processFeed($feed);
 
+                    $feedTitle = $this->extractFeedTitle($feed);
+                    if ($feedTitle && $feedTitle !== $feed['title']) {
+                        $this->climate->info("Updating feed title from '{$feed['title']}' to '{$feedTitle}'");
+                    }
+
                     $this->climate->green("✓ Feed {$feed['title']} is working again after 72 hours paused");
                     DB::update('feeds', [
+                        'title' => $feedTitle ?: $feed['title'],
                         'last_checked' => DB::sqleval("NOW()"),
                         'status' => 'online',
                         'retry_count' => 0,
@@ -197,8 +203,14 @@ class FeedProcessor
 
                     $this->processFeed($feed);
 
+                    $feedTitle = $this->extractFeedTitle($feed);
+                    if ($feedTitle && $feedTitle !== $feed['title']) {
+                        $this->climate->info("Updating feed title from '{$feed['title']}' to '{$feedTitle}'");
+                    }
+
                     $this->climate->green("✓ Feed {$feed['title']} is working again after 24 hours paused");
                     DB::update('feeds', [
+                        'title' => $feedTitle ?: $feed['title'],
                         'last_checked' => DB::sqleval("NOW()"),
                         'status' => 'online',
                         'retry_count' => 0,
@@ -1183,6 +1195,38 @@ class FeedProcessor
             return null;
         } catch (\Exception $e) {
             $this->climate->whisper("Error extracting image: {$e->getMessage()}");
+            return null;
+        }
+    }
+
+    private function extractFeedTitle(array $feed): ?string
+    {
+        try {
+            $feedUrl = $feed['feed_url'];
+            $feedType = $feed['feed_type'];
+
+            $this->climate->whisper("Extracting feed title from: {$feedUrl}");
+
+            if (in_array($feedType, ['rss1', 'rss2', 'atom', 'rdf'])) {
+                $simplePie = new SimplePie();
+                $simplePie->set_feed_url($feedUrl);
+                $simplePie->enable_cache(false);
+                $simplePie->init();
+
+                if (!$simplePie->error()) {
+                    $title = $simplePie->get_title();
+                    if ($title) {
+                        $this->climate->whisper("Feed title extracted: {$title}");
+                        return $title;
+                    }
+                }
+            }
+
+            $this->climate->whisper("Could not extract feed title");
+            return null;
+
+        } catch (\Exception $e) {
+            $this->climate->whisper("Error extracting feed title: {$e->getMessage()}");
             return null;
         }
     }
