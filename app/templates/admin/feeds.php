@@ -21,10 +21,26 @@
     <!-- Filters and Bulk Actions -->
     <div class="card-body border-bottom">
         <div class="row g-3 align-items-end">
+            <!-- Search -->
+            <div class="col-md-4">
+                <label for="search-input" class="form-label small fw-medium"><?= __('common.search') ?></label>
+                <div class="input-group">
+                    <input type="text" id="search-input" class="form-control" placeholder="Buscar feeds..." value="<?= $this->e($searchQuery ?? '') ?>">
+                    <button class="btn btn-primary" type="button" id="search-btn">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <?php if (!empty($searchQuery)): ?>
+                        <button class="btn btn-outline-secondary" type="button" id="clear-search-btn">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    <?php endif; ?>
+                </div>
+            </div>
+
             <!-- Status Filter -->
             <div class="col-md-4">
                 <label for="status-filter" class="form-label small fw-medium"><?= __('admin.feeds.filter_status') ?></label>
-                <select id="status-filter" class="form-select" onchange="window.location.href='/admin/feeds?status=' + this.value">
+                <select id="status-filter" class="form-select">
                     <option value=""><?= __('admin.feeds.all_status') ?></option>
                     <option value="online" <?= $currentStatus === 'online' ? 'selected' : '' ?>><?= __('status.online') ?></option>
                     <option value="offline" <?= $currentStatus === 'offline' ? 'selected' : '' ?>><?= __('status.offline') ?></option>
@@ -35,7 +51,7 @@
             </div>
 
             <!-- Bulk Actions -->
-            <div class="col-md-8">
+            <div class="col-md-4">
                 <div class="d-flex gap-2 flex-wrap">
                     <button id="bulk-categories-btn" class="btn btn-outline-primary" disabled>
                         <i class="bi bi-folder me-1"></i>
@@ -338,6 +354,60 @@
 <?php $this->start('scripts') ?>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Search functionality
+        const searchInput = document.getElementById('search-input');
+        const searchBtn = document.getElementById('search-btn');
+        const clearSearchBtn = document.getElementById('clear-search-btn');
+        const statusFilter = document.getElementById('status-filter');
+
+        function performSearch() {
+            const searchValue = searchInput.value.trim();
+            const statusValue = statusFilter.value;
+            const params = new URLSearchParams();
+            
+            if (searchValue) {
+                params.append('search', searchValue);
+            }
+            if (statusValue) {
+                params.append('status', statusValue);
+            }
+            
+            window.location.href = '/admin/feeds?' + params.toString();
+        }
+
+        searchBtn.addEventListener('click', performSearch);
+
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', function() {
+                const params = new URLSearchParams();
+                const statusValue = statusFilter.value;
+                if (statusValue) {
+                    params.append('status', statusValue);
+                }
+                window.location.href = '/admin/feeds?' + params.toString();
+            });
+        }
+
+        statusFilter.addEventListener('change', function() {
+            const searchValue = searchInput.value.trim();
+            const params = new URLSearchParams();
+            
+            if (searchValue) {
+                params.append('search', searchValue);
+            }
+            if (this.value) {
+                params.append('status', this.value);
+            }
+            
+            window.location.href = '/admin/feeds?' + params.toString();
+        });
+
         function showModal(modalElement) {
             modalElement.classList.add('show');
             modalElement.style.display = 'block';

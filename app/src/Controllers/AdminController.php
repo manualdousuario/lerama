@@ -139,6 +139,7 @@ class AdminController
         $perPage = 50;
         $offset = ($page - 1) * $perPage;
         $status = $params['status'] ?? '';
+        $search = $params['search'] ?? '';
 
         $query = "
             SELECT f.*,
@@ -148,11 +149,25 @@ class AdminController
         ";
         $countQuery = "SELECT COUNT(*) FROM feeds f";
         $queryParams = [];
+        $whereConditions = [];
+
+        if (!empty($search)) {
+            $searchPattern = '%' . $search . '%';
+            $whereConditions[] = "(f.title LIKE %s OR f.feed_url LIKE %s OR f.site_url LIKE %s)";
+            $queryParams[] = $searchPattern;
+            $queryParams[] = $searchPattern;
+            $queryParams[] = $searchPattern;
+        }
 
         if (!empty($status) && in_array($status, ['online', 'offline', 'paused', 'pending', 'rejected'])) {
-            $query .= " WHERE f.status = %s";
-            $countQuery .= " WHERE f.status = %s";
+            $whereConditions[] = "f.status = %s";
             $queryParams[] = $status;
+        }
+
+        if (!empty($whereConditions)) {
+            $whereClause = " WHERE " . implode(" AND ", $whereConditions);
+            $query .= $whereClause;
+            $countQuery .= $whereClause;
         }
 
         $query .= " ORDER BY f.title LIMIT %i, %i";
@@ -190,11 +205,13 @@ class AdminController
             'allCategories' => $allCategories,
             'allTags' => $allTags,
             'currentStatus' => $status,
+            'searchQuery' => $search,
             'pagination' => [
                 'current' => $page,
                 'total' => $totalPages,
                 'baseUrl' => '/admin/feeds?' . http_build_query(array_filter([
-                    'status' => $status
+                    'status' => $status,
+                    'search' => $search
                 ]))
             ],
             'title' => 'Gerenciar Feeds'
