@@ -1,8 +1,8 @@
 # Process feeds
-* */4 * * * /usr/local/bin/php /app/bin/lerama feed:process 2>&1 | tee -a /proc/1/fd/1
+0 */4 * * * /usr/local/bin/php /app/bin/lerama feed:process 2>&1 | tee -a /tmp/cron/feed_process.log
 
 # Check feed status
-* */2 * * * /usr/local/bin/php /app/bin/lerama feed:check-status 2>&1 | tee -a /proc/1/fd/1
+0 0 * * * /usr/local/bin/php /app/bin/lerama feed:check-status 2>&1 | tee -a /tmp/cron/check_status.log
 
 # Update proxy list
-0 0 * * * /usr/local/bin/php /app/bin/lerama proxy:update 2>&1 | tee -a /proc/1/fd/1
+0 0 * * * /usr/local/bin/php /app/bin/lerama proxy:update 2>&1 | tee -a /tmp/cron/proxy_update.log
