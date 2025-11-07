@@ -1180,6 +1180,7 @@ class FeedProcessor
     }
     /**
      * Check if content is Substack subscriber-only
+     * Detects the "Read more" link pattern at the end of truncated content
      */
     private function isSubstackSubscriberOnly(string $url, ?string $content): bool
     {
@@ -1191,56 +1192,40 @@ class FeedProcessor
             return false;
         }
 
-        $subscriberPatterns = [
-            // English
-            '/This is exclusive content for subscribers/i',
-            '/This post is for paid subscribers/i',
-            '/This post is for paying subscribers/i',
-            '/Subscribe to keep reading/i',
-            '/Subscribe now to continue reading/i',
-            '/Upgrade to paid/i',
-            '/Subscribe to read the full story/i',
-            '/This is a preview/i.*subscribe/i',
-            '/Get \d+% off for \d+ year/i',
-            '/Upgrade your subscription/i',
-            '/subscribers only/i',
-            '/Subscribe to unlock/i',
-            '/Already a paying subscriber/i',
-            '/Become a paid subscriber/i',
-            
-            // Spanish
-            '/Este es contenido exclusivo para suscriptores/i',
-            '/Este contenido es para suscriptores/i',
-            '/Esta publicación es para suscriptores/i',
-            '/Suscríbete para seguir leyendo/i',
-            '/Suscríbete para continuar leyendo/i',
-            '/Actualiza a suscripción de pago/i',
-            '/Suscríbete para leer la historia completa/i',
-            '/solo para suscriptores/i',
-            '/Suscríbete para desbloquear/i',
-            '/Conviértete en suscriptor de pago/i',
-            '/Actualiza tu suscripción/i',
-            '/contenido exclusivo para suscriptores/i',
-            
-            // Portuguese
-            '/Este é um conteúdo exclusivo para os assinantes/i',
-            '/Este conteúdo é para assinantes/i',
-            '/Esta publicação é para assinantes/i',
-            '/Assine para continuar lendo/i',
-            '/Assine agora para continuar lendo/i',
-            '/Atualize para assinatura paga/i',
-            '/Assine para ler a história completa/i',
-            '/apenas para assinantes/i',
-            '/Assine para desbloquear/i',
-            '/Torne-se um assinante pago/i',
-            '/Atualize sua assinatura/i',
-            '/conteúdo exclusivo para assinantes/i',
-            '/somente assinantes/i'
+        // Remove whitespace and get the last 500 characters for checking
+        $trimmedContent = trim($content);
+        $endContent = substr($trimmedContent, -500);
+
+        // Pattern 1: Check for "Read more" link pointing to substack.com at the end
+        // Example: <p> <a href="https://example.substack.com/p/post-name"> Read more </a> </p>
+        $readMorePattern = '/<p>\s*<a\s+href=["\']https?:\/\/[^"\']*\.?substack\.com[^"\']*["\']>\s*Read more\s*<\/a>\s*<\/p>\s*$/i';
+        
+        if (preg_match($readMorePattern, $endContent)) {
+            $this->climate->whisper("Detected Substack subscriber-only content (Read more link) in: {$url}");
+            return true;
+        }
+
+        // Pattern 2: Alternative "Read more" patterns without strict spacing
+        $readMorePattern2 = '/<p[^>]*>\s*<a[^>]+href=["\']https?:\/\/[^"\']*\.?substack\.com[^"\']*["\'][^>]*>\s*Read\s+more\s*<\/a>\s*<\/p>\s*$/i';
+        
+        if (preg_match($readMorePattern2, $endContent)) {
+            $this->climate->whisper("Detected Substack subscriber-only content (Read more link alt) in: {$url}");
+            return true;
+        }
+
+        // Pattern 3: Check for common subscriber-only content indicators as fallback
+        $subscriberIndicators = [
+            '/Este (?:é um )?conteúdo exclusivo para (?:os )?assinantes/i',
+            '/This is (?:a |an )?(?:exclusive )?content for (?:paid )?subscribers/i',
+            '/Este(?:s)? (?:es|é) contenido exclusivo para suscriptores/i',
+            '/Subscribe (?:now )?to (?:keep |continue )?reading/i',
+            '/Assine (?:agora )?para (?:continuar |seguir )?lendo/i',
+            '/Suscr[ií]bete (?:ahora )?para (?:seguir |continuar )?leyendo/i'
         ];
 
-        foreach ($subscriberPatterns as $pattern) {
+        foreach ($subscriberIndicators as $pattern) {
             if (preg_match($pattern, $content)) {
-                $this->climate->whisper("Detected Substack subscriber-only content in: {$url}");
+                $this->climate->whisper("Detected Substack subscriber-only content (text indicator) in: {$url}");
                 return true;
             }
         }
