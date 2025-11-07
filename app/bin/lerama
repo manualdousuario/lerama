@@ -69,7 +69,7 @@ switch ($command) {
         $processor->checkPausedFeeds();
         break;
 
-    case 'feed:subscribercheck':
+    case 'feed:subscriber-only':
         // Check all feed items for subscriber-only content
         $processor->checkSubscriberContent();
         break;
@@ -112,7 +112,7 @@ function showUsage(CLImate $climate): void
     $climate->out("  php bin/lerama feed:process [--parallel|-p N]  Process all feeds (optionally with N parallel workers, max 10)");
     $climate->out("  php bin/lerama feed:id {ID_DO_FEED}            Process a specific feed by ID");
     $climate->out("  php bin/lerama feed:check-status               Check and update status of paused feeds");
-    $climate->out("  php bin/lerama feed:subscribercheck            Check all feed items for Substack subscriber-only content");
+    $climate->out("  php bin/lerama feed:subscribercheck            Check all feed items for  subscriber-only content");
     $climate->out("  php bin/lerama feed:import <CSV_FILE>          Import feeds from CSV file (columns: url, tags, category)");
     $climate->out("  php bin/lerama proxy:update                    Update proxy list from PROXY_LIST URL");
     $climate->out("");
