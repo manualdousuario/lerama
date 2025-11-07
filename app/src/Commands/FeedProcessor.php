@@ -21,6 +21,7 @@ class FeedProcessor
     private ProxyService $proxyService;
     private EmailService $emailService;
     private array $defaultClientConfig;
+    private bool $subscriberTextShow;
 
     public function __construct(CLImate $climate)
     {
@@ -31,6 +32,11 @@ class FeedProcessor
         $this->defaultClientConfig = HttpClientConfig::getDefaultConfig();
 
         $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
+        
+        $this->subscriberTextShow = filter_var(
+            $_ENV['SUBSCRIBER_SHOW_POST'] ?? 'false',
+            FILTER_VALIDATE_BOOLEAN
+        );
     }
 
     public function process(?int $feedId = null, int $parallel = 1): void
@@ -315,6 +321,7 @@ class FeedProcessor
             $date = $item->get_date('Y-m-d H:i:s') ?: date('Y-m-d H:i:s');
 
             $imageUrl = $this->extractImageFromUrl($url);
+            $isVisible = $this->subscriberTextShow ? true : !$this->isSubstackSubscriberOnly($url, $content);
 
             try {
                 DB::insert('feed_items', [
@@ -325,7 +332,8 @@ class FeedProcessor
                     'url' => $url,
                     'image_url' => $imageUrl,
                     'guid' => $guid,
-                    'published_at' => $date
+                    'published_at' => $date,
+                    'is_visible' => $isVisible ? 1 : 0
                 ]);
                 $count++;
                 $updated = true;
@@ -415,6 +423,7 @@ class FeedProcessor
                     $date = $item->get_date('Y-m-d H:i:s') ?: date('Y-m-d H:i:s');
 
                     $imageUrl = $this->extractImageFromUrl($url);
+                    $isVisible = $this->subscriberTextShow ? true : !$this->isSubstackSubscriberOnly($url, $content);
 
                     try {
                         DB::insert('feed_items', [
@@ -425,7 +434,8 @@ class FeedProcessor
                             'url' => $url,
                             'image_url' => $imageUrl,
                             'guid' => $guid,
-                            'published_at' => $date
+                            'published_at' => $date,
+                            'is_visible' => $isVisible ? 1 : 0
                         ]);
                         $count++;
                         $updated = true;
@@ -562,17 +572,20 @@ class FeedProcessor
             $this->climate->whisper("Processing item: {$title} ({$url})");
 
             $imageUrl = $this->extractImageFromUrl($url);
+            $content = $contentIndex !== false && isset($data[$contentIndex]) ? $data[$contentIndex] : null;
+            $isVisible = $this->subscriberTextShow ? true : !$this->isSubstackSubscriberOnly($url, $content);
 
             try {
                 DB::insert('feed_items', [
                     'feed_id' => $feed['id'],
                     'title' => $title,
                     'author' => $authorIndex !== false && isset($data[$authorIndex]) ? $data[$authorIndex] : null,
-                    'content' => $contentIndex !== false && isset($data[$contentIndex]) ? $data[$contentIndex] : null,
+                    'content' => $content,
                     'url' => $url,
                     'image_url' => $imageUrl,
                     'guid' => $guid,
-                    'published_at' => $dateIndex !== false && isset($data[$dateIndex]) ? $data[$dateIndex] : date('Y-m-d H:i:s')
+                    'published_at' => $dateIndex !== false && isset($data[$dateIndex]) ? $data[$dateIndex] : date('Y-m-d H:i:s'),
+                    'is_visible' => $isVisible ? 1 : 0
                 ]);
                 $count++;
                 $updated = true;
@@ -683,17 +696,20 @@ class FeedProcessor
                     $this->climate->whisper("Processing item from page {$currentPage}: {$title} ({$url})");
 
                     $imageUrl = $this->extractImageFromUrl($url);
+                    $content = $contentIndex !== false && isset($data[$contentIndex]) ? $data[$contentIndex] : null;
+                    $isVisible = $this->subscriberTextShow ? true : !$this->isSubstackSubscriberOnly($url, $content);
 
                     try {
                         DB::insert('feed_items', [
                             'feed_id' => $feed['id'],
                             'title' => $title,
                             'author' => $authorIndex !== false && isset($data[$authorIndex]) ? $data[$authorIndex] : null,
-                            'content' => $contentIndex !== false && isset($data[$contentIndex]) ? $data[$contentIndex] : null,
+                            'content' => $content,
                             'url' => $url,
                             'image_url' => $imageUrl,
                             'guid' => $guid,
-                            'published_at' => $dateIndex !== false && isset($data[$dateIndex]) ? $data[$dateIndex] : date('Y-m-d H:i:s')
+                            'published_at' => $dateIndex !== false && isset($data[$dateIndex]) ? $data[$dateIndex] : date('Y-m-d H:i:s'),
+                            'is_visible' => $isVisible ? 1 : 0
                         ]);
                         $count++;
                         $pageItemCount++;
@@ -787,6 +803,7 @@ class FeedProcessor
             $this->climate->whisper("Processing JSON item: {$title} ({$url})");
 
             $imageUrl = $this->extractImageFromUrl($url);
+            $isVisible = $this->subscriberTextShow ? true : !$this->isSubstackSubscriberOnly($url, $content);
 
             try {
                 DB::insert('feed_items', [
@@ -797,7 +814,8 @@ class FeedProcessor
                     'url' => $url,
                     'image_url' => $imageUrl,
                     'guid' => $guid,
-                    'published_at' => $date
+                    'published_at' => $date,
+                    'is_visible' => $isVisible ? 1 : 0
                 ]);
                 $count++;
                 $updated = true;
@@ -885,6 +903,7 @@ class FeedProcessor
                     $this->climate->whisper("Processing JSON item from page {$currentPage}: {$title} ({$url})");
 
                     $imageUrl = $this->extractImageFromUrl($url);
+                    $isVisible = $this->subscriberTextShow ? true : !$this->isSubstackSubscriberOnly($url, $content);
 
                     try {
                         DB::insert('feed_items', [
@@ -895,7 +914,8 @@ class FeedProcessor
                             'url' => $url,
                             'image_url' => $imageUrl,
                             'guid' => $guid,
-                            'published_at' => $date
+                            'published_at' => $date,
+                            'is_visible' => $isVisible ? 1 : 0
                         ]);
                         $count++;
                         $pageItemCount++;
@@ -982,6 +1002,7 @@ class FeedProcessor
             $this->climate->whisper("Processing XML item: {$title} ({$url})");
 
             $imageUrl = $this->extractImageFromUrl($url);
+            $isVisible = $this->subscriberTextShow ? true : !$this->isSubstackSubscriberOnly($url, $content);
 
             try {
                 DB::insert('feed_items', [
@@ -992,7 +1013,8 @@ class FeedProcessor
                     'url' => $url,
                     'image_url' => $imageUrl,
                     'guid' => $guid,
-                    'published_at' => $date
+                    'published_at' => $date,
+                    'is_visible' => $isVisible ? 1 : 0
                 ]);
                 $count++;
                 $updated = true;
@@ -1098,6 +1120,7 @@ class FeedProcessor
                     $this->climate->whisper("Processing XML item from page {$currentPage}: {$title} ({$url})");
 
                     $imageUrl = $this->extractImageFromUrl($url);
+                    $isVisible = $this->subscriberTextShow ? true : !$this->isSubstackSubscriberOnly($url, $content);
 
                     try {
                         DB::insert('feed_items', [
@@ -1108,7 +1131,8 @@ class FeedProcessor
                             'url' => $url,
                             'image_url' => $imageUrl,
                             'guid' => $guid,
-                            'published_at' => $date
+                            'published_at' => $date,
+                            'is_visible' => $isVisible ? 1 : 0
                         ]);
                         $count++;
                         $pageItemCount++;
@@ -1154,6 +1178,119 @@ class FeedProcessor
         }
         $this->climate->out("Added {$count} new items from XML feed: {$feed['title']}");
     }
+    /**
+     * Check if content is Substack subscriber-only
+     */
+    private function isSubstackSubscriberOnly(string $url, ?string $content): bool
+    {
+        if (stripos($url, 'substack.com') === false) {
+            return false;
+        }
+
+        if (empty($content)) {
+            return false;
+        }
+
+        $subscriberPatterns = [
+            // English
+            '/This is exclusive content for subscribers/i',
+            '/This post is for paid subscribers/i',
+            '/This post is for paying subscribers/i',
+            '/Subscribe to keep reading/i',
+            '/Subscribe now to continue reading/i',
+            '/Upgrade to paid/i',
+            '/Subscribe to read the full story/i',
+            '/This is a preview/i.*subscribe/i',
+            '/Get \d+% off for \d+ year/i',
+            '/Upgrade your subscription/i',
+            '/subscribers only/i',
+            '/Subscribe to unlock/i',
+            '/Already a paying subscriber/i',
+            '/Become a paid subscriber/i',
+            
+            // Spanish
+            '/Este es contenido exclusivo para suscriptores/i',
+            '/Este contenido es para suscriptores/i',
+            '/Esta publicación es para suscriptores/i',
+            '/Suscríbete para seguir leyendo/i',
+            '/Suscríbete para continuar leyendo/i',
+            '/Actualiza a suscripción de pago/i',
+            '/Suscríbete para leer la historia completa/i',
+            '/solo para suscriptores/i',
+            '/Suscríbete para desbloquear/i',
+            '/Conviértete en suscriptor de pago/i',
+            '/Actualiza tu suscripción/i',
+            '/contenido exclusivo para suscriptores/i',
+            
+            // Portuguese
+            '/Este é um conteúdo exclusivo para os assinantes/i',
+            '/Este conteúdo é para assinantes/i',
+            '/Esta publicação é para assinantes/i',
+            '/Assine para continuar lendo/i',
+            '/Assine agora para continuar lendo/i',
+            '/Atualize para assinatura paga/i',
+            '/Assine para ler a história completa/i',
+            '/apenas para assinantes/i',
+            '/Assine para desbloquear/i',
+            '/Torne-se um assinante pago/i',
+            '/Atualize sua assinatura/i',
+            '/conteúdo exclusivo para assinantes/i',
+            '/somente assinantes/i'
+        ];
+
+        foreach ($subscriberPatterns as $pattern) {
+            if (preg_match($pattern, $content)) {
+                $this->climate->whisper("Detected Substack subscriber-only content in: {$url}");
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check all feed items for Substack subscriber-only content and mark them as invisible
+     */
+    public function checkSubscriberContent(): void
+    {
+        $this->climate->info("Checking all feed items for subscriber-only content...");
+
+        $items = DB::query("SELECT id, url, content FROM feed_items WHERE is_visible = 1");
+
+        if (empty($items)) {
+            $this->climate->info("No visible items found to check");
+            return;
+        }
+
+        $totalItems = count($items);
+        $this->climate->info("Found {$totalItems} visible items to check");
+
+        $markedInvisible = 0;
+        $processed = 0;
+
+        foreach ($items as $item) {
+            $processed++;
+            
+            // Show progress every 100 items
+            if ($processed % 100 === 0) {
+                $this->climate->info("Progress: {$processed}/{$totalItems} items checked...");
+            }
+
+            if ($this->isSubstackSubscriberOnly($item['url'], $item['content'])) {
+                DB::update('feed_items', [
+                    'is_visible' => 0
+                ], 'id=%i', $item['id']);
+
+                $markedInvisible++;
+                $this->climate->whisper("Marked as invisible (ID: {$item['id']}): {$item['url']}");
+            }
+        }
+
+        $this->climate->green("✓ Process complete!");
+        $this->climate->info("Total items checked: {$totalItems}");
+        $this->climate->info("Items marked as invisible: {$markedInvisible}");
+    }
+
     private function extractImageFromUrl(string $url): ?string
     {
         if (empty($url)) {
