@@ -1194,9 +1194,17 @@ class FeedProcessor
         }
 
         // WordPress Password Protected Post
-        if (strpos($content, 'wp-login.php?action=postpass') !== false) {
-            $this->climate->whisper("Detected WordPress password protected post in: {$url}");
-            return ['status' => 'invisible', 'reason' => 'wordpress_password_protected'];
+        $passwordPatterns = [
+            'wp-login.php?action=postpass',
+            'Este conteúdo está protegido por senha',
+            'This content is password protected.'
+        ];
+
+        foreach ($passwordPatterns as $pattern) {
+            if (strpos($content, $pattern) !== false) {
+                $this->climate->whisper("Detected WordPress password protected post in: {$url}");
+                return ['status' => 'invisible', 'reason' => 'wordpress_password_protected'];
+            }
         }
 
         $trimmedContent = trim($content);
