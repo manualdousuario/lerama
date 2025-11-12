@@ -321,7 +321,8 @@ class FeedProcessor
             $date = $item->get_date('Y-m-d H:i:s') ?: date('Y-m-d H:i:s');
 
             $imageUrl = $this->extractImageFromUrl($url);
-            $isVisible = $this->subscriberTextShow ? true : !$this->isSubscriberOnly($url, $content);
+            $contentCheck = $this->checkRealContent($content, $url);
+            $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
 
             try {
                 DB::insert('feed_items', [
@@ -423,7 +424,8 @@ class FeedProcessor
                     $date = $item->get_date('Y-m-d H:i:s') ?: date('Y-m-d H:i:s');
 
                     $imageUrl = $this->extractImageFromUrl($url);
-                    $isVisible = $this->subscriberTextShow ? true : !$this->isSubscriberOnly($url, $content);
+                    $contentCheck = $this->checkRealContent($content, $url);
+                    $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
 
                     try {
                         DB::insert('feed_items', [
@@ -573,7 +575,8 @@ class FeedProcessor
 
             $imageUrl = $this->extractImageFromUrl($url);
             $content = $contentIndex !== false && isset($data[$contentIndex]) ? $data[$contentIndex] : null;
-            $isVisible = $this->subscriberTextShow ? true : !$this->isSubscriberOnly($url, $content);
+            $contentCheck = $this->checkRealContent($content, $url);
+            $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
 
             try {
                 DB::insert('feed_items', [
@@ -697,7 +700,8 @@ class FeedProcessor
 
                     $imageUrl = $this->extractImageFromUrl($url);
                     $content = $contentIndex !== false && isset($data[$contentIndex]) ? $data[$contentIndex] : null;
-                    $isVisible = $this->subscriberTextShow ? true : !$this->isSubscriberOnly($url, $content);
+                    $contentCheck = $this->checkRealContent($content, $url);
+                    $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
 
                     try {
                         DB::insert('feed_items', [
@@ -803,7 +807,8 @@ class FeedProcessor
             $this->climate->whisper("Processing JSON item: {$title} ({$url})");
 
             $imageUrl = $this->extractImageFromUrl($url);
-            $isVisible = $this->subscriberTextShow ? true : !$this->isSubscriberOnly($url, $content);
+            $contentCheck = $this->checkRealContent($content, $url);
+            $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
 
             try {
                 DB::insert('feed_items', [
@@ -903,7 +908,8 @@ class FeedProcessor
                     $this->climate->whisper("Processing JSON item from page {$currentPage}: {$title} ({$url})");
 
                     $imageUrl = $this->extractImageFromUrl($url);
-                    $isVisible = $this->subscriberTextShow ? true : !$this->isSubscriberOnly($url, $content);
+                    $contentCheck = $this->checkRealContent($content, $url);
+                    $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
 
                     try {
                         DB::insert('feed_items', [
@@ -1002,7 +1008,8 @@ class FeedProcessor
             $this->climate->whisper("Processing XML item: {$title} ({$url})");
 
             $imageUrl = $this->extractImageFromUrl($url);
-            $isVisible = $this->subscriberTextShow ? true : !$this->isSubscriberOnly($url, $content);
+            $contentCheck = $this->checkRealContent($content, $url);
+            $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
 
             try {
                 DB::insert('feed_items', [
@@ -1120,7 +1127,8 @@ class FeedProcessor
                     $this->climate->whisper("Processing XML item from page {$currentPage}: {$title} ({$url})");
 
                     $imageUrl = $this->extractImageFromUrl($url);
-                    $isVisible = $this->subscriberTextShow ? true : !$this->isSubscriberOnly($url, $content);
+                    $contentCheck = $this->checkRealContent($content, $url);
+                    $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
 
                     try {
                         DB::insert('feed_items', [
@@ -1178,36 +1186,36 @@ class FeedProcessor
         }
         $this->climate->out("Added {$count} new items from XML feed: {$feed['title']}");
     }
-    /**
-     * Check if content is subscriber-only
-     * Detects the "Read more" link pattern at the end of truncated content
-     */
-    private function isSubscriberOnly(string $url, ?string $content): bool
+    
+    private function checkRealContent(?string $content, ?string $url = ''): array
     {
         if (empty($content)) {
-            return false;
+            return ['status' => 'visible', 'reason' => 'empty_content'];
+        }
+
+        // WordPress Password Protected Post
+        if (strpos($content, 'wp-login.php?action=postpass') !== false) {
+            $this->climate->whisper("Detected WordPress password protected post in: {$url}");
+            return ['status' => 'invisible', 'reason' => 'wordpress_password_protected'];
         }
 
         $trimmedContent = trim($content);
         $endContent = substr($trimmedContent, -500);
 
-        // Substack
-            // Pattern 1: Check for "Read more" link pointing to substack.com at the end
-            // Example: <p> <a href="https://example.substack.com/p/post-name"> Read more </a> </p>
-            $readMorePattern = '/<p>\s*<a\s+href=["\']https?:\/\/[^"\']*\.?substack\.com[^"\']*["\']>\s*Read more\s*<\/a>\s*<\/p>\s*$/i';
-            if (preg_match($readMorePattern, $endContent)) {
-                $this->climate->whisper("Detected Substack subscriber-only content (Read more link) in: {$url}");
-                return true;
-            }
+        // Substack "Read more" patterns
+        $readMorePatterns = [
+            '/<p>\s*<a\s+href=["\']https?:\/\/[^"\']*\.?substack\.com[^"\']*["\']>\s*Read more\s*<\/a>\s*<\/p>\s*$/i',
+            '/<p[^>]*>\s*<a[^>]+href=["\']https?:\/\/[^"\']*\.?substack\.com[^"\']*["\'][^>]*>\s*Read\s+more\s*<\/a>\s*<\/p>\s*$/i'
+        ];
 
-            // Pattern 2: Alternative "Read more" patterns without strict spacing
-            $readMorePattern2 = '/<p[^>]*>\s*<a[^>]+href=["\']https?:\/\/[^"\']*\.?substack\.com[^"\']*["\'][^>]*>\s*Read\s+more\s*<\/a>\s*<\/p>\s*$/i';
-            if (preg_match($readMorePattern2, $endContent)) {
-                $this->climate->whisper("Detected subscriber-only content (Read more link alt) in: {$url}");
-                return true;
+        foreach ($readMorePatterns as $pattern) {
+            if (preg_match($pattern, $endContent)) {
+                $this->climate->whisper("Detected Substack subscriber-only content in: {$url}");
+                return ['status' => 'invisible', 'reason' => 'substack_read_more'];
             }
+        }
 
-        // Pattern 3: Fallback
+        // Generic subscriber-only text indicators
         $subscriberIndicators = [
             '/Este (?:é um )?conteúdo exclusivo para (?:os )?assinantes/i',
             '/This is (?:a |an )?(?:exclusive )?content for (?:paid )?subscribers/i',
@@ -1220,19 +1228,16 @@ class FeedProcessor
         foreach ($subscriberIndicators as $pattern) {
             if (preg_match($pattern, $content)) {
                 $this->climate->whisper("Detected subscriber-only content (text indicator) in: {$url}");
-                return true;
+                return ['status' => 'invisible', 'reason' => 'subscriber_text'];
             }
         }
 
-        return false;
+        return ['status' => 'visible', 'reason' => 'no_patterns_matched'];
     }
 
-    /**
-     * Check all feed items for subscriber-only content and mark them as invisible
-     */
-    public function checkSubscriberContent(): void
+    public function checkItemsContent(): void
     {
-        $this->climate->info("Checking all feed items for subscriber-only content...");
+        $this->climate->info("Checking all feed items for special content...");
 
         $items = DB::query("SELECT id, url, content FROM feed_items WHERE is_visible = 1");
 
@@ -1250,18 +1255,19 @@ class FeedProcessor
         foreach ($items as $item) {
             $processed++;
             
-            // Show progress every 100 items
             if ($processed % 100 === 0) {
                 $this->climate->info("Progress: {$processed}/{$totalItems} items checked...");
             }
 
-            if ($this->isSubscriberOnly($item['url'], $item['content'])) {
+            $contentCheck = $this->checkRealContent($item['content'], $item['url']);
+
+            if ($contentCheck['status'] === 'invisible') {
                 DB::update('feed_items', [
                     'is_visible' => 0
                 ], 'id=%i', $item['id']);
 
                 $markedInvisible++;
-                $this->climate->whisper("Marked as invisible (ID: {$item['id']}): {$item['url']}");
+                $this->climate->whisper("Marked as invisible (ID: {$item['id']}, Reason: {$contentCheck['reason']}): {$item['url']}");
             }
         }
 

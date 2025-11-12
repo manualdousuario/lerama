@@ -69,9 +69,9 @@ switch ($command) {
         $processor->checkPausedFeeds();
         break;
 
-    case 'feed:subscriber-only':
-        // Check all feed items for subscriber-only content
-        $processor->checkSubscriberContent();
+    case 'feed:check-real-content':
+        // Check all feed items for real contents
+        $processor->checkItemsContent();
         break;
 
     case 'proxy:update':
