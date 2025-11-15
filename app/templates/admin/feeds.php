@@ -22,7 +22,7 @@
     <div class="card-body border-bottom">
         <div class="row g-3 align-items-end">
             <!-- Search -->
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label for="search-input" class="form-label small fw-medium"><?= __('common.search') ?></label>
                 <div class="input-group">
                     <input type="text" id="search-input" class="form-control" placeholder="Buscar feeds..." value="<?= $this->e($searchQuery ?? '') ?>">
@@ -38,7 +38,7 @@
             </div>
 
             <!-- Status Filter -->
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label for="status-filter" class="form-label small fw-medium"><?= __('admin.feeds.filter_status') ?></label>
                 <select id="status-filter" class="form-select">
                     <option value=""><?= __('admin.feeds.all_status') ?></option>
@@ -51,8 +51,12 @@
             </div>
 
             <!-- Bulk Actions -->
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="d-flex gap-2 flex-wrap">
+                    <button id="bulk-status-btn" class="btn btn-outline-primary" disabled>
+                        <i class="bi bi-toggle-on me-1"></i>
+                        <?= __('admin.feeds.bulk_status') ?>
+                    </button>
                     <button id="bulk-categories-btn" class="btn btn-outline-primary" disabled>
                         <i class="bi bi-folder me-1"></i>
                         <?= __('admin.feeds.bulk_categories') ?>
@@ -351,6 +355,44 @@
     </div>
 </div>
 
+<!-- Bulk Status Modal -->
+<div class="modal fade" id="bulk-status-modal" tabindex="-1" aria-labelledby="bulk-status-title" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulk-status-title">Alterar Status em Lote</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-secondary mb-3">
+                    Selecione o novo status para <span id="bulk-status-count">0</span> feed(s) selecionado(s):
+                </p>
+                <div class="form-group">
+                    <label for="bulk-status-select" class="form-label fw-medium">Novo Status</label>
+                    <select id="bulk-status-select" class="form-select">
+                        <option value="">Selecione um status...</option>
+                        <option value="online"><?= __('status.online') ?></option>
+                        <option value="offline"><?= __('status.offline') ?></option>
+                        <option value="paused"><?= __('status.paused') ?></option>
+                        <option value="pending"><?= __('status.pending') ?></option>
+                        <option value="rejected"><?= __('status.rejected') ?></option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-1"></i>
+                    <?= __('common.cancel') ?>
+                </button>
+                <button type="button" class="btn btn-primary" id="confirm-bulk-status">
+                    <i class="bi bi-check-lg me-1"></i>
+                    Aplicar Status
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php $this->start('scripts') ?>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -444,6 +486,7 @@
         // Bulk selection
         const selectAllCheckbox = document.getElementById('select-all');
         const feedCheckboxes = document.querySelectorAll('.feed-checkbox');
+        const bulkStatusBtn = document.getElementById('bulk-status-btn');
         const bulkCategoriesBtn = document.getElementById('bulk-categories-btn');
         const bulkTagsBtn = document.getElementById('bulk-tags-btn');
         const selectionCount = document.getElementById('selection-count');
@@ -462,6 +505,8 @@
             checkbox.addEventListener('change', updateBulkButtons);
         });
 
+        const bulkStatusModalElement = document.getElementById('bulk-status-modal');
+
         document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(button => {
             button.addEventListener('click', function() {
                 const modal = this.closest('.modal');
@@ -471,7 +516,7 @@
             });
         });
 
-        [deleteModalElement, bulkCategoriesModalElement, bulkTagsModalElement].forEach(modal => {
+        [deleteModalElement, bulkCategoriesModalElement, bulkTagsModalElement, bulkStatusModalElement].forEach(modal => {
             modal.addEventListener('click', function(e) {
                 if (e.target === this) {
                     hideModal(this);
@@ -483,6 +528,7 @@
             const selectedCount = Array.from(feedCheckboxes).filter(cb => cb.checked).length;
             const hasSelection = selectedCount > 0;
             
+            bulkStatusBtn.disabled = !hasSelection;
             bulkCategoriesBtn.disabled = !hasSelection;
             bulkTagsBtn.disabled = !hasSelection;
             
@@ -497,6 +543,52 @@
             selectAllCheckbox.checked = selectedCount === feedCheckboxes.length;
             selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < feedCheckboxes.length;
         }
+
+        // Bulk status
+        bulkStatusBtn.addEventListener('click', function() {
+            const selectedCount = Array.from(feedCheckboxes).filter(cb => cb.checked).length;
+            document.getElementById('bulk-status-count').textContent = selectedCount;
+            document.getElementById('bulk-status-select').value = '';
+            showModal(bulkStatusModalElement);
+        });
+
+        document.getElementById('confirm-bulk-status').addEventListener('click', function() {
+            const selectedFeeds = Array.from(feedCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => parseInt(cb.value));
+            
+            const newStatus = document.getElementById('bulk-status-select').value;
+            
+            if (!newStatus) {
+                alert('Selecione um status');
+                return;
+            }
+
+            fetch('/admin/feeds/bulk/status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    feed_ids: selectedFeeds,
+                    status: newStatus
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    hideModal(bulkStatusModalElement);
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert('Erro: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ocorreu um erro ao atualizar o status.');
+            });
+        });
 
         // Bulk categories
         bulkCategoriesBtn.addEventListener('click', function() {

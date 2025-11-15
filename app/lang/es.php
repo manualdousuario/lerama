@@ -129,6 +129,7 @@ return [
     'admin.feeds.add_new' => 'Añadir Nuevo Feed',
     'admin.feeds.filter_status' => 'Filtrar por Estado',
     'admin.feeds.all_status' => 'Todos los Estados',
+    'admin.feeds.bulk_status' => 'Cambiar Estado',
     'admin.feeds.bulk_categories' => 'Editar Categorías',
     'admin.feeds.bulk_tags' => 'Editar Etiquetas',
     'admin.feeds.selected' => 'seleccionado(s)',

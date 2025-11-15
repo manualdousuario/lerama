@@ -1360,6 +1360,48 @@ class AdminController
         }
     }
 
+    public function bulkUpdateFeedStatus(ServerRequestInterface $request): ResponseInterface
+    {
+        $params = json_decode($request->getBody()->getContents(), true) ?: (array)$request->getParsedBody();
+        
+        $feedIds = $params['feed_ids'] ?? [];
+        $status = $params['status'] ?? '';
+        
+        if (empty($feedIds) || !is_array($feedIds)) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Nenhum feed selecionado'
+            ], 400);
+        }
+        
+        $validStatuses = ['online', 'offline', 'paused', 'pending', 'rejected'];
+        if (!in_array($status, $validStatuses)) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Status inválido. Valores permitidos: online, offline, paused, pending, rejected'
+            ], 400);
+        }
+        
+        try {
+            // Update status for all selected feeds
+            foreach ($feedIds as $feedId) {
+                DB::update('feeds', [
+                    'status' => $status
+                ], 'id=%i', (int)$feedId);
+            }
+            
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Status atualizado com sucesso para ' . count($feedIds) . ' feed(s)'
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erro ao atualizar status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     /**
      * Recalculate item counts for specified categories
      *

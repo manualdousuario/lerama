@@ -129,6 +129,7 @@ return [
     'admin.feeds.add_new' => 'Add New Feed',
     'admin.feeds.filter_status' => 'Filter by Status',
     'admin.feeds.all_status' => 'All Statuses',
+    'admin.feeds.bulk_status' => 'Change Status',
     'admin.feeds.bulk_categories' => 'Edit Categories',
     'admin.feeds.bulk_tags' => 'Edit Tags',
     'admin.feeds.selected' => 'selected',
