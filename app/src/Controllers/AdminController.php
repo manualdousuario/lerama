@@ -12,6 +12,7 @@ use Laminas\Diactoros\Response\RedirectResponse;
 use Laminas\Diactoros\Response\EmptyResponse;
 use League\Plates\Engine;
 use Lerama\Services\FeedTypeDetector;
+use Lerama\Services\EmailService;
 use DB;
 
 class AdminController
@@ -296,6 +297,16 @@ class AdminController
                         }
                     }
 
+                    $emailService = new EmailService();
+                    $emailService->sendFeedRegistrationNotification([
+                        'title' => $title,
+                        'feed_url' => $feedUrl,
+                        'site_url' => $siteUrl,
+                        'feed_type' => $feedType,
+                        'language' => $language,
+                        'status' => 'online'
+                    ]);
+
                     return new RedirectResponse('/admin/feeds');
                 } catch (\Exception $e) {
                     $errors['general'] = 'Erro ao criar feed: ' . $e->getMessage();
@@ -510,6 +521,16 @@ class AdminController
                 'feed_url' => $feedUrl,
                 'site_url' => $siteUrl,
                 'feed_type' => $feedType,
+                'status' => 'online'
+            ]);
+
+            $emailService = new EmailService();
+            $emailService->sendFeedRegistrationNotification([
+                'title' => $title,
+                'feed_url' => $feedUrl,
+                'site_url' => $siteUrl,
+                'feed_type' => $feedType,
+                'language' => 'en',
                 'status' => 'online'
             ]);
 
