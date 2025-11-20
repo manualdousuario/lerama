@@ -178,19 +178,15 @@ class SuggestionController
             ]);
 
             if ($categoryId !== null) {
-                DB::insert('feed_categories', [
-                    'feed_id' => $feedId,
-                    'category_id' => $categoryId
-                ]);
+                DB::query("INSERT IGNORE INTO feed_categories (feed_id, category_id) VALUES (%i, %i)",
+                    $feedId, $categoryId);
             }
 
             // Insert tags
             if (!empty($tagIds)) {
                 foreach ($tagIds as $tagId) {
-                    DB::insert('feed_tags', [
-                        'feed_id' => $feedId,
-                        'tag_id' => (int)$tagId
-                    ]);
+                    DB::query("INSERT IGNORE INTO feed_tags (feed_id, tag_id) VALUES (%i, %i)",
+                        $feedId, (int)$tagId);
                 }
             }
 
