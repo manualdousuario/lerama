@@ -79,7 +79,7 @@
                         <?php foreach ($items as $item): ?>
                             <tr>
                                 <td class="align-middle fw-medium">
-                                    <a href="<?= $this->e($item['url']) ?>" target="_blank" class="text-decoration-none">
+                                    <a href="<?= $this->e($item['url']) . (parse_url($item['url'], PHP_URL_QUERY) ? '&' : '?') ?>utm_source=lerama" target="_blank" class="text-decoration-none">
                                         <?= $this->e($item['title']) ?>
                                         <i class="bi bi-box-arrow-up-right ms-1"></i>
                                     </a>

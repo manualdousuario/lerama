@@ -101,7 +101,7 @@
                                     <div class="d-flex">
                                         <div>
                                             <div class="fw-medium">
-                                                <a href="<?= $this->e($feed['site_url']) ?>" target="_blank" class="text-decoration-none">
+                                                <a href="<?= $this->e($feed['site_url']) . (parse_url($feed['site_url'], PHP_URL_QUERY) ? '&' : '?') ?>utm_source=lerama" target="_blank" class="text-decoration-none">
                                                     <?= $this->e($feed['title']) ?>
                                                     <i class="bi bi-box-arrow-up-right ms-1"></i>
                                                 </a>

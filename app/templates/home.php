@@ -82,13 +82,13 @@
                         <div class="flex-fill">
                             <div class="pb-2 pb-md-0">
                                 <h4 class="fs-5 fw-medium text-primary m-0">
-                                    <a href="<?= $this->e($item['url']) ?>" target="_blank" class="text-decoration-none hover-underline">
-                                        <?= $this->e($item['title']) ?>
-                                    </a>
+                                    <a href="<?= $this->e($item['url']) . (parse_url($item['url'], PHP_URL_QUERY) ? '&' : '?') ?>utm_source=lerama" target="_blank" class="text-decoration-none hover-underline">
+                                            <?= $this->e($item['title']) ?>
+                                        </a>
                                 </h4>
                                 <div class="d-block">
                                     <span><?= __('common.in') ?></span>
-                                    <a href="<?= $this->e($item['site_url']) ?>" target="_blank" class="text-truncate">
+                                    <a href="<?= $this->e($item['site_url']) . (parse_url($item['site_url'], PHP_URL_QUERY) ? '&' : '?') ?>utm_source=lerama" target="_blank" class="text-truncate">
                                         <?= $this->e($item['feed_title']) ?>
                                     </a>
                                 </div>
