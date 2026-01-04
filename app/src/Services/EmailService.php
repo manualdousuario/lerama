@@ -33,6 +33,7 @@ class EmailService
             }
             
             $this->mailer->SMTPSecure = $_ENV['SMTP_SECURE'] ?? PHPMailer::ENCRYPTION_STARTTLS;
+            $this->mailer->CharSet = PHPMailer::CHARSET_UTF8;
             $this->mailer->setFrom($_ENV['SMTP_FROM_EMAIL'], $_ENV['SMTP_FROM_NAME']);
         }
     }

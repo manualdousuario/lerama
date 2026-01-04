@@ -11,6 +11,7 @@ use Laminas\Diactoros\Response\JsonResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use League\Plates\Engine;
 use Lerama\Services\FeedTypeDetector;
+use Lerama\Services\EmailService;
 use Gregwar\Captcha\CaptchaBuilder;
 use DB;
 
@@ -190,7 +191,17 @@ class SuggestionController
                 }
             }
 
-            if ($request->getHeaderLine('Accept') === 'application/json' || 
+            $emailService = new EmailService();
+            $emailService->sendFeedRegistrationNotification([
+                'title' => $title,
+                'feed_url' => $feedUrl,
+                'site_url' => $siteUrl,
+                'feed_type' => $feedType,
+                'language' => $language,
+                'status' => 'pending'
+            ]);
+
+            if ($request->getHeaderLine('Accept') === 'application/json' ||
                 $request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
                 return new JsonResponse([
                     'success' => true,
