@@ -54,6 +54,13 @@ Lightweight and efficient feed aggregator, developed as an alternative to [OpenO
    LERAMA_DB_PASS: secure_password
    ```
 
+   **Cron:**
+   ```yaml
+   CRONTAB_PROCESS_FEEDS: "0 */4 * * *"  # Feed processing (default: every 4 hours)
+   CRONTAB_FEED_STATUS: "0 0 * * *"      # Feed status check (default: midnight)
+   CRONTAB_PROXY: "0 0 * * *"            # Proxy list update (default: midnight)
+   ```
+
 3. **Start the containers:**
    ```bash
    docker-compose up -d

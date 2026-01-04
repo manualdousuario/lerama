@@ -54,6 +54,13 @@ Agregador de feeds leve e eficiente, desenvolvido como alternativa ao [OpenOrb](
    LERAMA_DB_PASS: senha_segura
    ```
 
+   **Cron:**
+   ```yaml
+   CRONTAB_PROCESS_FEEDS: "0 */4 * * *"  # Processamento de feeds (padrão: a cada 4 horas)
+   CRONTAB_FEED_STATUS: "0 0 * * *"      # Verificação de status dos feeds (padrão: meia-noite)
+   CRONTAB_PROXY: "0 0 * * *"            # Atualização da lista de proxies (padrão: meia-noite)
+   ```
+
 3. **Inicie os containers:**
    ```bash
    docker-compose up -d
