@@ -1,0 +1,30 @@
+#!/bin/bash
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+log_success() {
+    echo -e "${GREEN}[✓] $1${NC}"
+}
+
+log_info() {
+    echo -e "${YELLOW}[i] $1${NC}"
+}
+
+export CRONTAB_PROCESS_FEEDS=${CRONTAB_PROCESS_FEEDS:-"0 */4 * * *"}
+export CRONTAB_FEED_STATUS=${CRONTAB_FEED_STATUS:-"0 0 * * *"}
+export CRONTAB_PROXY=${CRONTAB_PROXY:-"0 0 * * *"}
+
+log_info "Crontabs..."
+log_info "  CRONTAB_PROCESS_FEEDS: $CRONTAB_PROCESS_FEEDS"
+log_info "  CRONTAB_FEED_STATUS: $CRONTAB_FEED_STATUS"
+log_info "  CRONTAB_PROXY: $CRONTAB_PROXY"
+
+envsubst '${CRONTAB_PROCESS_FEEDS} ${CRONTAB_FEED_STATUS} ${CRONTAB_PROXY}' < /crontab.tpl > /etc/crontab.d/lerama
+chmod 0644 /etc/crontab.d/lerama
+
+log_success "Crontab generated successfully at /etc/crontab.d/lerama"
