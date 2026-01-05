@@ -55,17 +55,21 @@
                             <?= __('nav.logout') ?>
                         </a>
                     <?php else : ?>
-                        <a href="/" class="d-inline-flex align-items-center pe-1 py-2 me-3 text-decoration-none <?= $this->section('active') === 'home' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
+                        <a href="/" class="d-inline-flex align-items-center pe-1 py-2 me-1 me-md-3 text-decoration-none <?= $this->section('active') === 'home' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
                             <i class="bi bi-house-door me-1"></i>
                             <?= __('nav.home') ?>
                         </a>
-                        <a href="/feeds" class="d-inline-flex align-items-center pe-1 py-2 me-3 text-decoration-none <?= $this->section('active') === 'feeds' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
+                        <a href="/feeds" class="d-inline-flex align-items-center pe-1 py-2 me-1 me-md-3 text-decoration-none <?= $this->section('active') === 'feeds' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
                             <i class="bi bi-journal-text me-1"></i>
                             <?= __('nav.feeds') ?>
                         </a>
-                        <a href="/suggest-feed" class="d-inline-flex align-items-center pe-1 py-2 me-3 text-decoration-none <?= $this->section('active') === 'suggest-feed' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
+                        <a href="/suggest-feed" class="d-inline-flex align-items-center pe-1 py-2 me-1 me-md-3 text-decoration-none <?= $this->section('active') === 'suggest-feed' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
                             <i class="bi bi-plus-circle me-1"></i>
                             <?= __('nav.suggest') ?>
+                        </a>
+                        <a href="/random" target="_blank" class="d-inline-flex align-items-center pe-1 py-2 me-1 me-md-3 text-decoration-none text-secondary hover-text-white">
+                            <i class="bi bi-shuffle me-1"></i>
+                            <?= __('nav.random') ?>
                         </a>
                     <?php endif; ?>
                 </nav>

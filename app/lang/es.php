@@ -5,6 +5,7 @@ return [
     'nav.home' => 'Inicio',
     'nav.feeds' => 'Feeds',
     'nav.suggest' => 'Sugerir',
+    'nav.random' => 'Aleatorio',
     'nav.articles' => 'Artículos',
     'nav.categories' => 'Categorías',
     'nav.tags' => 'Etiquetas',

@@ -5,6 +5,7 @@ return [
     'nav.home' => 'Home',
     'nav.feeds' => 'Feeds',
     'nav.suggest' => 'Suggest',
+    'nav.random' => 'Random',
     'nav.articles' => 'Articles',
     'nav.categories' => 'Categories',
     'nav.tags' => 'Tags',

@@ -158,4 +158,27 @@ class HomeController
 
         return new HtmlResponse($html);
     }
+
+    public function random(ServerRequestInterface $request): ResponseInterface
+    {
+        $days = (int)($_ENV['RANDOM_POST_DAYS'] ?? 30);
+        
+        $item = DB::queryFirstRow(
+            "SELECT fi.url
+             FROM feed_items fi
+             JOIN feeds f ON fi.feed_id = f.id
+             WHERE fi.is_visible = 1
+             AND fi.published_at >= DATE_SUB(NOW(), INTERVAL %i DAY)
+             ORDER BY RAND()
+             LIMIT 1",
+            $days
+        );
+
+        if ($item && !empty($item['url'])) {
+            return new RedirectResponse($item['url']);
+        }
+
+        // Fallback to home if no random post found
+        return new RedirectResponse('/');
+    }
 }
