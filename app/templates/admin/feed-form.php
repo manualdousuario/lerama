@@ -184,6 +184,29 @@
                     </div>
                 <?php endif; ?>
 
+                <?php $proxyAvailable = !empty($_ENV['PROXY_LIST']); ?>
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input type="checkbox"
+                               name="proxy_only"
+                               id="proxy_only"
+                               value="1"
+                               class="form-check-input"
+                               <?= ($isEdit && !empty($feed['proxy_only'])) ? 'checked' : '' ?>
+                               <?= !$proxyAvailable ? 'disabled' : '' ?>>
+                        <label class="form-check-label<?= !$proxyAvailable ? ' text-muted' : '' ?>" for="proxy_only">
+                            <i class="bi bi-shield-lock me-1"></i>
+                            <?= __('admin.feed_form.proxy_only') ?>
+                        </label>
+                    </div>
+                    <div class="form-text <?= $proxyAvailable ? 'text-secondary' : 'text-muted' ?>">
+                        <?= __('admin.feed_form.proxy_only_help') ?>
+                        <?php if (!$proxyAvailable): ?>
+                            <br><small class="text-warning"><?= __('admin.feed_form.proxy_only_disabled') ?></small>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
                 <div class="d-flex justify-content-end gap-2 mt-4">
                     <a href="/admin/feeds" class="btn btn-secondary">
                         <i class="bi bi-x-lg me-1"></i>

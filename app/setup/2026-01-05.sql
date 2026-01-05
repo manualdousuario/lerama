@@ -1,0 +1,10 @@
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+ALTER TABLE `feeds`
+ADD COLUMN IF NOT EXISTS `proxy_only` TINYINT(1) DEFAULT 0 AFTER `retry_proxy`;
+
+ALTER TABLE `feeds`
+ADD INDEX IF NOT EXISTS `idx_proxy_only`(`proxy_only`) USING BTREE;
+
+SET FOREIGN_KEY_CHECKS = 1;

@@ -235,6 +235,7 @@ class AdminController
             $feedType = $params['feed_type'] ?? '';
             $categoryIds = $params['categories'] ?? [];
             $tagIds = $params['tags'] ?? [];
+            $proxyOnly = isset($params['proxy_only']) ? 1 : 0;
 
             $errors = [];
             if (empty($title)) {
@@ -274,7 +275,8 @@ class AdminController
                         'site_url' => $siteUrl,
                         'feed_type' => $feedType,
                         'language' => $language,
-                        'status' => 'online'
+                        'status' => 'online',
+                        'proxy_only' => $proxyOnly
                     ]);
 
                     // Insert categories
@@ -374,6 +376,7 @@ class AdminController
             $status = $params['status'] ?? $feed['status'];
             $categoryIds = $params['categories'] ?? [];
             $tagIds = $params['tags'] ?? [];
+            $proxyOnly = isset($params['proxy_only']) ? 1 : 0;
 
             $errors = [];
             if (empty($title)) {
@@ -401,7 +404,8 @@ class AdminController
                         'feed_url' => $feedUrl,
                         'site_url' => $siteUrl,
                         'language' => $language,
-                        'status' => $status
+                        'status' => $status,
+                        'proxy_only' => $proxyOnly
                     ];
 
                     if (!empty($feedType)) {

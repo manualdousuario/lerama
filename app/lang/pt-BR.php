@@ -168,6 +168,9 @@ return [
     'admin.feed_form.update' => 'Atualizar Feed',
     'admin.feed_form.add' => 'Adicionar Feed',
     'admin.feed_form.saving' => 'Salvando...',
+    'admin.feed_form.proxy_only' => 'Usar somente proxy',
+    'admin.feed_form.proxy_only_help' => 'Se habilitado, este feed sempre usará proxy para coleta, ignorando a conexão direta.',
+    'admin.feed_form.proxy_only_disabled' => 'Configure PROXY_LIST para habilitar esta opção.',
     
     // Admin - Categories
     'admin.categories.title' => 'Gerenciar Categorias',
