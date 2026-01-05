@@ -21,7 +21,7 @@ COPY crontab.tpl /crontab.tpl
 RUN chmod 0644 /crontab.tpl
 
 # Copy startup scripts
-COPY /startup/*
+COPY /startup/* /startup/
 RUN chmod +x /startup/*
 
 # Set permissions
