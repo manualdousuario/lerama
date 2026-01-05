@@ -30,7 +30,7 @@ class HomeController
             $page = 1;
         }
 
-        $perPage = 20;
+        $perPage = (int)($_ENV['ITEMS_PER_PAGE'] ?? 21);
         $offset = ($page - 1) * $perPage;
 
         $params = $request->getQueryParams();

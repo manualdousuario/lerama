@@ -14,8 +14,16 @@
             <div class="border-top col-12 pb-0 pt-2 mt-2">
                 <form action="<?= isset($pagination) && $pagination['current'] > 1 ? $pagination['baseUrl'] . $pagination['current'] : '/' ?>" method="GET">
                     <div class="d-md-flex justify-content-between align-items-center">
-                        <div class="me-md-2 mb-2 mb-md-0">
-                            <input type="checkbox" id="simplified-view" /> <label for="simplified-view"><?= __('common.simplified') ?></label>
+                        <div class="d-flex align-items-center me-md-2 mb-2 mb-md-0">
+                            <div class="me-md-2 mb-2 mb-md-0">
+                                <select id="view-mode" class="form-select form-select-sm" style="width: auto;">
+                                    <option value="cards"><?= __('common.view_cards') ?></option>
+                                    <option value="list"><?= __('common.view_list') ?></option>
+                                </select>
+                            </div>
+                            <div class="me-md-2 mb-2 mb-md-0">
+                                <input type="checkbox" id="simplified-view" /> <label for="simplified-view" class="me-3"><?= __('common.simplified') ?></label>
+                            </div>
                         </div>
                         <div class="d-md-flex">
                             <div class="d-md-flex me-md-2 mb-3 mb-md-0">
@@ -70,7 +78,8 @@
             </p>
         </div>
     <?php else: ?>
-        <ul class="list-group list-group-flush">
+        <!-- List View -->
+        <ul class="list-group list-group-flush" id="list-view">
             <?php foreach ($items as $item): ?>
                 <li class="list-group-item p-3 hover-bg-light">
                     <div class="d-block d-md-flex">
@@ -116,6 +125,48 @@
                 </li>
             <?php endforeach; ?>
         </ul>
+
+        <!-- Cards View -->
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 p-3" id="cards-view" style="display: none;">
+            <?php foreach ($items as $item): ?>
+                <div class="col">
+                    <div class="card h-100 hover-bg-light">
+                        <?php if (!empty($item['image_url'])) : ?>
+                            <img src="<?= $this->e($thumbnailService->getThumbnail($item['image_url'], 360, 200)) ?>" class="card-img-top image-thumbnail" loading="lazy" decoding="async" alt="<?= $this->e($item['title']) ?>" style="height: 160px; object-fit: cover;">
+                        <?php endif; ?>
+                        <div class="card-body">
+                            <h5 class="card-title fs-6 fw-medium">
+                                <a href="<?= $this->e($item['url']) . (parse_url($item['url'], PHP_URL_QUERY) ? '&' : '?') ?>utm_source=lerama" target="_blank" class="text-decoration-none text-primary hover-underline">
+                                    <?= $this->e($item['title']) ?>
+                                </a>
+                            </h5>
+                            <?php if (!empty($item['content']) && strlen($item['content']) >= 30): ?>
+                                <p class="card-text small content">
+                                    <?= substr(strip_tags($item['content']), 0, 150) ?>...
+                                </p>
+                            <?php endif; ?>
+                        </div>
+                        <div class="card-footer bg-transparent small">
+                            <div class="mb-1">
+                                <a href="<?= $this->e($item['site_url']) . (parse_url($item['site_url'], PHP_URL_QUERY) ? '&' : '?') ?>utm_source=lerama" target="_blank" class="text-truncate d-block">
+                                    <?= $this->e($item['feed_title']) ?>
+                                </a>
+                            </div>
+                            <div class="d-flex align-items-center text-muted">
+                                <?php if (!empty($item['published_at'])): ?>
+                                    <i class="bi bi-calendar me-1"></i>
+                                    <span><?= date('j/m/Y', strtotime($item['published_at'])) ?></span>
+                                <?php endif; ?>
+                                <?php if (!empty($item['author'])): ?>
+                                    <i class="bi bi-person ms-2 me-1"></i>
+                                    <span class="text-truncate" style="max-width: 100px;"><?= $this->e($item['author']) ?></span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
 
         <?php if (isset($pagination) && $pagination['total'] > 1): ?>
             <div class="card-footer d-flex justify-content-between align-items-center p-3">
@@ -185,35 +236,67 @@
 <?php $this->start('scripts') ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Simplified view functionality
+    // View elements
     const simplifiedCheckbox = document.getElementById('simplified-view');
+    const viewModeSelect = document.getElementById('view-mode');
+    const listView = document.getElementById('list-view');
+    const cardsView = document.getElementById('cards-view');
     const imageThumbnails = document.querySelectorAll('.image-thumbnail');
     const contentDivs = document.querySelectorAll('.content');
     
-    function updateVisibility(isSimplified) {
-        const displayValue = isSimplified ? 'none' : '';
+    function updateView() {
+        const isSimplified = simplifiedCheckbox.checked;
+        const viewMode = viewModeSelect.value;
         
-        imageThumbnails.forEach(function(element) {
-            element.style.display = displayValue;
+        if (viewMode === 'cards') {
+            if (listView) listView.style.display = 'none';
+            if (cardsView) cardsView.style.display = '';
+        } else {
+            if (listView) listView.style.display = '';
+            if (cardsView) cardsView.style.display = 'none';
+        }
+        
+        const listImageThumbnails = listView ? listView.querySelectorAll('.image-thumbnail') : [];
+        const cardsImageThumbnails = cardsView ? cardsView.querySelectorAll('.image-thumbnail') : [];
+        const listContentDivs = listView ? listView.querySelectorAll('.content') : [];
+        const cardsContentDivs = cardsView ? cardsView.querySelectorAll('.content') : [];
+        
+        listImageThumbnails.forEach(function(element) {
+            element.style.display = isSimplified ? 'none' : '';
+        });
+        listContentDivs.forEach(function(element) {
+            element.style.display = isSimplified ? 'none' : '';
         });
         
-        contentDivs.forEach(function(element) {
-            element.style.display = displayValue;
+        cardsImageThumbnails.forEach(function(element) {
+            element.style.display = isSimplified ? 'none' : '';
         });
     }
     
-    const savedState = localStorage.getItem('simplifiedView');
-    if (savedState === 'true') {
+    const savedSimplified = localStorage.getItem('simplifiedView');
+    const savedViewMode = localStorage.getItem('viewMode');
+    
+    if (savedSimplified === 'true') {
         simplifiedCheckbox.checked = true;
-        updateVisibility(true);
     }
+    
+    if (savedViewMode) {
+        viewModeSelect.value = savedViewMode;
+    } else {
+        viewModeSelect.value = 'cards';
+        localStorage.setItem('viewMode', 'cards');
+    }
+    
+    updateView();
     
     simplifiedCheckbox.addEventListener('change', function() {
-        const isChecked = this.checked;
-        
-        updateVisibility(isChecked);
-        
-        localStorage.setItem('simplifiedView', isChecked);
+        localStorage.setItem('simplifiedView', this.checked);
+        updateView();
+    });
+    
+    viewModeSelect.addEventListener('change', function() {
+        localStorage.setItem('viewMode', this.value);
+        updateView();
     });
 
     // Filter save/load functionality
@@ -261,13 +344,17 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.setItem('savedFilterTag', tag);
         
         const icon = saveFilterBtn.querySelector('i');
-        const originalClass = icon.className;
-        icon.className = 'bi bi-bookmark-check-fill';
+        const originalClass = icon ? icon.className : '';
+        if (icon) {
+            icon.className = 'bi bi-bookmark-check-fill';
+        }
         saveFilterBtn.classList.remove('btn-outline-secondary');
         saveFilterBtn.classList.add('btn-success');
         
         setTimeout(function() {
-            icon.className = originalClass;
+            if (icon) {
+                icon.className = originalClass;
+            }
             saveFilterBtn.classList.remove('btn-success');
             saveFilterBtn.classList.add('btn-outline-secondary');
         }, 2000);
