@@ -1,5 +1,8 @@
 FROM shinsenter/php:8.3-fpm-nginx
 
+# Install gettext for envsubst
+RUN apt-get update && apt-get install -y gettext-base && rm -rf /var/lib/apt/lists/*
+
 # Default application envs
 ENV ENABLE_CRONTAB=1
 ENV APP_PATH=/app
