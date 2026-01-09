@@ -17,8 +17,8 @@ RUN composer config platform.php-64bit 8.3 && \
     composer install --no-interaction --optimize-autoloader --no-dev
 
 # Copy crontab template
-COPY crontab.tpl /crontab.tpl
-RUN chmod 0644 /crontab.tpl
+COPY crontab.tpl /tmp/crontab.tpl
+RUN chmod 0644 /tmp/crontab.tpl
 
 # Copy startup scripts
 COPY /startup/* /startup/
