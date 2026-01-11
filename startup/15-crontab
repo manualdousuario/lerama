@@ -25,7 +25,9 @@ log_info "  CRONTAB_FEED_STATUS: $CRONTAB_FEED_STATUS"
 log_info "  CRONTAB_PROXY: $CRONTAB_PROXY"
 
 mkdir -p /etc/cron.d
+mkdir -p /var/log/lerama
 envsubst '${CRONTAB_PROCESS_FEEDS} ${CRONTAB_FEED_STATUS} ${CRONTAB_PROXY}' < /tmp/crontab.tpl > /etc/cron.d/lerama
 chmod 0644 /etc/cron.d/lerama
 
-log_success "Crontab generated successfully at /etc/cron.d/lerama"
+service cron restart || cron -f &
+log_success "Crontab generated and cron restarted successfully"
