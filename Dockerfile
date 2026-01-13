@@ -23,10 +23,6 @@ RUN composer config platform.php-64bit 8.3 && \
 COPY crontab.tpl /tmp/crontab.tpl
 RUN chmod 0644 /tmp/crontab.tpl
 
-# Copy startup scripts
-COPY /startup/* /startup/
-RUN chmod +x /startup/*
-
 # Set permissions
 RUN chown -R www-data:www-data ${APP_PATH} && \
     chmod -R 755 ${APP_PATH} && \
