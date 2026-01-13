@@ -1,4 +1,4 @@
-FROM shinsenter/php:8.3-fpm-nginx
+FROM shinsenter/php:8.4-fpm-nginx
 
 # Install gettext for envsubst
 RUN apt-get update && apt-get install -y gettext-base && rm -rf /var/lib/apt/lists/*
@@ -16,7 +16,7 @@ COPY app/ ${APP_PATH}/
 WORKDIR ${APP_PATH}
 
 # Install composer dependencies
-RUN composer config platform.php-64bit 8.3 && \
+RUN composer config platform.php-64bit 8.4 && \
     composer install --no-interaction --optimize-autoloader --no-dev
 
 # Copy crontab template
