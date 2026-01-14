@@ -14,6 +14,9 @@ const paths = {
     css: 'node_modules/bootstrap-icons/font/bootstrap-icons.min.css',
     fonts: 'node_modules/bootstrap-icons/font/fonts/*'
   },
+  custom: {
+    css: 'public/assets/css/custom.css'
+  },
   dest: {
     css: 'public/assets/css',
     fonts: 'public/assets/css/fonts'
@@ -38,7 +41,8 @@ function bootstrapIconsFonts() {
 function combinedCSS() {
   return gulp.src([
     paths.bootstrap.css,
-    paths.bootstrapIcons.css
+    paths.bootstrapIcons.css,
+    paths.custom.css
   ])
     .pipe(concat('lerama.css'))
     .pipe(gulp.dest(paths.dest.css))
