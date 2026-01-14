@@ -20,8 +20,7 @@ RUN composer config platform.php-64bit 8.4 && \
     composer install --no-interaction --optimize-autoloader --no-dev
 
 # Create crontab
-RUN mkdir -p /var/log/lerama && \
-    touch /etc/crontab.d/lerama && \
+RUN mkdir -p /etc/crontab.d/ /var/log/lerama && \
     echo '${CRONTAB_PROCESS_FEEDS} /usr/local/bin/php /app/bin/lerama feed:process | tee -a /var/log/lerama/feed_process.log' >> /etc/crontab.d/lerama && \
     echo '${CRONTAB_FEED_STATUS} /usr/local/bin/php /app/bin/lerama feed:check-status | tee -a /var/log/lerama/check_status.log' >> /etc/crontab.d/lerama && \
     echo '${CRONTAB_PROXY} /usr/local/bin/php /app/bin/lerama proxy:update | tee -a /var/log/lerama/proxy_update.log' >> /etc/crontab.d/lerama && \
