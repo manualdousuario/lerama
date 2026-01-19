@@ -73,6 +73,8 @@ class FeedImporter
                     'status' => 'error',
                     'message' => 'Empty URL'
                 ];
+                
+                unset($row);
                 continue;
             }
 
@@ -96,6 +98,13 @@ class FeedImporter
             } else {
                 $this->climate->red("✗ Line {$lineNumber}: {$result['message']}");
             }
+            
+            unset($row);
+            unset($result);
+            
+            if ($lineNumber % 50 === 0) {
+                gc_collect_cycles();
+            }
         }
 
         fclose($handle);
@@ -110,6 +119,9 @@ class FeedImporter
         $this->climate->info("Import completed!");
         $this->climate->green("Successful: {$successCount}");
         $this->climate->red("Errors: {$errorCount}");
+        
+        unset($results);
+        gc_collect_cycles();
     }
 
     private function importFeed(string $url, string $name, string $tags, string $category): array
@@ -199,6 +211,9 @@ class FeedImporter
 
     private function discoverFeedUrl(string $url): ?string
     {
+        $html = null;
+        $feedUrls = [];
+        
         try {
             // First, try the URL directly
             $feedType = $this->feedDetector->detectType($url);
@@ -226,6 +241,8 @@ class FeedImporter
             if (preg_match_all('/<link[^>]*href=["\']([^"\']+)["\'][^>]*type=["\']application\/(rss|atom)\+xml["\'][^>]*>/i', $html, $matches)) {
                 $feedUrls = array_merge($feedUrls, $matches[1]);
             }
+            
+            unset($html);
 
             // Try common feed URLs
             $commonPaths = [
@@ -256,6 +273,7 @@ class FeedImporter
 
                 $feedType = $this->feedDetector->detectType($feedUrl);
                 if ($feedType) {
+                    unset($feedUrls);
                     return $feedUrl;
                 }
             }
@@ -265,11 +283,17 @@ class FeedImporter
         } catch (\Exception $e) {
             $this->climate->whisper("Error discovering feed: {$e->getMessage()}");
             return null;
+        } finally {
+            unset($html);
+            unset($feedUrls);
         }
     }
 
     private function getFeedTitle(string $feedUrl, string $feedType): string
     {
+        $content = null;
+        $xml = null;
+        
         try {
             $response = $this->httpClient->get($feedUrl);
             if ($response->getStatusCode() !== 200) {
@@ -282,14 +306,20 @@ class FeedImporter
             if (in_array($feedType, ['rss1', 'rss2', 'atom', 'rdf', 'xml'])) {
                 libxml_use_internal_errors(true);
                 $xml = simplexml_load_string($content);
+                unset($content);
+                
                 if ($xml !== false) {
                     // RSS
                     if (isset($xml->channel->title)) {
-                        return (string) $xml->channel->title;
+                        $title = (string) $xml->channel->title;
+                        unset($xml);
+                        return $title;
                     }
                     // Atom
                     if (isset($xml->title)) {
-                        return (string) $xml->title;
+                        $title = (string) $xml->title;
+                        unset($xml);
+                        return $title;
                     }
                 }
             }
@@ -298,6 +328,10 @@ class FeedImporter
 
         } catch (\Exception $e) {
             return 'Imported Feed';
+        } finally {
+            unset($content);
+            unset($xml);
+            libxml_clear_errors();
         }
     }
 

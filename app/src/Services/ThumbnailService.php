@@ -36,6 +36,8 @@ class ThumbnailService
             return $thumbnailUrl;
         }
 
+        $tempFile = null;
+        
         try {
             $tempFile = $this->downloadImage($imageUrl);
             
@@ -45,13 +47,13 @@ class ThumbnailService
             
             $this->createThumbnail($tempFile, $thumbnailPath, $width, $height);
             
-            if (file_exists($tempFile)) {
-                unlink($tempFile);
-            }
-            
             return $thumbnailUrl;
         } catch (\Exception $e) {
             return $imageUrl;
+        } finally {
+            if ($tempFile !== null && file_exists($tempFile)) {
+                @unlink($tempFile);
+            }
         }
     }
     
@@ -95,57 +97,60 @@ class ThumbnailService
         $sourceHeight = $imageInfo[1];
         $mimeType = $imageInfo['mime'];
         
-        $sourceImage = $this->createImageFromFile($sourcePath, $mimeType);
-        if (!$sourceImage) {
-            return false;
+        $sourceImage = null;
+        $targetImage = null;
+        
+        try {
+            $sourceImage = $this->createImageFromFile($sourcePath, $mimeType);
+            if (!$sourceImage) {
+                return false;
+            }
+            
+            $sourceRatio = $sourceWidth / $sourceHeight;
+            $targetRatio = $maxWidth / $maxHeight;
+            
+            if ($sourceRatio > $targetRatio) {
+                $scaledHeight = $maxHeight;
+                $scaledWidth = (int)($sourceWidth * ($scaledHeight / $sourceHeight));
+                $sourceX = (int)(($sourceWidth - ($sourceHeight * $targetRatio)) / 2);
+                $sourceY = 0;
+                $sourceUseWidth = (int)($sourceHeight * $targetRatio);
+                $sourceUseHeight = $sourceHeight;
+            } else {
+                $scaledWidth = $maxWidth;
+                $scaledHeight = (int)($sourceHeight * ($scaledWidth / $sourceWidth));
+                $sourceX = 0;
+                $sourceY = (int)(($sourceHeight - ($sourceWidth / $targetRatio)) / 2);
+                $sourceUseWidth = $sourceWidth;
+                $sourceUseHeight = (int)($sourceWidth / $targetRatio);
+            }
+            
+            $targetImage = imagecreatetruecolor($maxWidth, $maxHeight);
+            if (!$targetImage) {
+                return false;
+            }
+            
+            if ($mimeType === 'image/png') {
+                imagealphablending($targetImage, false);
+                imagesavealpha($targetImage, true);
+                $transparent = imagecolorallocatealpha($targetImage, 255, 255, 255, 127);
+                imagefilledrectangle($targetImage, 0, 0, $maxWidth, $maxHeight, $transparent);
+            }
+            
+            imagecopyresampled(
+                $targetImage,
+                $sourceImage,
+                0, 0, $sourceX, $sourceY,
+                $maxWidth, $maxHeight,
+                $sourceUseWidth, $sourceUseHeight
+            );
+            
+            $result = $this->saveImage($targetImage, $destPath, 'image/jpeg', 90);
+            
+            return $result;
+        } finally {
+            unset($sourceImage, $targetImage);
         }
-        
-        $sourceRatio = $sourceWidth / $sourceHeight;
-        $targetRatio = $maxWidth / $maxHeight;
-        
-        if ($sourceRatio > $targetRatio) {
-            $scaledHeight = $maxHeight;
-            $scaledWidth = (int)($sourceWidth * ($scaledHeight / $sourceHeight));
-            $sourceX = (int)(($sourceWidth - ($sourceHeight * $targetRatio)) / 2);
-            $sourceY = 0;
-            $sourceUseWidth = (int)($sourceHeight * $targetRatio);
-            $sourceUseHeight = $sourceHeight;
-        } else {
-            $scaledWidth = $maxWidth;
-            $scaledHeight = (int)($sourceHeight * ($scaledWidth / $sourceWidth));
-            $sourceX = 0;
-            $sourceY = (int)(($sourceHeight - ($sourceWidth / $targetRatio)) / 2);
-            $sourceUseWidth = $sourceWidth;
-            $sourceUseHeight = (int)($sourceWidth / $targetRatio);
-        }
-        
-        $targetImage = imagecreatetruecolor($maxWidth, $maxHeight);
-        if (!$targetImage) {
-            imagedestroy($sourceImage);
-            return false;
-        }
-        
-        if ($mimeType === 'image/png') {
-            imagealphablending($targetImage, false);
-            imagesavealpha($targetImage, true);
-            $transparent = imagecolorallocatealpha($targetImage, 255, 255, 255, 127);
-            imagefilledrectangle($targetImage, 0, 0, $maxWidth, $maxHeight, $transparent);
-        }
-        
-        imagecopyresampled(
-            $targetImage,
-            $sourceImage,
-            0, 0, $sourceX, $sourceY,
-            $maxWidth, $maxHeight,
-            $sourceUseWidth, $sourceUseHeight
-        );
-        
-        $result = $this->saveImage($targetImage, $destPath, 'image/jpeg', 90);
-        
-        imagedestroy($sourceImage);
-        imagedestroy($targetImage);
-        
-        return $result;
     }
     
     private function createImageFromFile(string $filePath, string $mimeType): GdImage|false

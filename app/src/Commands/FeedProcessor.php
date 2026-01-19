@@ -80,7 +80,11 @@ class FeedProcessor
 
         foreach ($feeds as $feed) {
             $this->processSingleFeed($feed);
+            unset($feed);
         }
+        
+        unset($feeds);
+        gc_collect_cycles();
     }
 
     private function processSingleFeed(array $feed): void
@@ -251,7 +255,12 @@ class FeedProcessor
                     ], 'id=%i', $feed['id']);
                 }
             }
+            
+            unset($feed);
         }
+        
+        unset($pausedFeeds);
+        gc_collect_cycles();
     }
 
     private function setupProxyClient(): bool
@@ -309,77 +318,85 @@ class FeedProcessor
     private function processRssFeed(array $feed): void
     {
         $simplePie = new SimplePie();
-        $simplePie->set_feed_url($feed['feed_url']);
-        $simplePie->enable_cache(false);
-        $simplePie->init();
+        $items = null;
+        
+        try {
+            $simplePie->set_feed_url($feed['feed_url']);
+            $simplePie->enable_cache(false);
+            $simplePie->init();
 
-        if ($simplePie->error()) {
-            throw new \Exception($simplePie->error());
+            if ($simplePie->error()) {
+                throw new \Exception($simplePie->error());
+            }
+
+            $items = $simplePie->get_items();
+            $count = 0;
+            $updated = false;
+            $lastGuid = null;
+            $processedItems = 0;
+            $maxItemsToProcess = 100;
+
+            foreach ($items as $item) {
+                $guid = $item->get_id();
+
+                if ($feed['last_post_id'] === $guid) {
+                    break;
+                }
+
+                if ($lastGuid === null) {
+                    $lastGuid = $guid;
+                }
+
+                $title = $item->get_title();
+                $content = $item->get_content();
+                $author = $item->get_author() ? $item->get_author()->get_name() : null;
+                $url = $item->get_permalink();
+                $date = $item->get_date('Y-m-d H:i:s') ?: date('Y-m-d H:i:s');
+
+                $imageUrl = $this->extractImageFromUrl($url);
+                $contentCheck = $this->checkRealContent($content, $url);
+                $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
+
+                try {
+                    DB::insert('feed_items', [
+                        'feed_id' => $feed['id'],
+                        'title' => $title,
+                        'author' => $author,
+                        'content' => $content,
+                        'url' => $url,
+                        'image_url' => $imageUrl,
+                        'guid' => $guid,
+                        'published_at' => $date,
+                        'is_visible' => $isVisible ? 1 : 0
+                    ]);
+                    $count++;
+                    $updated = true;
+                } catch (\Exception $e) {
+                    continue;
+                }
+
+                $processedItems++;
+                if ($processedItems >= $maxItemsToProcess) {
+                    break;
+                }
+            }
+
+            $this->processPaginatedRssFeed($feed, $simplePie, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
+
+            if ($updated && $lastGuid) {
+                DB::update('feeds', [
+                    'last_post_id' => $lastGuid,
+                    'last_updated' => DB::sqleval("NOW()")
+                ], 'id=%i', $feed['id']);
+            }
+
+            $this->climate->out("Added {$count} new items from feed: {$feed['title']}");
+        } finally {
+            unset($items);
+            $simplePie->__destruct();
+            unset($simplePie);
+            gc_collect_cycles();
         }
-
-        $items = $simplePie->get_items();
-        $count = 0;
-        $updated = false;
-        $lastGuid = null;
-        $processedItems = 0;
-        $maxItemsToProcess = 100;
-
-        foreach ($items as $item) {
-            $guid = $item->get_id();
-
-            if ($feed['last_post_id'] === $guid) {
-                break;
-            }
-
-            if ($lastGuid === null) {
-                $lastGuid = $guid;
-            }
-
-            $title = $item->get_title();
-            $content = $item->get_content();
-            $author = $item->get_author() ? $item->get_author()->get_name() : null;
-            $url = $item->get_permalink();
-            $date = $item->get_date('Y-m-d H:i:s') ?: date('Y-m-d H:i:s');
-
-            $imageUrl = $this->extractImageFromUrl($url);
-            $contentCheck = $this->checkRealContent($content, $url);
-            $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
-
-            try {
-                DB::insert('feed_items', [
-                    'feed_id' => $feed['id'],
-                    'title' => $title,
-                    'author' => $author,
-                    'content' => $content,
-                    'url' => $url,
-                    'image_url' => $imageUrl,
-                    'guid' => $guid,
-                    'published_at' => $date,
-                    'is_visible' => $isVisible ? 1 : 0
-                ]);
-                $count++;
-                $updated = true;
-            } catch (\Exception $e) {
-                // Erro ao processar item
-                continue;
-            }
-
-            $processedItems++;
-            if ($processedItems >= $maxItemsToProcess) {
-                break;
-            }
-        }
-
-        $this->processPaginatedRssFeed($feed, $simplePie, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
-
-        if ($updated && $lastGuid) {
-            DB::update('feeds', [
-                'last_post_id' => $lastGuid,
-                'last_updated' => DB::sqleval("NOW()")
-            ], 'id=%i', $feed['id']);
-        }
-
-        $this->climate->out("Added {$count} new items from feed: {$feed['title']}");
     }
 
     private function processPaginatedRssFeed(array $feed, SimplePie $simplePie, &$count, &$updated, &$lastGuid, &$processedItems, $maxItemsToProcess): void
@@ -413,6 +430,9 @@ class FeedProcessor
 
         while ($nextPageUrl && $currentPage < $maxPages && $processedItems < $maxItemsToProcess) {
             $this->climate->out("Processing next page: {$nextPageUrl}");
+            
+            $nextSimplePie = null;
+            $nextItems = null;
 
             try {
                 $nextSimplePie = new SimplePie();
@@ -463,7 +483,6 @@ class FeedProcessor
                         $count++;
                         $updated = true;
                     } catch (\Exception $e) {
-                        // Erro ao processar item
                         continue;
                     }
 
@@ -493,8 +512,16 @@ class FeedProcessor
             } catch (\Exception $e) {
                 $this->climate->yellow("Erro ao processar próxima página: {$e->getMessage()}");
                 break;
+            } finally {
+                unset($nextItems);
+                if ($nextSimplePie !== null) {
+                    $nextSimplePie->__destruct();
+                    unset($nextSimplePie);
+                }
             }
         }
+        
+        gc_collect_cycles();
     }
 
     private function buildUrl(array $parts): string
@@ -541,6 +568,9 @@ class FeedProcessor
     private function processCsvFeed(array $feed): void
     {
         $this->climate->info("Processing CSV feed: {$feed['feed_url']}");
+        
+        $content = null;
+        $lines = null;
 
         try {
             $response = $this->httpClient->get($feed['feed_url']);
@@ -555,81 +585,90 @@ class FeedProcessor
             throw new \Exception("Failed to fetch CSV feed: " . $e->getMessage());
         }
 
-        $lines = explode("\n", $content);
-        $headers = str_getcsv(array_shift($lines));
+        try {
+            $lines = explode("\n", $content);
+            unset($content);
+            
+            $headers = str_getcsv(array_shift($lines));
 
-        $titleIndex = array_search('title', $headers);
-        $authorIndex = array_search('author', $headers);
-        $contentIndex = array_search('content', $headers);
-        $urlIndex = array_search('url', $headers);
-        $guidIndex = array_search('guid', $headers);
-        $dateIndex = array_search('date', $headers);
+            $titleIndex = array_search('title', $headers);
+            $authorIndex = array_search('author', $headers);
+            $contentIndex = array_search('content', $headers);
+            $urlIndex = array_search('url', $headers);
+            $guidIndex = array_search('guid', $headers);
+            $dateIndex = array_search('date', $headers);
 
-        if ($titleIndex === false || $urlIndex === false || $guidIndex === false) {
-            throw new \Exception("CSV feed missing required columns (title, url, guid)");
-        }
-
-        $count = 0;
-        $updated = false;
-        $lastGuid = null;
-
-        foreach ($lines as $line) {
-            if (empty(trim($line))) continue;
-
-            $data = str_getcsv($line);
-            if (count($data) <= $guidIndex) continue;
-
-            $guid = $data[$guidIndex];
-
-            if ($feed['last_post_id'] === $guid) {
-                break;
+            if ($titleIndex === false || $urlIndex === false || $guidIndex === false) {
+                throw new \Exception("CSV feed missing required columns (title, url, guid)");
             }
 
-            if ($lastGuid === null) {
-                $lastGuid = $guid;
+            $count = 0;
+            $updated = false;
+            $lastGuid = null;
+
+            foreach ($lines as $line) {
+                if (empty(trim($line))) continue;
+
+                $data = str_getcsv($line);
+                if (count($data) <= $guidIndex) continue;
+
+                $guid = $data[$guidIndex];
+
+                if ($feed['last_post_id'] === $guid) {
+                    break;
+                }
+
+                if ($lastGuid === null) {
+                    $lastGuid = $guid;
+                }
+
+                $url = $data[$urlIndex];
+                $title = $data[$titleIndex];
+
+                $this->climate->whisper("Processing item: {$title} ({$url})");
+
+                $imageUrl = $this->extractImageFromUrl($url);
+                $itemContent = $contentIndex !== false && isset($data[$contentIndex]) ? $data[$contentIndex] : null;
+                $contentCheck = $this->checkRealContent($itemContent, $url);
+                $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
+
+                try {
+                    DB::insert('feed_items', [
+                        'feed_id' => $feed['id'],
+                        'title' => $title,
+                        'author' => $authorIndex !== false && isset($data[$authorIndex]) ? $data[$authorIndex] : null,
+                        'content' => $itemContent,
+                        'url' => $url,
+                        'image_url' => $imageUrl,
+                        'guid' => $guid,
+                        'published_at' => $dateIndex !== false && isset($data[$dateIndex]) ? $data[$dateIndex] : date('Y-m-d H:i:s'),
+                        'is_visible' => $isVisible ? 1 : 0
+                    ]);
+                    $count++;
+                    $updated = true;
+                    $this->climate->whisper("Item added successfully: {$title}");
+                } catch (\Exception $e) {
+                    $this->climate->whisper("Error adding item {$title}: {$e->getMessage()}");
+                    continue;
+                }
+                
+                unset($data);
             }
 
-            $url = $data[$urlIndex];
-            $title = $data[$titleIndex];
+            $this->processPaginatedCsvFeed($feed, $count, $updated, $lastGuid);
 
-            $this->climate->whisper("Processing item: {$title} ({$url})");
-
-            $imageUrl = $this->extractImageFromUrl($url);
-            $content = $contentIndex !== false && isset($data[$contentIndex]) ? $data[$contentIndex] : null;
-            $contentCheck = $this->checkRealContent($content, $url);
-            $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
-
-            try {
-                DB::insert('feed_items', [
-                    'feed_id' => $feed['id'],
-                    'title' => $title,
-                    'author' => $authorIndex !== false && isset($data[$authorIndex]) ? $data[$authorIndex] : null,
-                    'content' => $content,
-                    'url' => $url,
-                    'image_url' => $imageUrl,
-                    'guid' => $guid,
-                    'published_at' => $dateIndex !== false && isset($data[$dateIndex]) ? $data[$dateIndex] : date('Y-m-d H:i:s'),
-                    'is_visible' => $isVisible ? 1 : 0
-                ]);
-                $count++;
-                $updated = true;
-                $this->climate->whisper("Item added successfully: {$title}");
-            } catch (\Exception $e) {
-                $this->climate->whisper("Error adding item {$title}: {$e->getMessage()}");
-                continue;
+            if ($updated && $lastGuid) {
+                DB::update('feeds', [
+                    'last_post_id' => $lastGuid,
+                    'last_updated' => DB::sqleval("NOW()")
+                ], 'id=%i', $feed['id']);
             }
+
+            $this->climate->out("Added {$count} new items from CSV feed: {$feed['title']}");
+        } finally {
+            unset($lines);
+            gc_collect_cycles();
         }
-
-        $this->processPaginatedCsvFeed($feed, $count, $updated, $lastGuid);
-
-        if ($updated && $lastGuid) {
-            DB::update('feeds', [
-                'last_post_id' => $lastGuid,
-                'last_updated' => DB::sqleval("NOW()")
-            ], 'id=%i', $feed['id']);
-        }
-
-        $this->climate->out("Added {$count} new items from CSV feed: {$feed['title']}");
     }
 
     private function processPaginatedCsvFeed(array $feed, &$count, &$updated, &$lastGuid): void
@@ -772,6 +811,10 @@ class FeedProcessor
     private function processJsonFeed(array $feed): void
     {
         $this->climate->info("Processing JSON feed: {$feed['feed_url']}");
+        
+        $content = null;
+        $data = null;
+        $items = null;
 
         try {
             $response = $this->httpClient->get($feed['feed_url']);
@@ -782,93 +825,101 @@ class FeedProcessor
             }
 
             $content = (string) $response->getBody();
+
+            $data = json_decode($content, true);
+            unset($content);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \Exception("Invalid JSON feed: " . json_last_error_msg());
+            }
+
+            $items = $data['items'] ?? $data['entries'] ?? $data['feed'] ?? $data;
+
+            if (!is_array($items)) {
+                throw new \Exception("Could not find items in JSON feed");
+            }
+            $nextPageUrl = $data['next'] ?? $data['next_page'] ?? $data['nextPage'] ?? null;
+            
+            unset($data);
+
+            $count = 0;
+            $updated = false;
+            $lastGuid = null;
+            $processedItems = 0;
+            $maxItemsToProcess = 100;
+
+            foreach ($items as $item) {
+                $guid = $item['id'] ?? $item['guid'] ?? $item['url'] ?? null;
+                if (!$guid) {
+                    continue;
+                }
+
+                if ($feed['last_post_id'] === $guid) {
+                    break;
+                }
+
+                if ($lastGuid === null) {
+                    $lastGuid = $guid;
+                }
+
+                $title = $item['title'] ?? 'Sem título';
+                $itemContent = $item['content'] ?? $item['content_html'] ?? $item['summary'] ?? '';
+                $author = $item['author']['name'] ?? $item['author'] ?? null;
+                $url = $item['url'] ?? $item['link'] ?? '';
+                $date = $item['date_published'] ?? $item['published'] ?? $item['date'] ?? date('Y-m-d H:i:s');
+
+                $this->climate->whisper("Processing JSON item: {$title} ({$url})");
+
+                $imageUrl = $this->extractImageFromUrl($url);
+                $contentCheck = $this->checkRealContent($itemContent, $url);
+                $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
+
+                try {
+                    DB::insert('feed_items', [
+                        'feed_id' => $feed['id'],
+                        'title' => $title,
+                        'author' => $author,
+                        'content' => $itemContent,
+                        'url' => $url,
+                        'image_url' => $imageUrl,
+                        'guid' => $guid,
+                        'published_at' => $date,
+                        'is_visible' => $isVisible ? 1 : 0
+                    ]);
+                    $count++;
+                    $updated = true;
+                    $this->climate->whisper("JSON item added successfully: {$title}");
+                } catch (\Exception $e) {
+                    $this->climate->whisper("Error adding JSON item {$title}: {$e->getMessage()}");
+                    continue;
+                }
+
+                $processedItems++;
+                if ($processedItems >= $maxItemsToProcess) {
+                    break;
+                }
+            }
+
+            if ($nextPageUrl) {
+                $this->processPaginatedJsonFeed($feed, $nextPageUrl, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
+            }
+
+            if ($updated && $lastGuid) {
+                DB::update('feeds', [
+                    'last_post_id' => $lastGuid,
+                    'last_updated' => DB::sqleval("NOW()")
+                ], 'id=%i', $feed['id']);
+            }
+
+            $this->climate->out("Added {$count} new items from JSON feed: {$feed['title']}");
         } catch (\Exception $e) {
-            throw new \Exception("Failed to fetch JSON feed: " . $e->getMessage());
+            throw $e;
+        } finally {
+            unset($items);
+            unset($data);
+            unset($content);
+            gc_collect_cycles();
         }
-
-        $data = json_decode($content, true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \Exception("Invalid JSON feed: " . json_last_error_msg());
-        }
-
-        $items = $data['items'] ?? $data['entries'] ?? $data['feed'] ?? $data;
-
-        if (!is_array($items)) {
-            throw new \Exception("Could not find items in JSON feed");
-        }
-        $nextPageUrl = $data['next'] ?? $data['next_page'] ?? $data['nextPage'] ?? null;
-
-        $count = 0;
-        $updated = false;
-        $lastGuid = null;
-        $processedItems = 0;
-        $maxItemsToProcess = 100;
-        $lastGuid = null;
-
-        foreach ($items as $item) {
-            $guid = $item['id'] ?? $item['guid'] ?? $item['url'] ?? null;
-            if (!$guid) {
-                continue;
-            }
-
-            if ($feed['last_post_id'] === $guid) {
-                break;
-            }
-
-            if ($lastGuid === null) {
-                $lastGuid = $guid;
-            }
-
-            $title = $item['title'] ?? 'Sem título';
-            $content = $item['content'] ?? $item['content_html'] ?? $item['summary'] ?? '';
-            $author = $item['author']['name'] ?? $item['author'] ?? null;
-            $url = $item['url'] ?? $item['link'] ?? '';
-            $date = $item['date_published'] ?? $item['published'] ?? $item['date'] ?? date('Y-m-d H:i:s');
-
-            $this->climate->whisper("Processing JSON item: {$title} ({$url})");
-
-            $imageUrl = $this->extractImageFromUrl($url);
-            $contentCheck = $this->checkRealContent($content, $url);
-            $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
-
-            try {
-                DB::insert('feed_items', [
-                    'feed_id' => $feed['id'],
-                    'title' => $title,
-                    'author' => $author,
-                    'content' => $content,
-                    'url' => $url,
-                    'image_url' => $imageUrl,
-                    'guid' => $guid,
-                    'published_at' => $date,
-                    'is_visible' => $isVisible ? 1 : 0
-                ]);
-                $count++;
-                $updated = true;
-                $this->climate->whisper("JSON item added successfully: {$title}");
-            } catch (\Exception $e) {
-                $this->climate->whisper("Error adding JSON item {$title}: {$e->getMessage()}");
-                continue;
-            }
-
-            $processedItems++;
-            if ($processedItems >= $maxItemsToProcess) {
-                break;
-            }
-        }
-
-        if ($nextPageUrl) {
-            $this->processPaginatedJsonFeed($feed, $nextPageUrl, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
-        }
-
-        if ($updated && $lastGuid) {
-            DB::update('feeds', [
-                'last_post_id' => $lastGuid,
-                'last_updated' => DB::sqleval("NOW()")
-            ], 'id=%i', $feed['id']);
-        }
-
-        $this->climate->out("Added {$count} new items from JSON feed: {$feed['title']}");
     }
 
     private function processPaginatedJsonFeed(array $feed, string $nextPageUrl, &$count, &$updated, &$lastGuid, &$processedItems, $maxItemsToProcess): void
@@ -979,6 +1030,10 @@ class FeedProcessor
     private function processXmlFeed(array $feed): void
     {
         $this->climate->info("Processing XML feed: {$feed['feed_url']}");
+        
+        $content = null;
+        $xml = null;
+        $items = null;
 
         try {
             $response = $this->httpClient->get($feed['feed_url']);
@@ -989,85 +1044,91 @@ class FeedProcessor
             }
 
             $content = (string) $response->getBody();
+
+            $xml = simplexml_load_string($content);
+            unset($content);
+            
+            if ($xml === false) {
+                throw new \Exception("Invalid XML feed");
+            }
+
+            $items = $xml->xpath('//item') ?: $xml->xpath('//entry') ?: [];
+
+            $count = 0;
+            $updated = false;
+            $lastGuid = null;
+            $processedItems = 0;
+            $maxItemsToProcess = 100;
+
+            foreach ($items as $item) {
+                $guid = (string)($item->guid ?? $item->id ?? $item->link ?? '');
+                if (empty($guid)) {
+                    continue;
+                }
+
+                if ($feed['last_post_id'] === $guid) {
+                    break;
+                }
+
+                if ($lastGuid === null) {
+                    $lastGuid = $guid;
+                }
+
+                $title = (string)($item->title ?? 'Sem título');
+                $itemContent = (string)($item->description ?? $item->content ?? $item->summary ?? '');
+                $author = (string)($item->author ?? $item->creator ?? '');
+                $url = (string)($item->link ?? $item->url ?? '');
+                $date = (string)($item->pubDate ?? $item->published ?? $item->date ?? date('Y-m-d H:i:s'));
+
+                $this->climate->whisper("Processing XML item: {$title} ({$url})");
+
+                $imageUrl = $this->extractImageFromUrl($url);
+                $contentCheck = $this->checkRealContent($itemContent, $url);
+                $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
+
+                try {
+                    DB::insert('feed_items', [
+                        'feed_id' => $feed['id'],
+                        'title' => $title,
+                        'author' => $author,
+                        'content' => $itemContent,
+                        'url' => $url,
+                        'image_url' => $imageUrl,
+                        'guid' => $guid,
+                        'published_at' => $date,
+                        'is_visible' => $isVisible ? 1 : 0
+                    ]);
+                    $count++;
+                    $updated = true;
+                    $this->climate->whisper("XML item added successfully: {$title}");
+                } catch (\Exception $e) {
+                    $this->climate->whisper("Error adding XML item {$title}: {$e->getMessage()}");
+                    continue;
+                }
+
+                $processedItems++;
+                if ($processedItems >= $maxItemsToProcess) {
+                    break;
+                }
+            }
+
+            $this->processPaginatedXmlFeed($feed, $xml, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
+
+            if ($updated && $lastGuid) {
+                DB::update('feeds', [
+                    'last_post_id' => $lastGuid,
+                    'last_updated' => DB::sqleval("NOW()")
+                ], 'id=%i', $feed['id']);
+            }
+            $this->climate->out("Added {$count} new items from XML feed: {$feed['title']}");
         } catch (\Exception $e) {
-            throw new \Exception("Failed to fetch XML feed: " . $e->getMessage());
+            throw $e;
+        } finally {
+            unset($items);
+            unset($xml);
+            unset($content);
+            gc_collect_cycles();
         }
-
-        $xml = simplexml_load_string($content);
-        if ($xml === false) {
-            throw new \Exception("Invalid XML feed");
-        }
-
-        $items = $xml->xpath('//item') ?: $xml->xpath('//entry') ?: [];
-
-        $count = 0;
-        $updated = false;
-        $lastGuid = null;
-        $processedItems = 0;
-        $maxItemsToProcess = 100;
-
-        foreach ($items as $item) {
-            $guid = (string)($item->guid ?? $item->id ?? $item->link ?? '');
-            if (empty($guid)) {
-                continue;
-            }
-
-            if ($feed['last_post_id'] === $guid) {
-                break;
-            }
-
-            if ($lastGuid === null) {
-                $lastGuid = $guid;
-            }
-
-            $title = (string)($item->title ?? 'Sem título');
-            $content = (string)($item->description ?? $item->content ?? $item->summary ?? '');
-            $author = (string)($item->author ?? $item->creator ?? '');
-            $url = (string)($item->link ?? $item->url ?? '');
-            $date = (string)($item->pubDate ?? $item->published ?? $item->date ?? date('Y-m-d H:i:s'));
-
-            $this->climate->whisper("Processing XML item: {$title} ({$url})");
-
-            $imageUrl = $this->extractImageFromUrl($url);
-            $contentCheck = $this->checkRealContent($content, $url);
-            $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
-
-            try {
-                DB::insert('feed_items', [
-                    'feed_id' => $feed['id'],
-                    'title' => $title,
-                    'author' => $author,
-                    'content' => $content,
-                    'url' => $url,
-                    'image_url' => $imageUrl,
-                    'guid' => $guid,
-                    'published_at' => $date,
-                    'is_visible' => $isVisible ? 1 : 0
-                ]);
-                $count++;
-                $updated = true;
-                $this->climate->whisper("XML item added successfully: {$title}");
-            } catch (\Exception $e) {
-
-                $this->climate->whisper("Error adding XML item {$title}: {$e->getMessage()}");
-                continue;
-            }
-
-            $processedItems++;
-            if ($processedItems >= $maxItemsToProcess) {
-                break;
-            }
-        }
-
-        $this->processPaginatedXmlFeed($feed, $xml, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
-
-        if ($updated && $lastGuid) {
-            DB::update('feeds', [
-                'last_post_id' => $lastGuid,
-                'last_updated' => DB::sqleval("NOW()")
-            ], 'id=%i', $feed['id']);
-        }
-        $this->climate->out("Added {$count} new items from XML feed: {$feed['title']}");
     }
 
     private function processPaginatedXmlFeed(array $feed, \SimpleXMLElement $xml, &$count, &$updated, &$lastGuid, &$processedItems, $maxItemsToProcess): void
@@ -1286,6 +1347,7 @@ class FeedProcessor
             
             if ($processed % 100 === 0) {
                 $this->climate->info("Progress: {$processed}/{$totalItems} items checked...");
+                gc_collect_cycles();
             }
 
             $contentCheck = $this->checkRealContent($item['content'], $item['url']);
@@ -1298,8 +1360,13 @@ class FeedProcessor
                 $markedInvisible++;
                 $this->climate->whisper("Marked as invisible (ID: {$item['id']}, Reason: {$contentCheck['reason']}): {$item['url']}");
             }
+            
+            unset($item);
         }
 
+        unset($items);
+        gc_collect_cycles();
+        
         $this->climate->green("✓ Process complete!");
         $this->climate->info("Total items checked: {$totalItems}");
         $this->climate->info("Items marked as invisible: {$markedInvisible}");
@@ -1352,6 +1419,8 @@ class FeedProcessor
 
     private function extractFeedTitle(array $feed): ?string
     {
+        $simplePie = null;
+        
         try {
             $feedUrl = $feed['feed_url'];
             $feedType = $feed['feed_type'];
@@ -1379,6 +1448,12 @@ class FeedProcessor
         } catch (\Exception $e) {
             $this->climate->whisper("Error extracting feed title: {$e->getMessage()}");
             return null;
+        } finally {
+            if ($simplePie !== null) {
+                $simplePie->__destruct();
+                unset($simplePie);
+            }
+            gc_collect_cycles();
         }
     }
 }
