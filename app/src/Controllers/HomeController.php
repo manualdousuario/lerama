@@ -11,16 +11,20 @@ use Laminas\Diactoros\Response\RedirectResponse;
 use League\Plates\Engine;
 use DB;
 use Lerama\Services\ThumbnailService;
+use Lerama\Services\CacheService;
+use Lerama\Services\CacheableQuery;
 
 class HomeController
 {
     private Engine $templates;
     private ThumbnailService $thumbnailService;
+    private CacheService $cache;
 
     public function __construct()
     {
         $this->templates = new Engine(__DIR__ . '/../../templates');
         $this->thumbnailService = new ThumbnailService();
+        $this->cache = CacheService::getInstance();
     }
 
     public function index(ServerRequestInterface $request, array $args = []): ResponseInterface
@@ -88,7 +92,20 @@ class HomeController
             $queryParams[] = $tagSlug;
         }
 
-        $totalCount = DB::queryFirstField($countQuery, ...$queryParams);
+        $filterHash = $this->cache->hash([
+            'search' => $search,
+            'feed' => $feedId,
+            'category' => $categorySlug,
+            'tag' => $tagSlug,
+            'page' => $page,
+            'perPage' => $perPage
+        ]);
+
+        $countCacheKey = $this->cache->key('items', 'count', $filterHash);
+        $totalCount = $this->cache->remember($countCacheKey, 60, ['items', 'feeds'], function() use ($countQuery, $queryParams) {
+            return DB::queryFirstField($countQuery, ...$queryParams);
+        });
+        
         $totalPages = ceil($totalCount / $perPage);
         if ($page > $totalPages && $totalPages > 0) {
             return new RedirectResponse('/page/' . $totalPages . $this->buildQueryString($params));
@@ -97,11 +114,25 @@ class HomeController
         $query .= " ORDER BY fi.published_at DESC LIMIT %i, %i";
         $finalQueryParams = [...$queryParams, $offset, $perPage];
 
-        $items = DB::query($query, ...$finalQueryParams);
+        $itemsCacheKey = $this->cache->key('items', 'home', $filterHash);
+        $items = $this->cache->remember($itemsCacheKey, 60, ['items', 'feeds'], function() use ($query, $finalQueryParams) {
+            return DB::query($query, ...$finalQueryParams) ?: [];
+        });
 
-        $feeds = DB::query("SELECT id, title FROM feeds ORDER BY title");
-        $categories = DB::query("SELECT * FROM categories ORDER BY name");
-        $tags = DB::query("SELECT * FROM tags ORDER BY name");
+        $feeds = CacheableQuery::query(
+            'feeds', 'dropdown', ['feeds'], 300,
+            "SELECT id, title FROM feeds ORDER BY title"
+        );
+
+        $categories = CacheableQuery::query(
+            'categories', 'all', ['categories'], 300,
+            "SELECT * FROM categories ORDER BY name"
+        );
+
+        $tags = CacheableQuery::query(
+            'tags', 'all', ['tags'], 300,
+            "SELECT * FROM tags ORDER BY name"
+        );
 
         $html = $this->templates->render('home', [
             'items' => $items,
@@ -137,7 +168,10 @@ class HomeController
 
     public function categories(ServerRequestInterface $request): ResponseInterface
     {
-        $categories = DB::query("SELECT * FROM categories ORDER BY name");
+        $categories = CacheableQuery::query(
+            'categories', 'all', ['categories'], 300,
+            "SELECT * FROM categories ORDER BY name"
+        );
 
         $html = $this->templates->render('categories-list', [
             'categories' => $categories,
@@ -149,7 +183,10 @@ class HomeController
 
     public function tags(ServerRequestInterface $request): ResponseInterface
     {
-        $tags = DB::query("SELECT * FROM tags ORDER BY name");
+        $tags = CacheableQuery::query(
+            'tags', 'all', ['tags'], 300,
+            "SELECT * FROM tags ORDER BY name"
+        );
 
         $html = $this->templates->render('tags-list', [
             'tags' => $tags,
@@ -178,7 +215,6 @@ class HomeController
             return new RedirectResponse($item['url']);
         }
 
-        // Fallback to home if no random post found
         return new RedirectResponse('/');
     }
 }

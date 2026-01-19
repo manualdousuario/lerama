@@ -13,15 +13,19 @@ use Laminas\Diactoros\Response\EmptyResponse;
 use League\Plates\Engine;
 use Lerama\Services\FeedTypeDetector;
 use Lerama\Services\EmailService;
+use Lerama\Services\CacheService;
+use Lerama\Services\CacheableQuery;
 use DB;
 
 class AdminController
 {
     private Engine $templates;
+    private CacheService $cache;
 
     public function __construct()
     {
         $this->templates = new Engine(__DIR__ . '/../../templates');
+        $this->cache = CacheService::getInstance();
     }
 
     public function loginForm(ServerRequestInterface $request): ResponseInterface
@@ -309,6 +313,8 @@ class AdminController
                         'status' => 'online'
                     ]);
 
+                    CacheableQuery::invalidateFeeds();
+
                     return new RedirectResponse('/admin/feeds');
                 } catch (\Exception $e) {
                     $errors['general'] = 'Erro ao criar feed: ' . $e->getMessage();
@@ -436,6 +442,8 @@ class AdminController
                         }
                     }
 
+                    CacheableQuery::invalidateFeed($id);
+
                     return new RedirectResponse('/admin/feeds');
                 } catch (\Exception $e) {
                     $errors['general'] = 'Erro ao atualizar feed: ' . $e->getMessage();
@@ -538,6 +546,8 @@ class AdminController
                 'status' => 'online'
             ]);
 
+            CacheableQuery::invalidateFeeds();
+
             return new JsonResponse([
                 'success' => true,
                 'message' => 'Feed criado com sucesso'
@@ -630,6 +640,8 @@ class AdminController
         try {
             DB::update('feeds', $updateData, 'id=%i', $id);
 
+            CacheableQuery::invalidateFeed($id);
+
             return new JsonResponse([
                 'success' => true,
                 'message' => 'Feed atualizado com sucesso'
@@ -656,6 +668,8 @@ class AdminController
 
         try {
             DB::delete('feeds', 'id=%i', $id);
+
+            CacheableQuery::invalidate(['feeds', 'items']);
 
             return new JsonResponse([
                 'success' => true,
@@ -695,6 +709,8 @@ class AdminController
                 DB::update('feed_items', [
                     'is_visible' => $isVisible ? 1 : 0
                 ], 'id=%i', $id);
+
+                CacheableQuery::invalidateItems();
 
                 return new JsonResponse([
                     'success' => true,
@@ -761,6 +777,8 @@ class AdminController
                         'slug' => $slug
                     ]);
 
+                    CacheableQuery::invalidateCategories();
+
                     return new RedirectResponse('/admin/categories');
                 } catch (\Exception $e) {
                     $errors['general'] = 'Erro ao criar categoria: ' . $e->getMessage();
@@ -826,6 +844,8 @@ class AdminController
                         'slug' => $slug
                     ], 'id=%i', $id);
 
+                    CacheableQuery::invalidateCategories();
+
                     return new RedirectResponse('/admin/categories');
                 } catch (\Exception $e) {
                     $errors['general'] = 'Erro ao atualizar categoria: ' . $e->getMessage();
@@ -890,6 +910,8 @@ class AdminController
                 'slug' => $slug
             ]);
 
+            CacheableQuery::invalidateCategories();
+
             return new JsonResponse([
                 'success' => true,
                 'message' => 'Categoria criada com sucesso'
@@ -940,6 +962,8 @@ class AdminController
 
         try {
             DB::update('categories', $updateData, 'id=%i', $id);
+            CacheableQuery::invalidateCategories();
+
             return new JsonResponse([
                 'success' => true,
                 'message' => 'Categoria atualizada com sucesso'
@@ -966,6 +990,8 @@ class AdminController
 
         try {
             DB::delete('categories', 'id=%i', $id);
+            CacheableQuery::invalidateCategories();
+
             return new JsonResponse([
                 'success' => true,
                 'message' => 'Categoria excluída com sucesso'
@@ -1024,6 +1050,8 @@ class AdminController
                         'name' => $name,
                         'slug' => $slug
                     ]);
+
+                    CacheableQuery::invalidateTags();
 
                     return new RedirectResponse('/admin/tags');
                 } catch (\Exception $e) {
@@ -1090,6 +1118,8 @@ class AdminController
                         'slug' => $slug
                     ], 'id=%i', $id);
 
+                    CacheableQuery::invalidateTags();
+
                     return new RedirectResponse('/admin/tags');
                 } catch (\Exception $e) {
                     $errors['general'] = 'Erro ao atualizar tag: ' . $e->getMessage();
@@ -1154,6 +1184,8 @@ class AdminController
                 'slug' => $slug
             ]);
 
+            CacheableQuery::invalidateTags();
+
             return new JsonResponse([
                 'success' => true,
                 'message' => 'Tag criada com sucesso'
@@ -1204,6 +1236,8 @@ class AdminController
 
         try {
             DB::update('tags', $updateData, 'id=%i', $id);
+            CacheableQuery::invalidateTags();
+
             return new JsonResponse([
                 'success' => true,
                 'message' => 'Tag atualizada com sucesso'
@@ -1230,6 +1264,9 @@ class AdminController
 
         try {
             DB::delete('tags', 'id=%i', $id);
+
+            CacheableQuery::invalidateTags();
+
             return new JsonResponse([
                 'success' => true,
                 'message' => 'Tag excluída com sucesso'
@@ -1290,6 +1327,8 @@ class AdminController
             }
             
             $this->recalculateCategoryItemCounts($affectedCategoryIds);
+            
+            CacheableQuery::invalidate(['categories', 'feeds']);
             
             return new JsonResponse([
                 'success' => true,
@@ -1352,6 +1391,8 @@ class AdminController
             
             $this->recalculateTagItemCounts($affectedTagIds);
             
+            CacheableQuery::invalidate(['tags', 'feeds']);
+            
             return new JsonResponse([
                 'success' => true,
                 'message' => 'Tags atualizadas com sucesso para ' . count($feedIds) . ' feed(s)'
@@ -1393,6 +1434,8 @@ class AdminController
                     'status' => $status
                 ], 'id=%i', (int)$feedId);
             }
+            
+            CacheableQuery::invalidateFeeds();
             
             return new JsonResponse([
                 'success' => true,

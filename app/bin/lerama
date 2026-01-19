@@ -10,6 +10,8 @@ use Lerama\Commands\FeedProcessor;
 use Lerama\Commands\FeedImporter;
 use Lerama\Services\ProxyService;
 use Lerama\Services\EmailService;
+use Lerama\Services\CacheService;
+use Lerama\Services\CacheableQuery;
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
@@ -85,6 +87,100 @@ switch ($command) {
         $importer->import($csvPath);
         break;
 
+    case 'cache:flush':
+        // Flush all cache
+        $climate->info("Flushing cache...");
+        $cache = CacheService::getInstance();
+        if ($cache->flush()) {
+            $climate->green("✓ Cache flushed successfully");
+        } else {
+            $climate->yellow("! Cache flush skipped (Redis may be unavailable)");
+        }
+        break;
+
+    case 'cache:warm':
+        // Warm cache
+        $climate->info("Warming cache...");
+        $cache = CacheService::getInstance();
+        
+        if (!$cache->isAvailable()) {
+            $climate->red("✗ Redis is not available");
+            exit(1);
+        }
+        
+        $climate->out("  Caching categories...");
+        $categories = CacheableQuery::query(
+            'categories', 'all', ['categories'], 300,
+            "SELECT * FROM categories ORDER BY name"
+        );
+        $climate->green("  ✓ Cached " . count($categories) . " categories");
+        
+        $climate->out("  Caching tags...");
+        $tags = CacheableQuery::query(
+            'tags', 'all', ['tags'], 300,
+            "SELECT * FROM tags ORDER BY name"
+        );
+        $climate->green("  ✓ Cached " . count($tags) . " tags");
+        
+        $climate->out("  Caching feeds dropdown...");
+        $feeds = CacheableQuery::query(
+            'feeds', 'dropdown', ['feeds'], 300,
+            "SELECT id, title FROM feeds ORDER BY title"
+        );
+        $climate->green("  ✓ Cached " . count($feeds) . " feeds");
+        
+        $climate->green("✓ Cache warming completed");
+        break;
+
+    case 'cache:stats':
+        // Cache statistics
+        $climate->info("Cache Statistics");
+        $cache = CacheService::getInstance();
+        $stats = $cache->stats();
+        
+        if (!$stats['available']) {
+            $climate->red("  Redis is not available");
+            if (isset($stats['error'])) {
+                $climate->red("  Error: " . $stats['error']);
+            }
+            exit(1);
+        }
+        
+        $climate->out("  Status: <green>Connected</green>");
+        $climate->out("  Redis Host: " . ($stats['redis_host'] ?? 'N/A'));
+        $climate->out("  Redis Database: " . ($stats['redis_database'] ?? 'N/A'));
+        $climate->out("  Connected Clients: " . ($stats['connected_clients'] ?? 'N/A'));
+        $climate->out("  Memory Used: " . ($stats['used_memory'] ?? 'N/A'));
+        $climate->out("  Total Keys (DB): " . ($stats['total_keys'] ?? 'N/A'));
+        $climate->out("  Lerama Keys: " . ($stats['lerama_keys'] ?? 'N/A'));
+        $climate->out("  Cache Hits: " . ($stats['hits'] ?? 'N/A'));
+        $climate->out("  Cache Misses: " . ($stats['misses'] ?? 'N/A'));
+        
+        $hits = (int)($stats['hits'] ?? 0);
+        $misses = (int)($stats['misses'] ?? 0);
+        $total = $hits + $misses;
+        if ($total > 0) {
+            $hitRate = round(($hits / $total) * 100, 2);
+            $climate->out("  Hit Rate: <green>" . $hitRate . "%</green>");
+        }
+        break;
+
+    case 'cache:invalidate':
+        // Invalidate cache tags
+        $tag = $argv[2] ?? null;
+        
+        if (empty($tag)) {
+            $climate->error("Tag is required");
+            $climate->out("Usage: php bin/lerama cache:invalidate <tag>");
+            $climate->out("Available tags: categories, tags, feeds, items");
+            exit(1);
+        }
+        
+        $climate->info("Invalidating cache for tag: {$tag}");
+        $deleted = CacheableQuery::invalidate($tag);
+        $climate->green("✓ Invalidated {$deleted} cache key(s)");
+        break;
+
     default:
         $climate->error("Unknown command: {$command}");
         showUsage($climate);
@@ -94,15 +190,26 @@ switch ($command) {
 function showUsage(CLImate $climate): void
 {
     $climate->out("Usage:");
+    $climate->out("");
+    $climate->out("Feed Commands:");
     $climate->out("  php bin/lerama feed:process                    Process all feeds");
     $climate->out("  php bin/lerama feed:id {ID_DO_FEED}            Process a specific feed by ID");
     $climate->out("  php bin/lerama feed:check-status               Check and update status of paused feeds");
     $climate->out("  php bin/lerama feed:check-real-content         Check all feed items for real contents");
     $climate->out("  php bin/lerama feed:import <CSV_FILE>          Import feeds from CSV file (columns: url, tags, category)");
+    $climate->out("");
+    $climate->out("Cache Commands:");
+    $climate->out("  php bin/lerama cache:flush                     Flush all cache");
+    $climate->out("  php bin/lerama cache:warm                      Warm cache");
+    $climate->out("  php bin/lerama cache:stats                     Cache statistics");
+    $climate->out("  php bin/lerama cache:invalidate <tag>          Invalidate cache by tag (categories, tags, feeds, items)");
+    $climate->out("");
+    $climate->out("Proxy Commands:");
     $climate->out("  php bin/lerama proxy:update                    Update proxy list from PROXY_LIST URL");
     $climate->out("");
     $climate->out("Examples:");
     $climate->out("  php bin/lerama feed:process                    Process all feeds");
     $climate->out("  php bin/lerama feed:import feeds.csv           Import feeds from CSV file");
-    $climate->out("  php bin/lerama feed:check-real-content         Check for real content");
+    $climate->out("  php bin/lerama cache:flush                     Clear all cached data");
+    $climate->out("  php bin/lerama cache:stats                     View cache hit/miss statistics");
 }

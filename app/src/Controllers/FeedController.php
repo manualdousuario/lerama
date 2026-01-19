@@ -11,14 +11,18 @@ use Laminas\Diactoros\Response\JsonResponse;
 use Laminas\Diactoros\Response\XmlResponse;
 use League\Plates\Engine;
 use DB;
+use Lerama\Services\CacheService;
+use Lerama\Services\CacheableQuery;
 
 class FeedController
 {
     private Engine $templates;
+    private CacheService $cache;
 
     public function __construct()
     {
         $this->templates = new Engine(__DIR__ . '/../../templates');
+        $this->cache = CacheService::getInstance();
     }
 
     public function index(ServerRequestInterface $request, array $args = []): ResponseInterface
@@ -71,33 +75,54 @@ class FeedController
             $queryParams[] = $tagSlug;
         }
 
-        $totalCount = DB::queryFirstField($countQuery, ...$queryParams);
+        $filterHash = $this->cache->hash([
+            'category' => $categorySlug,
+            'tag' => $tagSlug,
+            'page' => $page,
+            'perPage' => $perPage
+        ]);
+
+        $countCacheKey = $this->cache->key('feeds', 'count', $filterHash);
+        $totalCount = $this->cache->remember($countCacheKey, 120, ['feeds'], function() use ($countQuery, $queryParams) {
+            return DB::queryFirstField($countQuery, ...$queryParams);
+        });
         $totalPages = ceil($totalCount / $perPage);
 
         $query .= " ORDER BY f.title LIMIT %i, %i";
         $finalQueryParams = [...$queryParams, $offset, $perPage];
 
-        $feeds = DB::query($query, ...$finalQueryParams);
+        $feedsCacheKey = $this->cache->key('feeds', 'list', $filterHash);
+        $feeds = $this->cache->remember($feedsCacheKey, 120, ['feeds', 'categories', 'tags'], function() use ($query, $finalQueryParams) {
+            $feeds = DB::query($query, ...$finalQueryParams) ?: [];
+            
+            foreach ($feeds as &$feed) {
+                $feed['categories'] = DB::query("
+                    SELECT c.* FROM categories c
+                    JOIN feed_categories fc ON c.id = fc.category_id
+                    WHERE fc.feed_id = %i
+                    ORDER BY c.name
+                ", $feed['id']) ?: [];
 
-        // Get categories and tags for each feed
-        foreach ($feeds as &$feed) {
-            $feed['categories'] = DB::query("
-                SELECT c.* FROM categories c
-                JOIN feed_categories fc ON c.id = fc.category_id
-                WHERE fc.feed_id = %i
-                ORDER BY c.name
-            ", $feed['id']);
+                $feed['tags'] = DB::query("
+                    SELECT t.* FROM tags t
+                    JOIN feed_tags ft ON t.id = ft.tag_id
+                    WHERE ft.feed_id = %i
+                    ORDER BY t.name
+                ", $feed['id']) ?: [];
+            }
+            
+            return $feeds;
+        });
 
-            $feed['tags'] = DB::query("
-                SELECT t.* FROM tags t
-                JOIN feed_tags ft ON t.id = ft.tag_id
-                WHERE ft.feed_id = %i
-                ORDER BY t.name
-            ", $feed['id']);
-        }
+        $categories = CacheableQuery::query(
+            'categories', 'all', ['categories'], 300,
+            "SELECT * FROM categories ORDER BY name"
+        );
 
-        $categories = DB::query("SELECT * FROM categories ORDER BY name");
-        $tags = DB::query("SELECT * FROM tags ORDER BY name");
+        $tags = CacheableQuery::query(
+            'tags', 'all', ['tags'], 300,
+            "SELECT * FROM tags ORDER BY name"
+        );
 
         $html = $this->templates->render('feeds', [
             'feeds' => $feeds,
@@ -123,7 +148,6 @@ class FeedController
         $perPage = isset($params['per_page']) ? min(100, max(1, (int)$params['per_page'])) : 20;
         $offset = ($page - 1) * $perPage;
         
-        // Support both single and multiple categories/tags
         $categorySlugs = [];
         if (isset($params['category'])) {
             $categorySlugs = [$params['category']];
@@ -163,21 +187,34 @@ class FeedController
 
         $whereClause = implode(' AND ', $whereConditions);
 
-        $totalCount = DB::queryFirstField(
-            "SELECT COUNT(*) FROM feed_items fi JOIN feeds f ON fi.feed_id = f.id WHERE " . $whereClause,
-            ...$queryParams
-        );
+        $filterHash = $this->cache->hash([
+            'categories' => $categorySlugs,
+            'tags' => $tagSlugs,
+            'page' => $page,
+            'perPage' => $perPage
+        ]);
+
+        $countCacheKey = $this->cache->key('items', 'json', 'count', $filterHash);
+        $totalCount = $this->cache->remember($countCacheKey, 60, ['items', 'feeds'], function() use ($whereClause, $queryParams) {
+            return DB::queryFirstField(
+                "SELECT COUNT(*) FROM feed_items fi JOIN feeds f ON fi.feed_id = f.id WHERE " . $whereClause,
+                ...$queryParams
+            );
+        });
         $totalPages = ceil($totalCount / $perPage);
 
-        $items = DB::query("
-            SELECT fi.id, fi.title, fi.author, fi.content, fi.url, fi.image_url, fi.published_at,
-                   f.title as feed_title, f.site_url as feed_site_url
-            FROM feed_items fi
-            JOIN feeds f ON fi.feed_id = f.id
-            WHERE " . $whereClause . "
-            ORDER BY fi.published_at DESC
-            LIMIT %i, %i
-        ", ...array_merge($queryParams, [$offset, $perPage]));
+        $itemsCacheKey = $this->cache->key('items', 'json', $filterHash);
+        $items = $this->cache->remember($itemsCacheKey, 60, ['items', 'feeds'], function() use ($whereClause, $queryParams, $offset, $perPage) {
+            return DB::query("
+                SELECT fi.id, fi.title, fi.author, fi.content, fi.url, fi.image_url, fi.published_at,
+                       f.title as feed_title, f.site_url as feed_site_url
+                FROM feed_items fi
+                JOIN feeds f ON fi.feed_id = f.id
+                WHERE " . $whereClause . "
+                ORDER BY fi.published_at DESC
+                LIMIT %i, %i
+            ", ...array_merge($queryParams, [$offset, $perPage])) ?: [];
+        });
 
         $formattedItems = [];
         foreach ($items as $item) {
@@ -222,7 +259,6 @@ class FeedController
         $perPage = isset($params['per_page']) ? min(100, max(1, (int)$params['per_page'])) : 20;
         $offset = ($page - 1) * $perPage;
         
-        // Support both single and multiple categories/tags
         $categorySlugs = [];
         if (isset($params['category'])) {
             $categorySlugs = [$params['category']];
@@ -262,15 +298,25 @@ class FeedController
 
         $whereClause = implode(' AND ', $whereConditions);
 
-        $items = DB::query("
-            SELECT fi.id, fi.title, fi.author, fi.content, fi.url, fi.image_url, fi.published_at,
-                   f.title as feed_title, f.site_url as feed_site_url
-            FROM feed_items fi
-            JOIN feeds f ON fi.feed_id = f.id
-            WHERE " . $whereClause . "
-            ORDER BY fi.published_at DESC
-            LIMIT %i, %i
-        ", ...array_merge($queryParams, [$offset, $perPage]));
+        $filterHash = $this->cache->hash([
+            'categories' => $categorySlugs,
+            'tags' => $tagSlugs,
+            'page' => $page,
+            'perPage' => $perPage
+        ]);
+
+        $itemsCacheKey = $this->cache->key('items', 'rss', $filterHash);
+        $items = $this->cache->remember($itemsCacheKey, 60, ['items', 'feeds'], function() use ($whereClause, $queryParams, $offset, $perPage) {
+            return DB::query("
+                SELECT fi.id, fi.title, fi.author, fi.content, fi.url, fi.image_url, fi.published_at,
+                       f.title as feed_title, f.site_url as feed_site_url
+                FROM feed_items fi
+                JOIN feeds f ON fi.feed_id = f.id
+                WHERE " . $whereClause . "
+                ORDER BY fi.published_at DESC
+                LIMIT %i, %i
+            ", ...array_merge($queryParams, [$offset, $perPage])) ?: [];
+        });
 
         $xml = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"></rss>');
 
@@ -286,7 +332,6 @@ class FeedController
             $xmlItem = $channel->addChild('item');
             $xmlItem->addChild('title', htmlspecialchars($item['title']));
 
-            // Se o campo author estiver vazio, preencher com o nome do source
             $author = !empty($item['author'])
                 ? $item['author'] . ' em ' . $item['feed_title']
                 : $item['feed_title'];
@@ -320,11 +365,15 @@ class FeedController
 
     public function feedBuilder(ServerRequestInterface $request): ResponseInterface
     {
-        // Get all categories with item counts from the cached column
-        $categories = DB::query("SELECT * FROM categories ORDER BY name");
+        $categories = CacheableQuery::query(
+            'categories', 'all', ['categories'], 300,
+            "SELECT * FROM categories ORDER BY name"
+        );
 
-        // Get all tags with item counts from the cached column
-        $tags = DB::query("SELECT * FROM tags ORDER BY name");
+        $tags = CacheableQuery::query(
+            'tags', 'all', ['tags'], 300,
+            "SELECT * FROM tags ORDER BY name"
+        );
 
         $html = $this->templates->render('feed-builder', [
             'categories' => $categories,

@@ -12,6 +12,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use Lerama\Services\ProxyService;
 use Lerama\Services\EmailService;
+use Lerama\Services\CacheableQuery;
 use Lerama\Config\HttpClientConfig;
 
 class FeedProcessor
@@ -388,6 +389,9 @@ class FeedProcessor
                     'last_post_id' => $lastGuid,
                     'last_updated' => DB::sqleval("NOW()")
                 ], 'id=%i', $feed['id']);
+                
+                // Invalidate cache for items and this specific feed
+                CacheableQuery::invalidate(['items', "feed:{$feed['id']}"]);
             }
 
             $this->climate->out("Added {$count} new items from feed: {$feed['title']}");
@@ -662,6 +666,9 @@ class FeedProcessor
                     'last_post_id' => $lastGuid,
                     'last_updated' => DB::sqleval("NOW()")
                 ], 'id=%i', $feed['id']);
+                
+                // Invalidate cache for items and this specific feed
+                CacheableQuery::invalidate(['items', "feed:{$feed['id']}"]);
             }
 
             $this->climate->out("Added {$count} new items from CSV feed: {$feed['title']}");
@@ -909,6 +916,9 @@ class FeedProcessor
                     'last_post_id' => $lastGuid,
                     'last_updated' => DB::sqleval("NOW()")
                 ], 'id=%i', $feed['id']);
+                
+                // Invalidate cache for items and this specific feed
+                CacheableQuery::invalidate(['items', "feed:{$feed['id']}"]);
             }
 
             $this->climate->out("Added {$count} new items from JSON feed: {$feed['title']}");
@@ -1119,6 +1129,9 @@ class FeedProcessor
                     'last_post_id' => $lastGuid,
                     'last_updated' => DB::sqleval("NOW()")
                 ], 'id=%i', $feed['id']);
+                
+                // Invalidate cache for items and this specific feed
+                CacheableQuery::invalidate(['items', "feed:{$feed['id']}"]);
             }
             $this->climate->out("Added {$count} new items from XML feed: {$feed['title']}");
         } catch (\Exception $e) {

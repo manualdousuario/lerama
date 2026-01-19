@@ -21,6 +21,13 @@ services:
       SMTP_SECURE: tls
       SMTP_FROM_EMAIL: lerama@lerama.lab
       SMTP_FROM_NAME: Lerama
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD:
+      REDIS_DATABASE: 0
+      CACHE_PREFIX: lerama
+      CACHE_DEFAULT_TTL: 300
+      CACHE_ENABLED: true
     ports:
       - 80:80
     volumes:
@@ -36,6 +43,20 @@ services:
       - lerama
     depends_on:
       - db
+      - redis
+  redis:
+    image: redis:7-alpine
+    container_name: lerama-redis
+    restart: unless-stopped
+    volumes:
+      - ./redis/data:/data
+    networks:
+      - lerama
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   db:
     image: mariadb:10.11
     container_name: db
