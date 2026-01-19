@@ -17,6 +17,7 @@ log_info() {
 
 # Create .env file with environment variables
 log_info "Setting up environment variables in /app/.env..."
+touch /app/.env
 cat > /app/.env << EOL
 APP_NAME=Lerama
 APP_URL=${APP_URL:-https://lerama.lab}
