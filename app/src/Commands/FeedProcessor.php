@@ -46,7 +46,7 @@ class FeedProcessor
         $this->errorThreshold = (int)($_ENV['FEED_ITEM_ERROR_THRESHOLD'] ?? 5);
     }
 
-    public function process(?int $feedId = null, int $parallel = 1): void
+    public function process(?int $feedId = null): void
     {
         if ($feedId) {
             $this->climate->info("Processing feed ID: {$feedId}");
@@ -78,37 +78,8 @@ class FeedProcessor
         $totalFeeds = count($feeds);
         $this->climate->info("Total feeds to process: {$totalFeeds}");
 
-        if ($parallel > 1 && $totalFeeds > 1) {
-            $this->climate->info("Using parallel processing with {$parallel} workers");
-            $this->processParallel($feeds, $parallel);
-        } else {
-            $this->climate->info("Using sequential processing");
-            $this->processSequential($feeds);
-        }
-    }
-
-    private function processSequential(array $feeds): void
-    {
         foreach ($feeds as $feed) {
             $this->processSingleFeed($feed);
-        }
-    }
-
-    private function processParallel(array $feeds, int $maxWorkers): void
-    {
-        $batches = array_chunk($feeds, max(1, (int)ceil(count($feeds) / $maxWorkers)));
-        $this->climate->info("Processing " . count($feeds) . " feeds in " . count($batches) . " batches");
-
-        foreach ($batches as $batchIndex => $batch) {
-            $this->climate->info("Processing batch " . ($batchIndex + 1) . " of " . count($batches) . " (" . count($batch) . " feeds)");
-
-            foreach ($batch as $feed) {
-                $this->processSingleFeed($feed);
-            }
-
-            if ($batchIndex < count($batches) - 1) {
-                usleep(1000000); // 1000ms delay between batches
-            }
         }
     }
 
