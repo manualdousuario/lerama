@@ -55,16 +55,23 @@ class FeedProcessor
         } else {
             $this->climate->info("Processing online feeds (max: {$this->maxFeedsPerRun}, interval: {$this->collectionIntervalMinutes} min)");
             
+            // Validate interval to prevent all feeds being selected
+            if ($this->collectionIntervalMinutes <= 0) {
+                $this->climate->error("FEED_COLLECTION_INTERVAL must be greater than 0, using default 120 minutes");
+                $this->collectionIntervalMinutes = 120;
+            }
+            
             // Select feeds that:
             // 1. Are online
             // 2. Haven't been checked in the last FEED_COLLECTION_INTERVAL minutes OR have never been checked
             // 3. Limit to FEED_MAX_PER_RUN feeds
-            // Order by last_checked ASC (oldest first) to ensure fair rotation
+            // Order by last_checked ASC (NULL first, then oldest) to ensure fair rotation
+            // Using COALESCE to explicitly handle NULL as epoch (very old date)
             $feeds = DB::query(
                 "SELECT * FROM feeds
                 WHERE status = 'online'
-                AND (last_checked IS NULL OR last_checked < DATE_SUB(NOW(), INTERVAL %i MINUTE))
-                ORDER BY last_checked ASC
+                AND (last_checked IS NULL OR last_checked <= DATE_SUB(NOW(), INTERVAL %i MINUTE))
+                ORDER BY COALESCE(last_checked, '1970-01-01 00:00:00') ASC
                 LIMIT %i",
                 $this->collectionIntervalMinutes,
                 $this->maxFeedsPerRun
@@ -72,12 +79,18 @@ class FeedProcessor
         }
 
         if (empty($feeds)) {
-            $this->climate->warning("No feeds found to process (all feeds may have been checked recently)");
+            $this->climate->warning("No feeds found to process (all feeds were checked within the last {$this->collectionIntervalMinutes} minutes)");
             return;
         }
 
         $totalFeeds = count($feeds);
-        $this->climate->info("Total feeds to process: {$totalFeeds}");
+        $this->climate->info("Found {$totalFeeds} feed(s) due for processing:");
+        
+        // Log selected feeds with their last_checked times for debugging
+        foreach ($feeds as $index => $feed) {
+            $lastChecked = $feed['last_checked'] ?? 'never';
+            $this->climate->whisper("  " . ($index + 1) . ". [{$feed['id']}] {$feed['title']} - last checked: {$lastChecked}");
+        }
 
         foreach ($feeds as $feed) {
             $this->processSingleFeed($feed);
@@ -90,7 +103,9 @@ class FeedProcessor
 
     private function processSingleFeed(array $feed): void
     {
-        $this->climate->out("Processando: {$feed['title']} ({$feed['feed_url']})");
+        $lastChecked = $feed['last_checked'] ?? 'never';
+        $this->climate->out("Processing: {$feed['title']} (last checked: {$lastChecked})");
+        $this->climate->whisper("Feed URL: {$feed['feed_url']}");
 
         $proxyOnly = ($feed['proxy_only'] ?? 0) == 1;
         $useProxy = $proxyOnly || ($feed['retry_proxy'] ?? 0) == 1;
@@ -106,11 +121,16 @@ class FeedProcessor
             $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
         }
 
+        // Update last_checked BEFORE processing to prevent re-selection on concurrent runs
+        // This ensures the feed won't be picked up again until FEED_COLLECTION_INTERVAL passes
+        DB::update('feeds', [
+            'last_checked' => DB::sqleval("NOW()")
+        ], 'id=%i', $feed['id']);
+
         try {
             $this->processFeed($feed);
 
             $updateData = [
-                'last_checked' => DB::sqleval("NOW()"),
                 'status' => 'online',
                 'retry_count' => 0,
                 'paused_at' => null
@@ -132,7 +152,6 @@ class FeedProcessor
             if ($retryCount >= $this->errorThreshold) {
                 $this->climate->yellow("Feed {$feed['title']} marked as paused after {$retryCount} attempts (threshold: {$this->errorThreshold})");
                 DB::update('feeds', [
-                    'last_checked' => DB::sqleval("NOW()"),
                     'status' => 'paused',
                     'retry_count' => $retryCount,
                     'paused_at' => DB::sqleval("NOW()")
@@ -140,14 +159,12 @@ class FeedProcessor
             } else if ($retryCount > 3 && !$proxyOnly) {
                 $this->climate->yellow("Feed {$feed['title']} will use proxy in next attempts");
                 DB::update('feeds', [
-                    'last_checked' => DB::sqleval("NOW()"),
                     'status' => 'online',
                     'retry_count' => $retryCount,
                     'retry_proxy' => 1
                 ], 'id=%i', $feed['id']);
             } else {
                 DB::update('feeds', [
-                    'last_checked' => DB::sqleval("NOW()"),
                     'status' => 'online',
                     'retry_count' => $retryCount
                 ], 'id=%i', $feed['id']);
