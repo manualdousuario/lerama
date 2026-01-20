@@ -17,7 +17,6 @@ Lightweight and efficient feed aggregator, developed as an alternative to [OpenO
   - CSV import
   - Filter by individual feed, categories and topics/tags
   - Text search in titles and content
-  - Cron scheduling
   - Batch processing
   - Incremental updates
   - Proxy support for blocked feeds
@@ -52,13 +51,6 @@ Lightweight and efficient feed aggregator, developed as an alternative to [OpenO
    LERAMA_DB_NAME: lerama
    LERAMA_DB_USER: root
    LERAMA_DB_PASS: secure_password
-   ```
-
-   **Cron:**
-   ```yaml
-   CRONTAB_PROCESS_FEEDS: "* * * * *"    # Feed processing (default: every minute)
-   CRONTAB_FEED_STATUS: "0 0 * * *"      # Feed status check (default: midnight)
-   CRONTAB_PROXY: "0 0 * * *"            # Proxy list update (default: midnight)
    ```
 
 3. **Start the containers:**
