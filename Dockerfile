@@ -16,9 +16,6 @@ WORKDIR ${APP_PATH}
 RUN composer config platform.php-64bit 8.4 && \
     composer install --no-interaction --optimize-autoloader --no-dev
 
-# Create directories for crontab and logs (crontab content will be generated at runtime)
-RUN mkdir -p /etc/crontab.d/ /var/log/lerama
-
 # Set permissions
 RUN chown -R www-data:www-data ${APP_PATH} && \
     chmod -R 755 ${APP_PATH} && \
