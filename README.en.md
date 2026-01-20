@@ -56,7 +56,7 @@ Lightweight and efficient feed aggregator, developed as an alternative to [OpenO
 
    **Cron:**
    ```yaml
-   CRONTAB_PROCESS_FEEDS: "0 */4 * * *"  # Feed processing (default: every 4 hours)
+   CRONTAB_PROCESS_FEEDS: "* * * * *"    # Feed processing (default: every minute)
    CRONTAB_FEED_STATUS: "0 0 * * *"      # Feed status check (default: midnight)
    CRONTAB_PROXY: "0 0 * * *"            # Proxy list update (default: midnight)
    ```
