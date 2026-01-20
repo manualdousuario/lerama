@@ -16,6 +16,9 @@ WORKDIR ${APP_PATH}
 RUN composer config platform.php-64bit 8.4 && \
     composer install --no-interaction --optimize-autoloader --no-dev
 
+# Create directories for crontab
+RUN mkdir -p /etc/crontab.d/
+
 # Set permissions
 RUN chown -R www-data:www-data ${APP_PATH} && \
     chmod -R 755 ${APP_PATH} && \

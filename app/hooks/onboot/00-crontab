@@ -22,9 +22,9 @@ CRONTAB_FEED_STATUS="${CRONTAB_FEED_STATUS:-0 0 * * *}"
 CRONTAB_PROXY="${CRONTAB_PROXY:-0 0 * * *}"
 
 cat > /etc/crontab.d/lerama << EOL
-${CRONTAB_PROCESS_FEEDS} /usr/local/bin/php /app/bin/lerama feed:process | tee /var/log/lerama-feed_process.log
-${CRONTAB_FEED_STATUS} /usr/local/bin/php /app/bin/lerama feed:check-status | tee /var/log/lerama-check_status.log
-${CRONTAB_PROXY} /usr/local/bin/php /app/bin/lerama proxy:update | tee /var/log/lerama-proxy_update.log
+${CRONTAB_PROCESS_FEEDS} /usr/local/bin/php /app/bin/lerama feed:process > /var/log/lerama-feed_process.log
+${CRONTAB_FEED_STATUS} /usr/local/bin/php /app/bin/lerama feed:check-status > /var/log/lerama-check_status.log
+${CRONTAB_PROXY} /usr/local/bin/php /app/bin/lerama proxy:update > /var/log/lerama-proxy_update.log
 EOL
 
 chmod 0644 /etc/crontab.d/lerama
