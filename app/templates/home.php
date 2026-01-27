@@ -15,7 +15,7 @@
                 <form action="<?= isset($pagination) && $pagination['current'] > 1 ? $pagination['baseUrl'] . $pagination['current'] : '/' ?>" method="GET">
                     <div class="d-md-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center me-md-2 mb-2 mb-md-0">
-                            <div class="me-md-2 mb-2 mb-md-0">
+                            <div class="me-2 mb-2 mb-md-0">
                                 <select id="view-mode" class="form-select form-select-sm" style="width: auto;">
                                     <option value="cards"><?= __('common.view_cards') ?></option>
                                     <option value="list"><?= __('common.view_list') ?></option>
