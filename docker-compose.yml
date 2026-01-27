@@ -4,9 +4,6 @@ services:
     container_name: lerama
     environment:
       TZ: ${TZ:-UTC}
-      CRONTAB_PROCESS_FEEDS: "* * * * *"
-      CRONTAB_FEED_STATUS: "0 0 * * *"
-      CRONTAB_PROXY: "0 0 * * *"
       APP_URL: https://lerama.lab
       LERAMA_DB_HOST: localhost
       LERAMA_DB_PORT: 3306

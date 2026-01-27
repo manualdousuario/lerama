@@ -17,7 +17,6 @@ Agregador de feeds leve e eficiente, desenvolvido como alternativa ao [OpenOrb](
   - Importação via CSV
   - Filtro por feed individual, categorias e tópicos/tags
   - Busca textual em títulos e conteúdo
-  - Agendamento via cron
   - Processamento em lote
   - Atualização incremental
   - Suporte a proxy para feeds bloqueados
