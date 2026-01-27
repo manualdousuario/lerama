@@ -11,13 +11,11 @@ class EmailService
     private PHPMailer $mailer;
     private bool $enabled;
     private string $adminEmail;
-    private string $notifyRegistrationEmail;
 
     public function __construct()
     {
         $this->enabled = !empty($_ENV['SMTP_HOST']) && !empty($_ENV['SMTP_PORT']);
         $this->adminEmail = $_ENV['ADMIN_EMAIL'] ?? '';
-        $this->notifyRegistrationEmail = $_ENV['APP_NOTIFY_REGISTRATION'] ?? '';
         
         if ($this->enabled) {
             $this->mailer = new PHPMailer(true);
@@ -40,13 +38,14 @@ class EmailService
 
     public function sendFeedOfflineNotification(array $feed): bool
     {
-        if (!$this->enabled) {
-            error_log("Feed marked as offline: {$feed['title']} ({$feed['feed_url']})");
+        if (!$this->enabled || empty($this->adminEmail)) {
+            error_log("Feed marked as offline (email not sent - SMTP disabled or ADMIN_EMAIL not set): {$feed['title']} ({$feed['feed_url']})");
             return false;
         }
         
         try {
-            $this->mailer->clearAddresses();
+            $this->mailer->clearAllRecipients();
+            $this->mailer->clearCustomHeaders();
             $this->mailer->addAddress($this->adminEmail);
             $this->mailer->Subject = "[Lerama] Feed offline: {$feed['title']}";
 
@@ -73,14 +72,15 @@ class EmailService
 
     public function sendFeedRegistrationNotification(array $feed): bool
     {
-        if (!$this->enabled || empty($this->notifyRegistrationEmail)) {
-            error_log("New feed registered: {$feed['title']} ({$feed['feed_url']})");
+        if (!$this->enabled || empty($this->adminEmail)) {
+            error_log("New feed registered (email not sent - SMTP disabled or ADMIN_EMAIL not set): {$feed['title']} ({$feed['feed_url']})");
             return false;
         }
         
         try {
-            $this->mailer->clearAddresses();
-            $this->mailer->addAddress($this->notifyRegistrationEmail);
+            $this->mailer->clearAllRecipients();
+            $this->mailer->clearCustomHeaders();
+            $this->mailer->addAddress($this->adminEmail);
             $this->mailer->Subject = "[Lerama] Novo feed registrado: {$feed['title']}";
 
             $body = "<h1>Novo feed registrado</h1>";
