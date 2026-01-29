@@ -21,9 +21,6 @@
                                     <option value="list"><?= __('common.view_list') ?></option>
                                 </select>
                             </div>
-                            <div class="me-md-2 mb-2 mb-md-0">
-                                <input type="checkbox" id="simplified-view" /> <label for="simplified-view" class="me-3"><?= __('common.simplified') ?></label>
-                            </div>
                         </div>
                         <div class="d-md-flex">
                             <div class="d-md-flex me-md-2 mb-3 mb-md-0">
@@ -63,6 +60,15 @@
                                     </button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                    <div class="mt-2 d-md-flex justify-content-start">
+                        <div class="me-md-2 mb-2 mb-md-0">
+                            <input type="checkbox" id="simplified-view" /> <label for="simplified-view" class="me-3"><?= __('common.simplified') ?></label>
+                        </div>
+                        <div class="me-md-2 mb-2 mb-md-0">
+                            <input type="checkbox" name="latest" value="1" id="latest-per-feed" <?= !empty($latestPerFeed) ? 'checked' : '' ?> />
+                            <label for="latest-per-feed" class="me-3"><?= __('common.latest_per_feed') ?></label>
                         </div>
                     </div>
                 </form>
@@ -178,7 +184,8 @@
                                 'search' => $search,
                                 'feed' => $selectedFeed,
                                 'category' => $selectedCategory ?? null,
-                                'tag' => $selectedTag ?? null
+                                'tag' => $selectedTag ?? null,
+                                'latest' => !empty($latestPerFeed) ? '1' : null
                             ]);
                             $queryString = !empty($queryParams) ? '?' . http_build_query($queryParams) : '';
                             ?>
@@ -302,6 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Filter save/load functionality
     const categorySelect = document.getElementById('category-select');
     const tagSelect = document.getElementById('tag-select');
+    const latestPerFeedCheckbox = document.getElementById('latest-per-feed');
     const saveFilterBtn = document.getElementById('save-filter-btn');
     const clearFilterBtn = document.getElementById('clear-filter-btn');
     const filterForm = categorySelect.closest('form');
@@ -314,6 +322,12 @@ document.addEventListener('DOMContentLoaded', function() {
     tagSelect.addEventListener('change', function() {
         filterForm.submit();
     });
+
+    if (latestPerFeedCheckbox) {
+        latestPerFeedCheckbox.addEventListener('change', function() {
+            filterForm.submit();
+        });
+    }
         
     // Load saved filters on page load
     function loadSavedFilters() {
