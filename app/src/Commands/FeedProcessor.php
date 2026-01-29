@@ -402,7 +402,9 @@ class FeedProcessor
             $this->processPaginatedRssFeed($feed, $simplePie, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
 
             if ($updated && $lastGuid) {
+                $lastFeedItemId = DB::queryFirstField("SELECT id FROM feed_items WHERE guid = %s ORDER BY id DESC LIMIT 1", $lastGuid);
                 DB::update('feeds', [
+                    'last_feed_item_id' => $lastFeedItemId,
                     'last_post_id' => $lastGuid,
                     'last_updated' => DB::sqleval("NOW()")
                 ], 'id=%i', $feed['id']);
@@ -679,7 +681,9 @@ class FeedProcessor
             $this->processPaginatedCsvFeed($feed, $count, $updated, $lastGuid);
 
             if ($updated && $lastGuid) {
+                $lastFeedItemId = DB::queryFirstField("SELECT id FROM feed_items WHERE guid = %s ORDER BY id DESC LIMIT 1", $lastGuid);
                 DB::update('feeds', [
+                    'last_feed_item_id' => $lastFeedItemId,
                     'last_post_id' => $lastGuid,
                     'last_updated' => DB::sqleval("NOW()")
                 ], 'id=%i', $feed['id']);
@@ -929,7 +933,9 @@ class FeedProcessor
             }
 
             if ($updated && $lastGuid) {
+                $lastFeedItemId = DB::queryFirstField("SELECT id FROM feed_items WHERE guid = %s ORDER BY id DESC LIMIT 1", $lastGuid);
                 DB::update('feeds', [
+                    'last_feed_item_id' => $lastFeedItemId,
                     'last_post_id' => $lastGuid,
                     'last_updated' => DB::sqleval("NOW()")
                 ], 'id=%i', $feed['id']);
@@ -1142,7 +1148,9 @@ class FeedProcessor
             $this->processPaginatedXmlFeed($feed, $xml, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
 
             if ($updated && $lastGuid) {
+                $lastFeedItemId = DB::queryFirstField("SELECT id FROM feed_items WHERE guid = %s ORDER BY id DESC LIMIT 1", $lastGuid);
                 DB::update('feeds', [
+                    'last_feed_item_id' => $lastFeedItemId,
                     'last_post_id' => $lastGuid,
                     'last_updated' => DB::sqleval("NOW()")
                 ], 'id=%i', $feed['id']);

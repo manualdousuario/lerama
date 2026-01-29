@@ -42,6 +42,8 @@ class HomeController
         $feedId = isset($params['feed']) ? (int)$params['feed'] : null;
         $categorySlug = $params['category'] ?? null;
         $tagSlug = $params['tag'] ?? null;
+        $latestPerFeed = !empty($params['latest']);
+
 
         $query = "SELECT fi.*, f.title as feed_title, f.site_url, f.language
                  FROM feed_items fi
@@ -50,6 +52,12 @@ class HomeController
         $countQuery = "SELECT COUNT(*) FROM feed_items fi
                       JOIN feeds f ON fi.feed_id = f.id
                       WHERE fi.is_visible = 1";
+
+        if ($latestPerFeed) {
+            $query .= " AND fi.id = f.last_feed_item_id";
+            $countQuery .= " AND fi.id = f.last_feed_item_id";
+        }
+
         $queryParams = [];
 
         if (!empty($search)) {
@@ -98,7 +106,8 @@ class HomeController
             'category' => $categorySlug,
             'tag' => $tagSlug,
             'page' => $page,
-            'perPage' => $perPage
+            'perPage' => $perPage,
+            'latest' => $latestPerFeed ? 1 : 0
         ]);
 
         $countCacheKey = $this->cache->key('items', 'count', $filterHash);
@@ -143,6 +152,7 @@ class HomeController
             'selectedFeed' => $feedId,
             'selectedCategory' => $categorySlug,
             'selectedTag' => $tagSlug,
+            'latestPerFeed' => $latestPerFeed,
             'pagination' => [
                 'current' => $page,
                 'total' => $totalPages,
