@@ -21,6 +21,7 @@ return [
     'common.all_tags' => 'Todas las Etiquetas',
     'common.all_topics' => 'Todos los Temas',
     'common.simplified' => 'Simplificado',
+    'common.latest_per_feed' => 'Último por feed',
     'common.view_mode' => 'Modo de Vista',
     'common.view_cards' => 'Tarjetas',
     'common.view_list' => 'Lista',

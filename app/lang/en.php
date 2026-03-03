@@ -21,6 +21,7 @@ return [
     'common.all_tags' => 'All Tags',
     'common.all_topics' => 'All Topics',
     'common.simplified' => 'Simplified',
+    'common.latest_per_feed' => 'Latest per feed',
     'common.view_mode' => 'View Mode',
     'common.view_cards' => 'Cards',
     'common.view_list' => 'List',
