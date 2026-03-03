@@ -128,6 +128,12 @@ return [
     'admin.items.published' => 'Publicado',
     'admin.items.unknown_author' => 'Desconhecido',
     'admin.items.no_items' => 'Nenhum item encontrado. Tente ajustar sua pesquisa ou filtro.',
+    'admin.items.refresh_thumbnail' => 'Atualizar imagem de destaque',
+    'admin.items.show_item' => 'Mostrar item',
+    'admin.items.hide_item' => 'Ocultar item',
+    'admin.items.thumbnail_updated' => 'Imagem de destaque atualizada com sucesso',
+    'admin.items.thumbnail_error' => 'Erro ao atualizar imagem de destaque',
+    'admin.items.no_thumbnail' => 'Item não possui imagem de destaque',
     
     // Admin - Feeds
     'admin.feeds.title' => 'Gerenciar Feeds',

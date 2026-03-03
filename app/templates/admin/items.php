@@ -94,16 +94,29 @@
                                     <?= $item['published_at'] ? date('d/m/Y \à\s H:i', strtotime($item['published_at'])) : 'Nunca' ?>
                                 </td>
                                 <td class="align-middle text-end">
-                                    <button
-                                        data-id="<?= $item['id'] ?>"
-                                        data-visible="<?= $item['is_visible'] ? '1' : '0' ?>"
-                                        class="d-inline-block btn btn-sm <?= $item['is_visible'] ? 'btn-outline-success' : 'btn-outline-danger' ?> toggle-visibility">
-                                        <?php if ($item['is_visible']): ?>
-                                            <i class="bi bi-eye"></i>
-                                        <?php else: ?>
-                                            <i class="bi bi-eye-slash"></i>
+                                    <div class="d-flex gap-1 justify-content-end">
+                                        <button
+                                            data-id="<?= $item['id'] ?>"
+                                            data-visible="<?= $item['is_visible'] ? '1' : '0' ?>"
+                                            class="btn btn-sm <?= $item['is_visible'] ? 'btn-outline-success' : 'btn-outline-danger' ?> toggle-visibility"
+                                            title="<?= $item['is_visible'] ? __('admin.items.hide_item') : __('admin.items.show_item') ?>">
+                                            <?php if ($item['is_visible']): ?>
+                                                <i class="bi bi-eye"></i>
+                                            <?php else: ?>
+                                                <i class="bi bi-eye-slash"></i>
+                                            <?php endif; ?>
+                                        </button>
+                                        
+                                        <?php if (!empty($item['image_url'])): ?>
+                                        <button
+                                            data-id="<?= $item['id'] ?>"
+                                            data-image-url="<?= $this->e($item['image_url']) ?>"
+                                            class="btn btn-sm btn-outline-primary refresh-thumbnail"
+                                            title="<?= __('admin.items.refresh_thumbnail') ?>">
+                                            <i class="bi bi-image"></i>
+                                        </button>
                                         <?php endif; ?>
-                                    </button>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -164,6 +177,7 @@
 <?php $this->start('scripts') ?>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Handle visibility toggle
         const toggleButtons = document.querySelectorAll('.toggle-visibility');
 
         toggleButtons.forEach(button => {
@@ -186,12 +200,14 @@
                         if (data.success) {
                             if (newVisible) {
                                 this.innerHTML = '<i class="bi bi-eye"></i>';
-                                this.classList.remove('btn-danger');
-                                this.classList.add('btn-success');
+                                this.classList.remove('btn-outline-danger');
+                                this.classList.add('btn-outline-success');
+                                this.title = 'Ocultar item';
                             } else {
                                 this.innerHTML = '<i class="bi bi-eye-slash"></i>';
-                                this.classList.remove('btn-success');
-                                this.classList.add('btn-danger');
+                                this.classList.remove('btn-outline-success');
+                                this.classList.add('btn-outline-danger');
+                                this.title = 'Mostrar item';
                             }
                             this.dataset.visible = newVisible ? '1' : '0';
                         } else {
@@ -204,6 +220,70 @@
                     });
             });
         });
+        
+        // Thumbnail refresh
+        const refreshButtons = document.querySelectorAll('.refresh-thumbnail');
+        
+        refreshButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const originalText = this.innerHTML;
+                
+                this.innerHTML = '<i class="bi bi-arrow-repeat"></i>';
+                this.classList.add('disabled');
+                this.setAttribute('disabled', 'disabled');
+                
+                const icon = this.querySelector('i');
+                icon.classList.add('spin-animation');
+                
+                fetch(`/admin/items/${id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            refresh_thumbnail: true
+                        }),
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Erro na resposta do servidor: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        this.innerHTML = originalText;
+                        this.classList.remove('disabled');
+                        this.removeAttribute('disabled');
+                        
+                        if (data.success) {
+                            // Show success message with simple alert
+                            alert('<?= __('admin.items.thumbnail_updated') ?>');
+                        } else {
+                            alert('<?= __('admin.items.thumbnail_error') ?>: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        this.innerHTML = originalText;
+                        this.classList.remove('disabled');
+                        this.removeAttribute('disabled');
+                        
+                        console.error('Error:', error);
+                        alert('<?= __('admin.items.thumbnail_error') ?>: ' + error.message);
+                    });
+            });
+        });
     });
 </script>
+
+<style>
+    .spin-animation {
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
 <?php $this->stop() ?>

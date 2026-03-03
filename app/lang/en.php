@@ -128,6 +128,12 @@ return [
     'admin.items.published' => 'Published',
     'admin.items.unknown_author' => 'Unknown',
     'admin.items.no_items' => 'No items found. Try adjusting your search or filter.',
+    'admin.items.refresh_thumbnail' => 'Refresh featured image',
+    'admin.items.show_item' => 'Show item',
+    'admin.items.hide_item' => 'Hide item',
+    'admin.items.thumbnail_updated' => 'Featured image successfully updated',
+    'admin.items.thumbnail_error' => 'Error updating featured image',
+    'admin.items.no_thumbnail' => 'Item has no featured image',
     
     // Admin - Feeds
     'admin.feeds.title' => 'Manage Feeds',

@@ -15,6 +15,7 @@ use Lerama\Services\FeedTypeDetector;
 use Lerama\Services\EmailService;
 use Lerama\Services\CacheService;
 use Lerama\Services\CacheableQuery;
+use Lerama\Services\ThumbnailService;
 use DB;
 
 class AdminController
@@ -720,6 +721,40 @@ class AdminController
                 return new JsonResponse([
                     'success' => false,
                     'message' => 'Erro ao atualizar item: ' . $e->getMessage()
+                ], 500);
+            }
+        }
+        
+        if (isset($params['refresh_thumbnail']) && $params['refresh_thumbnail']) {
+            try {
+                $imageUrl = $item['image_url'] ?? '';
+                
+                if (empty($imageUrl)) {
+                    return new JsonResponse([
+                        'success' => false,
+                        'message' => __('admin.items.no_thumbnail')
+                    ], 400);
+                }
+                
+                $thumbnailService = new ThumbnailService();
+                $thumbnailFilename = md5($imageUrl . 120 . 60) . '.jpg';
+                $thumbnailPath = __DIR__ . '/../../public/storage/thumbnails/' . $thumbnailFilename;
+                
+                if (file_exists($thumbnailPath)) {
+                    @unlink($thumbnailPath);
+                }
+                
+                $newThumbnailUrl = $thumbnailService->getThumbnail($imageUrl);
+                
+                return new JsonResponse([
+                    'success' => true,
+                    'message' => __('admin.items.thumbnail_updated'),
+                    'thumbnail_url' => $newThumbnailUrl
+                ]);
+            } catch (\Exception $e) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => __('admin.items.thumbnail_error') . ': ' . $e->getMessage()
                 ], 500);
             }
         }
