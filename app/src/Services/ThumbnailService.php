@@ -130,7 +130,7 @@ class ThumbnailService
                 return false;
             }
             
-            if ($mimeType === 'image/png') {
+            if ($mimeType === 'image/png' || $mimeType === 'image/avif') {
                 imagealphablending($targetImage, false);
                 imagesavealpha($targetImage, true);
                 $transparent = imagecolorallocatealpha($targetImage, 255, 255, 255, 127);
@@ -166,6 +166,8 @@ class ThumbnailService
                 return imagecreatefromwebp($filePath);
             case 'image/bmp':
                 return imagecreatefrombmp($filePath);
+            case 'image/avif':
+                return imagecreatefromavif($filePath);
             default:
                 return false;
         }
