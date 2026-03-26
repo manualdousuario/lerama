@@ -227,4 +227,51 @@ class HomeController
 
         return new RedirectResponse('/');
     }
+
+    public function shuffle(ServerRequestInterface $request): ResponseInterface
+    {
+        $params = $request->getQueryParams();
+        $isAjax = isset($params['ajax']) && $params['ajax'] === '1';
+        
+        $blockedHosts = [
+            'facebook.com',
+            'twitter.com',
+            'x.com',
+            'instagram.com',
+            'linkedin.com',
+            'youtube.com',
+            'tiktok.com',
+            'pinterest.com',
+            'reddit.com',
+            'substack.com',
+        ];
+        
+        $query = "SELECT f.site_url FROM feeds f WHERE f.status = 'online'";
+        foreach ($blockedHosts as $blocked) {
+            $query .= " AND f.site_url NOT LIKE " . DB::escape("%{$blocked}%");
+        }
+        $query .= " ORDER BY RAND() LIMIT 1";
+        
+        $randomFeed = DB::queryFirstRow($query);
+
+        $url = $randomFeed['site_url'] ?? '';
+        
+        if ($isAjax) {
+            $response = new \Laminas\Diactoros\Response\JsonResponse([
+                'url' => $url
+            ]);
+            
+            return $response
+                ->withHeader('Access-Control-Allow-Origin', '*')
+                ->withHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+                ->withHeader('Access-Control-Allow-Headers', 'Content-Type');
+        }
+        
+        $html = $this->templates->render('shuffle', [
+            'title' => 'Shuffle',
+            'initialUrl' => $url
+        ]);
+
+        return new HtmlResponse($html);
+    }
 }

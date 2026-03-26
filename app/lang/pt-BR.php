@@ -216,4 +216,9 @@ return [
     // Pagination
     'pagination.previous' => 'Anterior',
     'pagination.next' => 'Próximo',
+    
+    // Shuffle
+    'shuffle.button' => 'Aleatório',
+    'shuffle.go' => 'Ir',
+    'shuffle.open' => 'Abrir',
 ];

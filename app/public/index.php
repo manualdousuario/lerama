@@ -47,6 +47,7 @@ $router->map('GET', '/feed/rss', [FeedController::class, 'rss']);
 $router->map('GET', '/suggest-feed', [SuggestionController::class, 'suggestForm']);
 $router->map('POST', '/suggest-feed', [SuggestionController::class, 'submitSuggestion']);
 $router->map('GET', '/random', [HomeController::class, 'random']);
+$router->map('GET', '/shuffle', [HomeController::class, 'shuffle']);
 $router->map('GET', '/captcha', [SuggestionController::class, 'getCaptcha']);
 $router->map('GET', '/admin/login', [AdminController::class, 'loginForm']);
 $router->map('POST', '/admin/login', [AdminController::class, 'login']);
