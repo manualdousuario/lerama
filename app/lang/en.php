@@ -12,6 +12,7 @@ return [
     'nav.topics' => 'Topics',
     'nav.logout' => 'Logout',
     'nav.feed_builder' => 'Feed Builder',
+    'nav.shuffle' => 'Shuffle',
     
     // Common
     'common.search' => 'Search',

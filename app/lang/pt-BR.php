@@ -12,6 +12,7 @@ return [
     'nav.topics' => 'Tópicos',
     'nav.logout' => 'Sair',
     'nav.feed_builder' => 'Construtor de Feed',
+    'nav.shuffle' => 'Rolêrama',
     
     // Common
     'common.search' => 'Buscar',

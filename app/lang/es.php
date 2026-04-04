@@ -5,13 +5,14 @@ return [
     'nav.home' => 'Inicio',
     'nav.feeds' => 'Feeds',
     'nav.suggest' => 'Sugerir',
-    'nav.random' => 'Aleatorio',
+    'nav.random' => 'Ruleta',
     'nav.articles' => 'Artículos',
     'nav.categories' => 'Categorías',
     'nav.tags' => 'Etiquetas',
     'nav.topics' => 'Temas',
     'nav.logout' => 'Salir',
     'nav.feed_builder' => 'Constructor de Feed',
+    'nav.shuffle' => 'Aleatorio',
     
     // Common
     'common.search' => 'Buscar',
