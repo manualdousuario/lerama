@@ -218,7 +218,7 @@ return [
     'pagination.next' => 'Próximo',
     
     // Shuffle
-    'shuffle.button' => 'Aleatório',
+    'shuffle.button' => 'Rolêrama',
     'shuffle.go' => 'Ir',
     'shuffle.open' => 'Abrir',
 ];

@@ -68,11 +68,11 @@
                             <?= __('nav.suggest') ?>
                         </a>
                         <a href="/shuffle" class="d-inline-flex align-items-center pe-1 py-2 me-1 me-md-3 text-decoration-none <?= $this->section('active') === 'shuffle' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
-                            <i class="bi bi-shuffle me-1"></i>
+                            <i class="bi bi-arrow-clockwise me-1"></i>
                             Shuffle
                         </a>
                         <a href="/random" target="_blank" class="d-inline-flex align-items-center pe-1 py-2 me-1 me-md-3 text-decoration-none text-secondary hover-text-white">
-                            <i class="bi bi-shuffle me-1"></i>
+                            <i class="bi bi-arrow-up-right me-1"></i>
                             <?= __('nav.random') ?>
                         </a>
                     <?php endif; ?>

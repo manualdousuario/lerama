@@ -10,7 +10,7 @@
             </div>
             <div class="col-auto">
                 <button id="shuffleButton" class="btn btn-sm btn-primary">
-                    <i class="bi bi-shuffle"></i> <?= __('shuffle.button') ?>
+                    <i class="bi bi-arrow-clockwise"></i> <?= __('shuffle.button') ?>
                 </button>
             </div>
             <div class="col flex-grow-1">
