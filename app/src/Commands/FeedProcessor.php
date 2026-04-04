@@ -1432,16 +1432,29 @@ class FeedProcessor
             }
 
             $html = (string) $response->getBody();
+            $parsedUrl = parse_url($url);
+            $baseUrl = $parsedUrl['scheme'] . '://' . $parsedUrl['host'];
 
             if (preg_match('/<meta[^>]*property=["\']og:image["\'][^>]*content=["\'](.*?)["\'][^>]*>/i', $html, $matches)) {
-                $this->climate->whisper("Image extracted (og:image): {$matches[1]}");
-                return $matches[1];
+                $imageUrl = $matches[1];
+                if (substr($imageUrl, 0, 1) === '/') {
+                    $imageUrl = $baseUrl . $imageUrl;
+                    $this->climate->whisper("Converted relative URL to absolute: {$imageUrl}");
+                }
+                
+                $this->climate->whisper("Image extracted (og:image): {$imageUrl}");
+                return $imageUrl;
             }
 
-
             if (preg_match('/<meta[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:image["\'][^>]*>/i', $html, $matches)) {
-                $this->climate->whisper("Image extracted (og:image alt): {$matches[1]}");
-                return $matches[1];
+                $imageUrl = $matches[1];
+                if (substr($imageUrl, 0, 1) === '/') {
+                    $imageUrl = $baseUrl . $imageUrl;
+                    $this->climate->whisper("Converted relative URL to absolute: {$imageUrl}");
+                }
+                
+                $this->climate->whisper("Image extracted (og:image alt): {$imageUrl}");
+                return $imageUrl;
             }
 
             $this->climate->whisper("No image found");
