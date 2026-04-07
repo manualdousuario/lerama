@@ -136,25 +136,25 @@
 
                 <?php if (!empty($tags)): ?>
                     <div class="col-12 col-md-4 mb-3">
-                        <label for="tag" class="form-label">
+                        <label for="tags" class="form-label">
                             <?= __('suggest.form.tags') ?>
                         </label>
                         <div class="input-group">
                             <span class="input-group-text">
                                 <i class="bi bi-tag"></i>
                             </span>
-                            <select name="tag" id="tag" class="form-select">
+                            <select name="tags[]" id="tags" class="form-select" required>
                                 <option value=""><?= __('suggest.form.select_tag') ?></option>
                                 <?php foreach ($tags as $tag): ?>
                                     <option value="<?= $tag['id'] ?>"
-                                        <?= ($data['selected_tag'] ?? '') == $tag['id'] ? 'selected' : '' ?>>
+                                        <?= in_array($tag['id'], ($data['selected_tags'] ?? [])) ? 'selected' : '' ?>>
                                         <?= $this->e($tag['name']) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <?php if (isset($errors['tag'])): ?>
-                            <div class="form-text text-danger"><?= $this->e($errors['tag']) ?></div>
+                        <?php if (isset($errors['tags'])): ?>
+                            <div class="form-text text-danger"><?= $this->e($errors['tags']) ?></div>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>

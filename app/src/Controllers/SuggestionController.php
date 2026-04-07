@@ -73,6 +73,10 @@ class SuggestionController
         $captcha = trim($params['captcha'] ?? '');
         $categoryId = !empty($params['category']) ? (int)$params['category'] : null;
         $tagIds = $params['tags'] ?? [];
+        if (!is_array($tagIds)) {
+            $tagIds = !empty($tagIds) ? [$tagIds] : [];
+        }
+        $tagIds = array_map('intval', array_filter($tagIds));
 
         $errors = [];
         
@@ -119,6 +123,11 @@ class SuggestionController
         $availableCategories = DB::query("SELECT * FROM categories ORDER BY name");
         if (!empty($availableCategories) && empty($categoryId)) {
             $errors['category'] = 'A categoria é obrigatória';
+        }
+
+        $availableTags = DB::query("SELECT * FROM tags ORDER BY name");
+        if (!empty($availableTags) && empty($tagIds)) {
+            $errors['tags'] = 'Pelo menos uma tag é obrigatória';
         }
 
         $existingFeed = DB::queryFirstRow("SELECT id, status FROM feeds WHERE feed_url = %s", $feedUrl);
@@ -168,7 +177,7 @@ class SuggestionController
                 $feedType = $feedValidation['type'];
             }
 
-            $feedId = DB::insert('feeds', [
+            DB::insert('feeds', [
                 'title' => $title,
                 'feed_url' => $feedUrl,
                 'site_url' => $siteUrl,
@@ -177,6 +186,7 @@ class SuggestionController
                 'submitter_email' => !empty($email) ? $email : null,
                 'status' => 'pending'
             ]);
+            $feedId = DB::insertId();
 
             if ($categoryId !== null) {
                 DB::query("INSERT IGNORE INTO feed_categories (feed_id, category_id) VALUES (%i, %i)",
@@ -209,8 +219,13 @@ class SuggestionController
                 ]);
             }
 
+            $categories = DB::query("SELECT * FROM categories ORDER BY name");
+            $tags = DB::query("SELECT * FROM tags ORDER BY name");
+
             $html = $this->templates->render('suggest-feed', [
                 'title' => 'Sugerir Blog/Feed',
+                'categories' => $categories,
+                'tags' => $tags,
                 'success' => 'Sugestão enviada com sucesso! Aguarde a aprovação do administrador.'
             ]);
 
