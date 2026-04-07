@@ -38,7 +38,7 @@
             </div>
 
             <!-- Status Filter -->
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label for="status-filter" class="form-label small fw-medium"><?= __('admin.feeds.filter_status') ?></label>
                 <select id="status-filter" class="form-select">
                     <option value=""><?= __('admin.feeds.all_status') ?></option>
@@ -47,6 +47,16 @@
                     <option value="paused" <?= $currentStatus === 'paused' ? 'selected' : '' ?>><?= __('status.paused') ?></option>
                     <option value="pending" <?= $currentStatus === 'pending' ? 'selected' : '' ?>><?= __('status.pending') ?></option>
                     <option value="rejected" <?= $currentStatus === 'rejected' ? 'selected' : '' ?>><?= __('status.rejected') ?></option>
+                </select>
+            </div>
+
+            <!-- Shuffle Filter -->
+            <div class="col-md-2">
+                <label for="shuffle-filter" class="form-label small fw-medium"><?= __('admin.feeds.filter_shuffle') ?></label>
+                <select id="shuffle-filter" class="form-select">
+                    <option value=""><?= __('admin.feeds.all_shuffle') ?></option>
+                    <option value="1" <?= $currentShuffle === 1 ? 'selected' : '' ?>><?= __('admin.feeds.shuffle_active') ?></option>
+                    <option value="0" <?= $currentShuffle === 0 ? 'selected' : '' ?>><?= __('admin.feeds.shuffle_inactive') ?></option>
                 </select>
             </div>
 
@@ -173,6 +183,12 @@
                                         <i class="bi bi-pencil"></i>
                                     </a><button class="d-inline-block btn btn-sm btn-outline-danger delete-feed" data-feed-id="<?= $feed['id'] ?>">
                                         <i class="bi bi-trash"></i>
+                                    </button>
+                                    <button class="btn btn-sm shuffle-toggle-btn <?= ($feed['shuffle'] ?? 1) ? 'btn-success' : 'btn-outline-secondary' ?>"
+                                            data-feed-id="<?= $feed['id'] ?>"
+                                            data-shuffle="<?= $feed['shuffle'] ?? 1 ?>"
+                                            title="<?= ($feed['shuffle'] ?? 1) ? __('admin.feeds.shuffle_disable') : __('admin.feeds.shuffle_enable') ?>">
+                                        <i class="bi bi-shuffle"></i>
                                     </button>
                                     </div>
                                 </td>
@@ -404,10 +420,12 @@
         const searchBtn = document.getElementById('search-btn');
         const clearSearchBtn = document.getElementById('clear-search-btn');
         const statusFilter = document.getElementById('status-filter');
+        const shuffleFilter = document.getElementById('shuffle-filter');
 
         function performSearch() {
             const searchValue = searchInput.value.trim();
             const statusValue = statusFilter.value;
+            const shuffleValue = shuffleFilter.value;
             const params = new URLSearchParams();
             
             if (searchValue) {
@@ -415,6 +433,9 @@
             }
             if (statusValue) {
                 params.append('status', statusValue);
+            }
+            if (shuffleValue !== '') {
+                params.append('shuffle', shuffleValue);
             }
             
             window.location.href = '/admin/feeds?' + params.toString();
@@ -432,8 +453,12 @@
             clearSearchBtn.addEventListener('click', function() {
                 const params = new URLSearchParams();
                 const statusValue = statusFilter.value;
+                const shuffleValue = shuffleFilter.value;
                 if (statusValue) {
                     params.append('status', statusValue);
+                }
+                if (shuffleValue !== '') {
+                    params.append('shuffle', shuffleValue);
                 }
                 window.location.href = '/admin/feeds?' + params.toString();
             });
@@ -441,6 +466,7 @@
 
         statusFilter.addEventListener('change', function() {
             const searchValue = searchInput.value.trim();
+            const shuffleValue = shuffleFilter.value;
             const params = new URLSearchParams();
             
             if (searchValue) {
@@ -448,6 +474,27 @@
             }
             if (this.value) {
                 params.append('status', this.value);
+            }
+            if (shuffleValue !== '') {
+                params.append('shuffle', shuffleValue);
+            }
+            
+            window.location.href = '/admin/feeds?' + params.toString();
+        });
+
+        shuffleFilter.addEventListener('change', function() {
+            const searchValue = searchInput.value.trim();
+            const statusValue = statusFilter.value;
+            const params = new URLSearchParams();
+            
+            if (searchValue) {
+                params.append('search', searchValue);
+            }
+            if (statusValue) {
+                params.append('status', statusValue);
+            }
+            if (this.value !== '') {
+                params.append('shuffle', this.value);
             }
             
             window.location.href = '/admin/feeds?' + params.toString();
@@ -754,6 +801,48 @@
                         console.error('Error:', error);
                         alert('Ocorreu um erro ao atualizar o status do feed.');
                     });
+            });
+        });
+
+        const shuffleToggleBtns = document.querySelectorAll('.shuffle-toggle-btn');
+        shuffleToggleBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const feedId = this.dataset.feedId;
+                const btnElement = this;
+                const iconElement = this.querySelector('i');
+
+                fetch(`/admin/feeds/${feedId}/shuffle`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const newShuffle = data.shuffle;
+                        btnElement.dataset.shuffle = newShuffle;
+                        if (newShuffle) {
+                            btnElement.classList.remove('btn-outline-secondary');
+                            btnElement.classList.add('btn-success');
+                            iconElement.classList.remove('bi-x-lg');
+                            iconElement.classList.add('bi-shuffle');
+                            btnElement.title = '<?= __('admin.feeds.shuffle_disable') ?>';
+                        } else {
+                            btnElement.classList.remove('btn-success');
+                            btnElement.classList.add('btn-outline-secondary');
+                            iconElement.classList.remove('bi-shuffle');
+                            iconElement.classList.add('bi-x-lg');
+                            btnElement.title = '<?= __('admin.feeds.shuffle_enable') ?>';
+                        }
+                    } else {
+                        alert('Erro ao atualizar shuffle: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Ocorreu um erro ao atualizar o shuffle do feed.');
+                });
             });
         });
     });

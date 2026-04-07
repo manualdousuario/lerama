@@ -207,6 +207,25 @@
                     </div>
                 </div>
 
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input type="checkbox"
+                               name="shuffle"
+                               id="shuffle"
+                               value="1"
+                               class="form-check-input"
+                               <?= ($isEdit && ($feed['shuffle'] ?? 1)) ? 'checked' : '' ?>
+                               <?= !$isEdit ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="shuffle">
+                            <i class="bi bi-shuffle me-1"></i>
+                            <?= __('admin.feed_form.shuffle') ?>
+                        </label>
+                    </div>
+                    <div class="form-text text-secondary">
+                        <?= __('admin.feed_form.shuffle_help') ?>
+                    </div>
+                </div>
+
                 <div class="d-flex justify-content-end gap-2 mt-4">
                     <a href="/admin/feeds" class="btn btn-secondary">
                         <i class="bi bi-x-lg me-1"></i>

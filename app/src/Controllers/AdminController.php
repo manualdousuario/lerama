@@ -145,6 +145,7 @@ class AdminController
         $perPage = 50;
         $offset = ($page - 1) * $perPage;
         $status = $params['status'] ?? '';
+        $shuffle = isset($params['shuffle']) && $params['shuffle'] !== '' ? (int)$params['shuffle'] : null;
         $search = $params['search'] ?? '';
 
         $query = "
@@ -170,13 +171,18 @@ class AdminController
             $queryParams[] = $status;
         }
 
+        if ($shuffle !== null && in_array($shuffle, [0, 1], true)) {
+            $whereConditions[] = "f.shuffle = %i";
+            $queryParams[] = $shuffle;
+        }
+
         if (!empty($whereConditions)) {
             $whereClause = " WHERE " . implode(" AND ", $whereConditions);
             $query .= $whereClause;
             $countQuery .= $whereClause;
         }
 
-        $query .= " ORDER BY f.title LIMIT %i, %i";
+        $query .= " ORDER BY f.title ASC LIMIT %i, %i";
         $finalQueryParams = [...$queryParams, $offset, $perPage];
 
         $feeds = DB::query($query, ...$finalQueryParams);
@@ -211,12 +217,14 @@ class AdminController
             'allCategories' => $allCategories,
             'allTags' => $allTags,
             'currentStatus' => $status,
+            'currentShuffle' => $shuffle,
             'searchQuery' => $search,
             'pagination' => [
                 'current' => $page,
                 'total' => $totalPages,
                 'baseUrl' => '/admin/feeds?' . http_build_query(array_filter([
                     'status' => $status,
+                    'shuffle' => $shuffle !== null ? $shuffle : '',
                     'search' => $search
                 ]))
             ],
@@ -241,6 +249,7 @@ class AdminController
             $categoryIds = $params['categories'] ?? [];
             $tagIds = $params['tags'] ?? [];
             $proxyOnly = isset($params['proxy_only']) ? 1 : 0;
+            $shuffle = isset($params['shuffle']) ? 1 : 0;
 
             $errors = [];
             if (empty($title)) {
@@ -281,7 +290,8 @@ class AdminController
                         'feed_type' => $feedType,
                         'language' => $language,
                         'status' => 'online',
-                        'proxy_only' => $proxyOnly
+                        'proxy_only' => $proxyOnly,
+                        'shuffle' => $shuffle
                     ]);
 
                     // Insert categories
@@ -384,6 +394,7 @@ class AdminController
             $categoryIds = $params['categories'] ?? [];
             $tagIds = $params['tags'] ?? [];
             $proxyOnly = isset($params['proxy_only']) ? 1 : 0;
+            $shuffle = isset($params['shuffle']) ? 1 : 0;
 
             $errors = [];
             if (empty($title)) {
@@ -412,7 +423,8 @@ class AdminController
                         'site_url' => $siteUrl,
                         'language' => $language,
                         'status' => $status,
-                        'proxy_only' => $proxyOnly
+                        'proxy_only' => $proxyOnly,
+                        'shuffle' => $shuffle
                     ];
 
                     if (!empty($feedType)) {
@@ -1480,6 +1492,40 @@ class AdminController
             return new JsonResponse([
                 'success' => false,
                 'message' => __('error.status_update') . ': ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function toggleShuffle(ServerRequestInterface $request, array $args): ResponseInterface
+    {
+        $id = (int)$args['id'];
+        
+        $feed = DB::queryFirstRow("SELECT * FROM feeds WHERE id = %i", $id);
+        if (!$feed) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => __('error.feed_not_found')
+            ], 404);
+        }
+        
+        $newShuffle = (int)(!($feed['shuffle'] ?? 1));
+        
+        try {
+            DB::update('feeds', [
+                'shuffle' => $newShuffle
+            ], 'id=%i', $id);
+            
+            CacheableQuery::invalidateFeed($id);
+            
+            return new JsonResponse([
+                'success' => true,
+                'message' => __('success.shuffle_updated'),
+                'shuffle' => $newShuffle
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => __('error.shuffle_update') . ': ' . $e->getMessage()
             ], 500);
         }
     }

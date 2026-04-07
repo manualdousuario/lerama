@@ -68,6 +68,7 @@ $router->group('/admin', function ($router) {
     $router->map('POST', '/feeds/bulk/categories', [AdminController::class, 'bulkUpdateFeedCategories']);
     $router->map('POST', '/feeds/bulk/tags', [AdminController::class, 'bulkUpdateFeedTags']);
     $router->map('POST', '/feeds/bulk/status', [AdminController::class, 'bulkUpdateFeedStatus']);
+    $router->map('POST', '/feeds/{id:number}/shuffle', [AdminController::class, 'toggleShuffle']);
     $router->map('PUT', '/items/{id:number}', [AdminController::class, 'updateItem']);
     
     // Categories management
