@@ -108,13 +108,16 @@
                                 <td>
                                     <div>
                                         <div class="fw-medium">
-                                            <a href="<?= $this->e($feed['site_url']) . (parse_url($feed['site_url'], PHP_URL_QUERY) ? '&' : '?') ?>utm_source=lerama" target="_blank" class="text-decoration-none">
-                                                <?= $this->e($feed['title']) ?>
+                                            <?= $this->e($feed['title']) ?>
+                                        </div>
+                                        <div class="small text-secondary text-truncate" style="max-width: 250px;">
+                                            <a href="<?= $this->e($feed['site_url']) ?>" target="_blank" class="text-decoration-none text-secondary">
+                                                <i class="bi bi-globe"></i> <?= $this->e($feed['site_url']) ?>
                                             </a>
                                         </div>
                                         <div class="small text-secondary text-truncate" style="max-width: 250px;">
                                             <a href="<?= $this->e($feed['feed_url']) ?>" target="_blank" class="text-decoration-none text-secondary">
-                                                <?= $this->e($feed['feed_url']) ?>
+                                                <i class="bi bi-rss"></i> <?= $this->e($feed['feed_url']) ?>
                                             </a>
                                         </div>
                                     </div>

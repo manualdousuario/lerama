@@ -94,6 +94,7 @@ return [
     'suggest.form.captcha_help' => 'Haga clic en la imagen para generar un nuevo código',
     'suggest.form.submit' => 'Enviar Sugerencia',
     'suggest.form.validating' => 'Validando feed...',
+    'suggest.form.feed_url_same_as_site' => 'La URL del feed no puede ser la misma que la URL del sitio',
     
     // Feed Builder page
     'feed_builder.title' => 'Constructor de Feed',

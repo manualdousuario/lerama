@@ -199,18 +199,47 @@
         const suggestForm = document.getElementById('suggest-form');
         const captchaImage = document.getElementById('captcha-image');
         const captchaInput = document.getElementById('captcha');
+        const feedUrlInput = document.getElementById('feed_url');
+        const siteUrlInput = document.getElementById('site_url');
 
-        // Refresh captcha on click
         captchaImage.addEventListener('click', function() {
             this.src = '/captcha?' + new Date().getTime();
             captchaInput.value = '';
             captchaInput.focus();
         });
 
-        suggestForm.addEventListener('submit', function() {
-            const submitButton = suggestForm.querySelector('button[type="submit"]');
-            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> <?= __('suggest.form.validating') ?>';
-            submitButton.disabled = true;
+        suggestForm.addEventListener('submit', function(event) {
+            if (feedUrlInput.value.trim() === siteUrlInput.value.trim()) {
+                event.preventDefault();
+                
+                let errorDiv = document.querySelector('#feed_url_error');
+                if (!errorDiv) {
+                    errorDiv = document.createElement('div');
+                    errorDiv.id = 'feed_url_error';
+                    errorDiv.className = 'form-text text-danger';
+                    feedUrlInput.parentNode.parentNode.appendChild(errorDiv);
+                }
+                
+                errorDiv.textContent = '<?= __('suggest.form.feed_url_same_as_site') ?? "O URL do feed não pode ser o mesmo que o URL do site" ?>';
+                
+                feedUrlInput.classList.add('is-invalid');
+                siteUrlInput.classList.add('is-invalid');
+                
+                feedUrlInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            } else {
+                feedUrlInput.classList.remove('is-invalid');
+                siteUrlInput.classList.remove('is-invalid');
+                
+                const errorDiv = document.querySelector('#feed_url_error');
+                if (errorDiv) {
+                    errorDiv.remove();
+                }
+                
+                const submitButton = suggestForm.querySelector('button[type="submit"]');
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> <?= __('suggest.form.validating') ?>';
+                submitButton.disabled = true;
+            }
         });
     });
 </script>
