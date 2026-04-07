@@ -192,6 +192,7 @@ return [
     'admin.category_form.name' => 'Nome',
     'admin.category_form.slug' => 'Slug',
     'admin.category_form.slug_help' => 'Deixe em branco para gerar automaticamente',
+    'admin.category_form.edit_title' => 'Editar Categoria',
     
     // Admin - Tags
     'admin.tags.title' => 'Gerenciar Tags',
@@ -199,6 +200,9 @@ return [
     'admin.tags.no_tags' => 'Nenhuma tag cadastrada',
     'admin.tags.feeds' => 'feeds',
     'admin.tags.delete_confirm' => 'Tem certeza que deseja excluir esta tag?',
+    
+    // Admin - Tag Form
+    'admin.tag_form.edit_title' => 'Editar Tag',
     
     // Footer
     'footer.description' => 'Diretório e buscador de blogs pessoais atualizado em tempo real.',
@@ -223,4 +227,72 @@ return [
     'shuffle.button' => 'Rolêrama',
     'shuffle.go' => 'Ir',
     'shuffle.open' => 'Abrir',
+    
+    // Validation Messages
+    'validation.title_required' => 'O título é obrigatório',
+    'validation.title_min_length' => 'O título deve ter pelo menos 3 caracteres',
+    'validation.title_not_empty' => 'O título não pode estar vazio',
+    'validation.feed_url_required' => 'A URL do feed é obrigatória',
+    'validation.feed_url_valid' => 'A URL do feed deve ser uma URL válida',
+    'validation.feed_url_not_empty' => 'A URL do feed não pode estar vazia',
+    'validation.site_url_required' => 'A URL do site é obrigatória',
+    'validation.site_url_valid' => 'A URL do site deve ser uma URL válida',
+    'validation.site_url_not_empty' => 'A URL do site não pode estar vazia',
+    'validation.language_invalid' => 'Idioma selecionado inválido',
+    'validation.slug_exists' => 'Este slug já existe',
+    'validation.name_required' => 'O nome é obrigatório',
+    'validation.captcha_required' => 'O código de verificação é obrigatório',
+    'validation.captcha_invalid' => 'Código de verificação inválido',
+    'validation.email_invalid' => 'Email inválido',
+    'validation.category_required' => 'A categoria é obrigatória',
+    'validation.tag_required' => 'Pelo menos uma tag é obrigatória',
+    'validation.status_invalid' => 'Status inválido. Valores permitidos: online, offline, paused, pending, rejected',
+    
+    // Success Messages
+    'success.feed_created' => 'Feed criado com sucesso',
+    'success.feed_updated' => 'Feed atualizado com sucesso',
+    'success.feed_deleted' => 'Feed excluído com sucesso',
+    'success.item_updated' => 'Item atualizado com sucesso',
+    'success.category_created' => 'Categoria criada com sucesso',
+    'success.category_updated' => 'Categoria atualizada com sucesso',
+    'success.category_deleted' => 'Categoria excluída com sucesso',
+    'success.tag_created' => 'Tag criada com sucesso',
+    'success.tag_updated' => 'Tag atualizada com sucesso',
+    'success.tag_deleted' => 'Tag excluída com sucesso',
+    'success.categories_updated' => 'Categorias atualizadas com sucesso para',
+    'success.tags_updated' => 'Tags atualizadas com sucesso para',
+    'success.status_updated' => 'Status atualizado com sucesso para',
+    'success.suggestion_sent' => 'Sugestão enviada com sucesso! Aguarde a aprovação do administrador.',
+    'success.feeds' => 'feed(s)',
+    
+    // Error Messages
+    'error.feed_not_found' => 'Feed não encontrado',
+    'error.item_not_found' => 'Item não encontrado',
+    'error.category_not_found' => 'Categoria não encontrada',
+    'error.tag_not_found' => 'Tag não encontrada',
+    'error.feed_create' => 'Erro ao criar feed',
+    'error.feed_update' => 'Erro ao atualizar feed',
+    'error.feed_delete' => 'Erro ao excluir feed',
+    'error.item_update' => 'Erro ao atualizar item',
+    'error.category_create' => 'Erro ao criar categoria',
+    'error.category_update' => 'Erro ao atualizar categoria',
+    'error.category_delete' => 'Erro ao excluir categoria',
+    'error.tag_create' => 'Erro ao criar tag',
+    'error.tag_update' => 'Erro ao atualizar tag',
+    'error.tag_delete' => 'Erro ao excluir tag',
+    'error.categories_update' => 'Erro ao atualizar categorias',
+    'error.tags_update' => 'Erro ao atualizar tags',
+    'error.status_update' => 'Erro ao atualizar status',
+    'error.suggestion_send' => 'Erro ao enviar sugestão',
+    'error.no_fields_update' => 'Nenhum campo para atualizar',
+    'error.no_feed_selected' => 'Nenhum feed selecionado',
+    'error.no_category_selected' => 'Nenhuma categoria selecionada',
+    'error.no_tag_selected' => 'Nenhuma tag selecionada',
+    'error.feed_validate' => 'Não foi possível validar o feed. Verifique se a URL está correta e se o feed está acessível.',
+    'error.feed_invalid' => 'Feed inválido ou inacessível',
+    'error.login_invalid' => 'Nome de usuário ou senha inválidos',
+    
+    // Feed Status Messages
+    'feed.already_pending' => 'Este feed já foi sugerido e está aguardando aprovação',
+    'feed.already_registered' => 'Este feed já está cadastrado',
 ];

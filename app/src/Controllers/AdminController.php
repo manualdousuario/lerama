@@ -61,8 +61,8 @@ class AdminController
         }
 
         $html = $this->templates->render('admin/login', [
-            'title' => 'Login',
-            'error' => 'Nome de usuário ou senha inválidos'
+            'title' => __('admin.login.title'),
+            'error' => __('error.login_invalid')
         ]);
 
         return new HtmlResponse($html);
@@ -132,7 +132,7 @@ class AdminController
                     'feed' => $feedId
                 ]))
             ],
-            'title' => 'Gerenciar Itens do Feed'
+            'title' => __('admin.items.title')
         ]);
 
         return new HtmlResponse($html);
@@ -220,7 +220,7 @@ class AdminController
                     'search' => $search
                 ]))
             ],
-            'title' => 'Gerenciar Feeds'
+            'title' => __('admin.feeds.title')
         ]);
 
         return new HtmlResponse($html);
@@ -244,21 +244,21 @@ class AdminController
 
             $errors = [];
             if (empty($title)) {
-                $errors['title'] = 'O título é obrigatório';
+                $errors['title'] = __('validation.title_required');
             }
             if (empty($feedUrl)) {
-                $errors['feed_url'] = 'A URL do feed é obrigatória';
+                $errors['feed_url'] = __('validation.feed_url_required');
             } elseif (!filter_var($feedUrl, FILTER_VALIDATE_URL)) {
-                $errors['feed_url'] = 'A URL do feed deve ser uma URL válida';
+                $errors['feed_url'] = __('validation.feed_url_valid');
             }
             if (empty($siteUrl)) {
-                $errors['site_url'] = 'A URL do site é obrigatória';
+                $errors['site_url'] = __('validation.site_url_required');
             } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
-                $errors['site_url'] = 'A URL do site deve ser uma URL válida';
+                $errors['site_url'] = __('validation.site_url_valid');
             }
 
             if (!in_array($language, ['en', 'pt-BR', 'es'])) {
-                $errors['language'] = 'Idioma selecionado inválido';
+                $errors['language'] = __('validation.language_invalid');
             }
 
             if (empty($errors)) {
@@ -318,12 +318,12 @@ class AdminController
 
                     return new RedirectResponse('/admin/feeds');
                 } catch (\Exception $e) {
-                    $errors['general'] = 'Erro ao criar feed: ' . $e->getMessage();
+                    $errors['general'] = __('error.feed_create') . ': ' . $e->getMessage();
                 }
             }
 
             $html = $this->templates->render('admin/feed-form', [
-                'title' => 'Adicionar Novo Feed',
+                'title' => __('admin.feed_form.add_title'),
                 'isEdit' => false,
                 'feed' => [
                     'title' => $title,
@@ -343,7 +343,7 @@ class AdminController
         }
 
         $html = $this->templates->render('admin/feed-form', [
-            'title' => 'Adicionar Novo Feed',
+            'title' => __('admin.feed_form.add_title'),
             'isEdit' => false,
             'feed' => null,
             'selectedCategories' => [],
@@ -387,21 +387,21 @@ class AdminController
 
             $errors = [];
             if (empty($title)) {
-                $errors['title'] = 'O título é obrigatório';
+                $errors['title'] = __('validation.title_required');
             }
             if (empty($feedUrl)) {
-                $errors['feed_url'] = 'A URL do feed é obrigatória';
+                $errors['feed_url'] = __('validation.feed_url_required');
             } elseif (!filter_var($feedUrl, FILTER_VALIDATE_URL)) {
-                $errors['feed_url'] = 'A URL do feed deve ser uma URL válida';
+                $errors['feed_url'] = __('validation.feed_url_valid');
             }
             if (empty($siteUrl)) {
-                $errors['site_url'] = 'A URL do site é obrigatória';
+                $errors['site_url'] = __('validation.site_url_required');
             } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
-                $errors['site_url'] = 'A URL do site deve ser uma URL válida';
+                $errors['site_url'] = __('validation.site_url_valid');
             }
 
             if (!in_array($language, ['en', 'pt-BR', 'es'])) {
-                $errors['language'] = 'Idioma selecionado inválido';
+                $errors['language'] = __('validation.language_invalid');
             }
 
             if (empty($errors)) {
@@ -447,12 +447,12 @@ class AdminController
 
                     return new RedirectResponse('/admin/feeds');
                 } catch (\Exception $e) {
-                    $errors['general'] = 'Erro ao atualizar feed: ' . $e->getMessage();
+                    $errors['general'] = __('error.feed_update') . ': ' . $e->getMessage();
                 }
             }
 
             $html = $this->templates->render('admin/feed-form', [
-                'title' => 'Editar Feed',
+                'title' => __('admin.feed_form.edit_title'),
                 'isEdit' => true,
                 'feed' => [
                     'id' => $id,
@@ -474,7 +474,7 @@ class AdminController
         }
 
         $html = $this->templates->render('admin/feed-form', [
-            'title' => 'Editar Feed',
+            'title' => __('admin.feed_form.edit_title'),
             'isEdit' => true,
             'feed' => $feed,
             'selectedCategories' => $selectedCategoryIds,
@@ -497,17 +497,17 @@ class AdminController
 
         $errors = [];
         if (empty($title)) {
-            $errors['title'] = 'O título é obrigatório';
+            $errors['title'] = __('validation.title_required');
         }
         if (empty($feedUrl)) {
-            $errors['feed_url'] = 'A URL do feed é obrigatória';
+            $errors['feed_url'] = __('validation.feed_url_required');
         } elseif (!filter_var($feedUrl, FILTER_VALIDATE_URL)) {
-            $errors['feed_url'] = 'A URL do feed deve ser uma URL válida';
+            $errors['feed_url'] = __('validation.feed_url_valid');
         }
         if (empty($siteUrl)) {
-            $errors['site_url'] = 'A URL do site é obrigatória';
+            $errors['site_url'] = __('validation.site_url_required');
         } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
-            $errors['site_url'] = 'A URL do site deve ser uma URL válida';
+            $errors['site_url'] = __('validation.site_url_valid');
         }
 
         if (!empty($errors)) {
@@ -551,12 +551,12 @@ class AdminController
 
             return new JsonResponse([
                 'success' => true,
-                'message' => 'Feed criado com sucesso'
+                'message' => __('success.feed_created')
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Erro ao criar feed: ' . $e->getMessage()
+                'message' => __('error.feed_create') . ': ' . $e->getMessage()
             ], 500);
         }
     }
@@ -576,7 +576,7 @@ class AdminController
         if (!$feed) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Feed não encontrado'
+                'message' => __('error.feed_not_found')
             ], 404);
         }
 
@@ -585,7 +585,7 @@ class AdminController
 
         if (isset($params['title'])) {
             if (empty($params['title'])) {
-                $errors['title'] = 'O título não pode estar vazio';
+                $errors['title'] = __('validation.title_not_empty');
             } else {
                 $updateData['title'] = $params['title'];
             }
@@ -593,9 +593,9 @@ class AdminController
 
         if (isset($params['feed_url'])) {
             if (empty($params['feed_url'])) {
-                $errors['feed_url'] = 'A URL do feed não pode estar vazia';
+                $errors['feed_url'] = __('validation.feed_url_not_empty');
             } elseif (!filter_var($params['feed_url'], FILTER_VALIDATE_URL)) {
-                $errors['feed_url'] = 'A URL do feed deve ser uma URL válida';
+                $errors['feed_url'] = __('validation.feed_url_valid');
             } else {
                 $updateData['feed_url'] = $params['feed_url'];
             }
@@ -603,9 +603,9 @@ class AdminController
 
         if (isset($params['site_url'])) {
             if (empty($params['site_url'])) {
-                $errors['site_url'] = 'A URL do site não pode estar vazia';
+                $errors['site_url'] = __('validation.site_url_not_empty');
             } elseif (!filter_var($params['site_url'], FILTER_VALIDATE_URL)) {
-                $errors['site_url'] = 'A URL do site deve ser uma URL válida';
+                $errors['site_url'] = __('validation.site_url_valid');
             } else {
                 $updateData['site_url'] = $params['site_url'];
             }
@@ -618,7 +618,7 @@ class AdminController
         if (isset($params['status'])) {
             $validStatuses = ['online', 'offline', 'paused', 'pending', 'rejected'];
             if (!in_array($params['status'], $validStatuses)) {
-                $errors['status'] = 'Status inválido. Valores permitidos: online, offline, paused, pending, rejected';
+                $errors['status'] = __('validation.status_invalid');
             } else {
                 $updateData['status'] = $params['status'];
             }
@@ -634,7 +634,7 @@ class AdminController
         if (empty($updateData)) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Nenhum campo para atualizar'
+                'message' => __('error.no_fields_update')
             ], 400);
         }
 
@@ -645,12 +645,12 @@ class AdminController
 
             return new JsonResponse([
                 'success' => true,
-                'message' => 'Feed atualizado com sucesso'
+                'message' => __('success.feed_updated')
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Erro ao atualizar feed: ' . $e->getMessage()
+                'message' => __('error.feed_update') . ': ' . $e->getMessage()
             ], 500);
         }
     }
@@ -663,7 +663,7 @@ class AdminController
         if (!$feed) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Feed não encontrado'
+                'message' => __('error.feed_not_found')
             ], 404);
         }
 
@@ -674,12 +674,12 @@ class AdminController
 
             return new JsonResponse([
                 'success' => true,
-                'message' => 'Feed excluído com sucesso'
+                'message' => __('success.feed_deleted')
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Erro ao excluir feed: ' . $e->getMessage()
+                'message' => __('error.feed_delete') . ': ' . $e->getMessage()
             ], 500);
         }
     }
@@ -699,7 +699,7 @@ class AdminController
         if (!$item) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Item não encontrado'
+                'message' => __('error.item_not_found')
             ], 404);
         }
 
@@ -715,12 +715,12 @@ class AdminController
 
                 return new JsonResponse([
                     'success' => true,
-                    'message' => 'Item atualizado com sucesso'
+                    'message' => __('success.item_updated')
                 ]);
             } catch (\Exception $e) {
                 return new JsonResponse([
                     'success' => false,
-                    'message' => 'Erro ao atualizar item: ' . $e->getMessage()
+                    'message' => __('error.item_update') . ': ' . $e->getMessage()
                 ], 500);
             }
         }
@@ -761,7 +761,7 @@ class AdminController
 
         return new JsonResponse([
             'success' => false,
-            'message' => 'Nenhum campo para atualizar'
+            'message' => __('error.no_fields_update')
         ], 400);
     }
 
@@ -777,7 +777,7 @@ class AdminController
 
         $html = $this->templates->render('admin/categories', [
             'categories' => $categories,
-            'title' => 'Gerenciar Categorias'
+            'title' => __('admin.categories.title')
         ]);
 
         return new HtmlResponse($html);
@@ -792,7 +792,7 @@ class AdminController
 
             $errors = [];
             if (empty($name)) {
-                $errors['name'] = 'O nome é obrigatório';
+                $errors['name'] = __('validation.name_required');
             }
             
             if (empty($slug)) {
@@ -802,7 +802,7 @@ class AdminController
             // Check if slug already exists
             $existing = DB::queryFirstRow("SELECT id FROM categories WHERE slug = %s", $slug);
             if ($existing) {
-                $errors['slug'] = 'Este slug já existe';
+                $errors['slug'] = __('validation.slug_exists');
             }
 
             if (empty($errors)) {
@@ -816,12 +816,12 @@ class AdminController
 
                     return new RedirectResponse('/admin/categories');
                 } catch (\Exception $e) {
-                    $errors['general'] = 'Erro ao criar categoria: ' . $e->getMessage();
+                    $errors['general'] = __('error.category_create') . ': ' . $e->getMessage();
                 }
             }
 
             $html = $this->templates->render('admin/category-form', [
-                'title' => 'Nova Categoria',
+                'title' => __('admin.categories.new'),
                 'isEdit' => false,
                 'category' => [
                     'name' => $name,
@@ -834,7 +834,7 @@ class AdminController
         }
 
         $html = $this->templates->render('admin/category-form', [
-            'title' => 'Nova Categoria',
+            'title' => __('admin.categories.new'),
             'isEdit' => false,
             'category' => null,
             'errors' => []
@@ -859,7 +859,7 @@ class AdminController
 
             $errors = [];
             if (empty($name)) {
-                $errors['name'] = 'O nome é obrigatório';
+                $errors['name'] = __('validation.name_required');
             }
 
             if (empty($slug)) {
@@ -869,7 +869,7 @@ class AdminController
             // Check if slug already exists (excluding current category)
             $existing = DB::queryFirstRow("SELECT id FROM categories WHERE slug = %s AND id != %i", $slug, $id);
             if ($existing) {
-                $errors['slug'] = 'Este slug já existe';
+                $errors['slug'] = __('validation.slug_exists');
             }
 
             if (empty($errors)) {
@@ -883,12 +883,12 @@ class AdminController
 
                     return new RedirectResponse('/admin/categories');
                 } catch (\Exception $e) {
-                    $errors['general'] = 'Erro ao atualizar categoria: ' . $e->getMessage();
+                    $errors['general'] = __('error.category_update') . ': ' . $e->getMessage();
                 }
             }
 
             $html = $this->templates->render('admin/category-form', [
-                'title' => 'Editar Categoria',
+                'title' => __('admin.category_form.edit_title'),
                 'isEdit' => true,
                 'category' => [
                     'id' => $id,
@@ -902,7 +902,7 @@ class AdminController
         }
 
         $html = $this->templates->render('admin/category-form', [
-            'title' => 'Editar Categoria',
+            'title' => __('admin.category_form.edit_title'),
             'isEdit' => true,
             'category' => $category,
             'errors' => []
@@ -919,7 +919,7 @@ class AdminController
 
         $errors = [];
         if (empty($name)) {
-            $errors['name'] = 'O nome é obrigatório';
+            $errors['name'] = __('validation.name_required');
         }
         
         if (empty($slug)) {
@@ -929,7 +929,7 @@ class AdminController
         // Check if slug already exists
         $existing = DB::queryFirstRow("SELECT id FROM categories WHERE slug = %s", $slug);
         if ($existing) {
-            $errors['slug'] = 'Este slug já existe';
+            $errors['slug'] = __('validation.slug_exists');
         }
 
         if (!empty($errors)) {
@@ -949,12 +949,12 @@ class AdminController
 
             return new JsonResponse([
                 'success' => true,
-                'message' => 'Categoria criada com sucesso'
+                'message' => __('success.category_created')
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Erro ao criar categoria: ' . $e->getMessage()
+                'message' => __('error.category_create') . ': ' . $e->getMessage()
             ], 500);
         }
     }
@@ -968,7 +968,7 @@ class AdminController
         if (!$category) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Categoria não encontrada'
+                'message' => __('error.category_not_found')
             ], 404);
         }
 
@@ -982,7 +982,7 @@ class AdminController
             if ($existing) {
                 return new JsonResponse([
                     'success' => false,
-                    'errors' => ['slug' => 'Este slug já existe']
+                    'errors' => ['slug' => __('validation.slug_exists')]
                 ], 400);
             }
             $updateData['slug'] = $slug;
@@ -991,7 +991,7 @@ class AdminController
         if (empty($updateData)) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Nenhum campo para atualizar'
+                'message' => __('error.no_fields_update')
             ], 400);
         }
 
@@ -1001,12 +1001,12 @@ class AdminController
 
             return new JsonResponse([
                 'success' => true,
-                'message' => 'Categoria atualizada com sucesso'
+                'message' => __('success.category_updated')
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Erro ao atualizar categoria: ' . $e->getMessage()
+                'message' => __('error.category_update') . ': ' . $e->getMessage()
             ], 500);
         }
     }
@@ -1019,7 +1019,7 @@ class AdminController
         if (!$category) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Categoria não encontrada'
+                'message' => __('error.category_not_found')
             ], 404);
         }
 
@@ -1029,12 +1029,12 @@ class AdminController
 
             return new JsonResponse([
                 'success' => true,
-                'message' => 'Categoria excluída com sucesso'
+                'message' => __('success.category_deleted')
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Erro ao excluir categoria: ' . $e->getMessage()
+                'message' => __('error.category_delete') . ': ' . $e->getMessage()
             ], 500);
         }
     }
@@ -1051,7 +1051,7 @@ class AdminController
 
         $html = $this->templates->render('admin/tags', [
             'tags' => $tags,
-            'title' => 'Gerenciar Tags'
+            'title' => __('admin.tags.title')
         ]);
 
         return new HtmlResponse($html);
@@ -1066,7 +1066,7 @@ class AdminController
 
             $errors = [];
             if (empty($name)) {
-                $errors['name'] = 'O nome é obrigatório';
+                $errors['name'] = __('validation.name_required');
             }
             
             if (empty($slug)) {
@@ -1076,7 +1076,7 @@ class AdminController
             // Check if slug already exists
             $existing = DB::queryFirstRow("SELECT id FROM tags WHERE slug = %s", $slug);
             if ($existing) {
-                $errors['slug'] = 'Este slug já existe';
+                $errors['slug'] = __('validation.slug_exists');
             }
 
             if (empty($errors)) {
@@ -1090,12 +1090,12 @@ class AdminController
 
                     return new RedirectResponse('/admin/tags');
                 } catch (\Exception $e) {
-                    $errors['general'] = 'Erro ao criar tag: ' . $e->getMessage();
+                    $errors['general'] = __('error.tag_create') . ': ' . $e->getMessage();
                 }
             }
 
             $html = $this->templates->render('admin/tag-form', [
-                'title' => 'Nova Tag',
+                'title' => __('admin.tags.new'),
                 'isEdit' => false,
                 'tag' => [
                     'name' => $name,
@@ -1108,7 +1108,7 @@ class AdminController
         }
 
         $html = $this->templates->render('admin/tag-form', [
-            'title' => 'Nova Tag',
+            'title' => __('admin.tags.new'),
             'isEdit' => false,
             'tag' => null,
             'errors' => []
@@ -1133,7 +1133,7 @@ class AdminController
 
             $errors = [];
             if (empty($name)) {
-                $errors['name'] = 'O nome é obrigatório';
+                $errors['name'] = __('validation.name_required');
             }
 
             if (empty($slug)) {
@@ -1143,7 +1143,7 @@ class AdminController
             // Check if slug already exists (excluding current tag)
             $existing = DB::queryFirstRow("SELECT id FROM tags WHERE slug = %s AND id != %i", $slug, $id);
             if ($existing) {
-                $errors['slug'] = 'Este slug já existe';
+                $errors['slug'] = __('validation.slug_exists');
             }
 
             if (empty($errors)) {
@@ -1157,12 +1157,12 @@ class AdminController
 
                     return new RedirectResponse('/admin/tags');
                 } catch (\Exception $e) {
-                    $errors['general'] = 'Erro ao atualizar tag: ' . $e->getMessage();
+                    $errors['general'] = __('error.tag_update') . ': ' . $e->getMessage();
                 }
             }
 
             $html = $this->templates->render('admin/tag-form', [
-                'title' => 'Editar Tag',
+                'title' => __('admin.tag_form.edit_title'),
                 'isEdit' => true,
                 'tag' => [
                     'id' => $id,
@@ -1176,7 +1176,7 @@ class AdminController
         }
 
         $html = $this->templates->render('admin/tag-form', [
-            'title' => 'Editar Tag',
+            'title' => __('admin.tag_form.edit_title'),
             'isEdit' => true,
             'tag' => $tag,
             'errors' => []
@@ -1193,7 +1193,7 @@ class AdminController
 
         $errors = [];
         if (empty($name)) {
-            $errors['name'] = 'O nome é obrigatório';
+            $errors['name'] = __('validation.name_required');
         }
         
         if (empty($slug)) {
@@ -1203,7 +1203,7 @@ class AdminController
         // Check if slug already exists
         $existing = DB::queryFirstRow("SELECT id FROM tags WHERE slug = %s", $slug);
         if ($existing) {
-            $errors['slug'] = 'Este slug já existe';
+            $errors['slug'] = __('validation.slug_exists');
         }
 
         if (!empty($errors)) {
@@ -1223,12 +1223,12 @@ class AdminController
 
             return new JsonResponse([
                 'success' => true,
-                'message' => 'Tag criada com sucesso'
+                'message' => __('success.tag_created')
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Erro ao criar tag: ' . $e->getMessage()
+                'message' => __('error.tag_create') . ': ' . $e->getMessage()
             ], 500);
         }
     }
@@ -1242,7 +1242,7 @@ class AdminController
         if (!$tag) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Tag não encontrada'
+                'message' => __('error.tag_not_found')
             ], 404);
         }
 
@@ -1256,7 +1256,7 @@ class AdminController
             if ($existing) {
                 return new JsonResponse([
                     'success' => false,
-                    'errors' => ['slug' => 'Este slug já existe']
+                    'errors' => ['slug' => __('validation.slug_exists')]
                 ], 400);
             }
             $updateData['slug'] = $slug;
@@ -1265,7 +1265,7 @@ class AdminController
         if (empty($updateData)) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Nenhum campo para atualizar'
+                'message' => __('error.no_fields_update')
             ], 400);
         }
 
@@ -1275,12 +1275,12 @@ class AdminController
 
             return new JsonResponse([
                 'success' => true,
-                'message' => 'Tag atualizada com sucesso'
+                'message' => __('success.tag_updated')
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Erro ao atualizar tag: ' . $e->getMessage()
+                'message' => __('error.tag_update') . ': ' . $e->getMessage()
             ], 500);
         }
     }
@@ -1293,7 +1293,7 @@ class AdminController
         if (!$tag) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Tag não encontrada'
+                'message' => __('error.tag_not_found')
             ], 404);
         }
 
@@ -1304,12 +1304,12 @@ class AdminController
 
             return new JsonResponse([
                 'success' => true,
-                'message' => 'Tag excluída com sucesso'
+                'message' => __('success.tag_deleted')
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Erro ao excluir tag: ' . $e->getMessage()
+                'message' => __('error.tag_delete') . ': ' . $e->getMessage()
             ], 500);
         }
     }
@@ -1324,14 +1324,14 @@ class AdminController
         if (empty($feedIds) || !is_array($feedIds)) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Nenhum feed selecionado'
+                'message' => __('error.no_feed_selected')
             ], 400);
         }
         
         if (empty($categoryIds) || !is_array($categoryIds)) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Nenhuma categoria selecionada'
+                'message' => __('error.no_category_selected')
             ], 400);
         }
         
@@ -1367,12 +1367,12 @@ class AdminController
             
             return new JsonResponse([
                 'success' => true,
-                'message' => 'Categorias atualizadas com sucesso para ' . count($feedIds) . ' feed(s)'
+                'message' => __('success.categories_updated') . ' ' . count($feedIds) . ' ' . __('success.feeds')
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Erro ao atualizar categorias: ' . $e->getMessage()
+                'message' => __('error.categories_update') . ': ' . $e->getMessage()
             ], 500);
         }
     }
@@ -1387,14 +1387,14 @@ class AdminController
         if (empty($feedIds) || !is_array($feedIds)) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Nenhum feed selecionado'
+                'message' => __('error.no_feed_selected')
             ], 400);
         }
         
         if (empty($tagIds) || !is_array($tagIds)) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Nenhuma tag selecionada'
+                'message' => __('error.no_tag_selected')
             ], 400);
         }
         
@@ -1430,12 +1430,12 @@ class AdminController
             
             return new JsonResponse([
                 'success' => true,
-                'message' => 'Tags atualizadas com sucesso para ' . count($feedIds) . ' feed(s)'
+                'message' => __('success.tags_updated') . ' ' . count($feedIds) . ' ' . __('success.feeds')
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Erro ao atualizar tags: ' . $e->getMessage()
+                'message' => __('error.tags_update') . ': ' . $e->getMessage()
             ], 500);
         }
     }
@@ -1450,7 +1450,7 @@ class AdminController
         if (empty($feedIds) || !is_array($feedIds)) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Nenhum feed selecionado'
+                'message' => __('error.no_feed_selected')
             ], 400);
         }
         
@@ -1458,7 +1458,7 @@ class AdminController
         if (!in_array($status, $validStatuses)) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Status inválido. Valores permitidos: online, offline, paused, pending, rejected'
+                'message' => __('validation.status_invalid')
             ], 400);
         }
         
@@ -1474,12 +1474,12 @@ class AdminController
             
             return new JsonResponse([
                 'success' => true,
-                'message' => 'Status atualizado com sucesso para ' . count($feedIds) . ' feed(s)'
+                'message' => __('success.status_updated') . ' ' . count($feedIds) . ' ' . __('success.feeds')
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Erro ao atualizar status: ' . $e->getMessage()
+                'message' => __('error.status_update') . ': ' . $e->getMessage()
             ], 500);
         }
     }

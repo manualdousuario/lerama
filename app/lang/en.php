@@ -192,6 +192,7 @@ return [
     'admin.category_form.name' => 'Name',
     'admin.category_form.slug' => 'Slug',
     'admin.category_form.slug_help' => 'Leave blank to auto-generate',
+    'admin.category_form.edit_title' => 'Edit Category',
     
     // Admin - Tags
     'admin.tags.title' => 'Manage Tags',
@@ -199,6 +200,9 @@ return [
     'admin.tags.no_tags' => 'No tags registered',
     'admin.tags.feeds' => 'feeds',
     'admin.tags.delete_confirm' => 'Are you sure you want to delete this tag?',
+    
+    // Admin - Tag Form
+    'admin.tag_form.edit_title' => 'Edit Tag',
     
     // Footer
     'footer.description' => 'Directory and search engine for personal blogs updated in real time.',
@@ -223,4 +227,72 @@ return [
     'shuffle.button' => 'Shuffle',
     'shuffle.go' => 'Go',
     'shuffle.open' => 'Open',
+    
+    // Validation Messages
+    'validation.title_required' => 'Title is required',
+    'validation.title_min_length' => 'Title must have at least 3 characters',
+    'validation.title_not_empty' => 'Title cannot be empty',
+    'validation.feed_url_required' => 'Feed URL is required',
+    'validation.feed_url_valid' => 'Feed URL must be a valid URL',
+    'validation.feed_url_not_empty' => 'Feed URL cannot be empty',
+    'validation.site_url_required' => 'Site URL is required',
+    'validation.site_url_valid' => 'Site URL must be a valid URL',
+    'validation.site_url_not_empty' => 'Site URL cannot be empty',
+    'validation.language_invalid' => 'Invalid language selected',
+    'validation.slug_exists' => 'This slug already exists',
+    'validation.name_required' => 'Name is required',
+    'validation.captcha_required' => 'Verification code is required',
+    'validation.captcha_invalid' => 'Invalid verification code',
+    'validation.email_invalid' => 'Invalid email',
+    'validation.category_required' => 'Category is required',
+    'validation.tag_required' => 'At least one topic is required',
+    'validation.status_invalid' => 'Invalid status. Allowed values: online, offline, paused, pending, rejected',
+    
+    // Success Messages
+    'success.feed_created' => 'Feed created successfully',
+    'success.feed_updated' => 'Feed updated successfully',
+    'success.feed_deleted' => 'Feed deleted successfully',
+    'success.item_updated' => 'Item updated successfully',
+    'success.category_created' => 'Category created successfully',
+    'success.category_updated' => 'Category updated successfully',
+    'success.category_deleted' => 'Category deleted successfully',
+    'success.tag_created' => 'Tag created successfully',
+    'success.tag_updated' => 'Tag updated successfully',
+    'success.tag_deleted' => 'Tag deleted successfully',
+    'success.categories_updated' => 'Categories updated successfully for',
+    'success.tags_updated' => 'Topics updated successfully for',
+    'success.status_updated' => 'Status updated successfully for',
+    'success.suggestion_sent' => 'Suggestion sent successfully! Wait for administrator approval.',
+    'success.feeds' => 'feed(s)',
+    
+    // Error Messages
+    'error.feed_not_found' => 'Feed not found',
+    'error.item_not_found' => 'Item not found',
+    'error.category_not_found' => 'Category not found',
+    'error.tag_not_found' => 'Tag not found',
+    'error.feed_create' => 'Error creating feed',
+    'error.feed_update' => 'Error updating feed',
+    'error.feed_delete' => 'Error deleting feed',
+    'error.item_update' => 'Error updating item',
+    'error.category_create' => 'Error creating category',
+    'error.category_update' => 'Error updating category',
+    'error.category_delete' => 'Error deleting category',
+    'error.tag_create' => 'Error creating tag',
+    'error.tag_update' => 'Error updating tag',
+    'error.tag_delete' => 'Error deleting tag',
+    'error.categories_update' => 'Error updating categories',
+    'error.tags_update' => 'Error updating topics',
+    'error.status_update' => 'Error updating status',
+    'error.suggestion_send' => 'Error sending suggestion',
+    'error.no_fields_update' => 'No fields to update',
+    'error.no_feed_selected' => 'No feed selected',
+    'error.no_category_selected' => 'No category selected',
+    'error.no_tag_selected' => 'No topic selected',
+    'error.feed_validate' => 'Could not validate feed. Check if the URL is correct and the feed is accessible.',
+    'error.feed_invalid' => 'Invalid or inaccessible feed',
+    'error.login_invalid' => 'Invalid username or password',
+    
+    // Feed Status Messages
+    'feed.already_pending' => 'This feed has already been suggested and is awaiting approval',
+    'feed.already_registered' => 'This feed is already registered',
 ];

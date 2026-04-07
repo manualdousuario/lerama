@@ -34,7 +34,7 @@ class SuggestionController
         $tags = DB::query("SELECT * FROM tags ORDER BY name");
 
         $html = $this->templates->render('suggest-feed', [
-            'title' => 'Sugerir Blog/Feed',
+            'title' => __('suggest.heading'),
             'categories' => $categories,
             'tags' => $tags
         ]);
@@ -81,23 +81,23 @@ class SuggestionController
         $errors = [];
         
         if (empty($captcha)) {
-            $errors['captcha'] = 'O código de verificação é obrigatório';
+            $errors['captcha'] = __('validation.captcha_required');
         } elseif (!isset($_SESSION['captcha_phrase']) || $captcha !== $_SESSION['captcha_phrase']) {
-            $errors['captcha'] = 'Código de verificação inválido';
+            $errors['captcha'] = __('validation.captcha_invalid');
         }
         
         unset($_SESSION['captcha_phrase']);
         
         if (empty($title)) {
-            $errors['title'] = 'O título do site é obrigatório';
+            $errors['title'] = __('validation.title_required');
         } elseif (strlen($title) < 3) {
-            $errors['title'] = 'O título deve ter pelo menos 3 caracteres';
+            $errors['title'] = __('validation.title_min_length');
         }
 
         if (empty($feedUrl)) {
-            $errors['feed_url'] = 'A URL do feed é obrigatória';
+            $errors['feed_url'] = __('validation.feed_url_required');
         } elseif (!filter_var($feedUrl, FILTER_VALIDATE_URL)) {
-            $errors['feed_url'] = 'A URL do feed deve ser uma URL válida';
+            $errors['feed_url'] = __('validation.feed_url_valid');
         } else {
             $feedValidation = $this->validateFeed($feedUrl);
             if (!$feedValidation['valid']) {
@@ -106,36 +106,36 @@ class SuggestionController
         }
 
         if (empty($siteUrl)) {
-            $errors['site_url'] = 'A URL do blog é obrigatória';
+            $errors['site_url'] = __('validation.site_url_required');
         } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
-            $errors['site_url'] = 'A URL do blog deve ser uma URL válida';
+            $errors['site_url'] = __('validation.site_url_valid');
         }
 
         $validLanguages = ['en', 'pt-BR', 'es'];
         if (!in_array($language, $validLanguages)) {
-            $errors['language'] = 'Idioma inválido';
+            $errors['language'] = __('validation.language_invalid');
         }
 
         if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors['email'] = 'Email inválido';
+            $errors['email'] = __('validation.email_invalid');
         }
 
         $availableCategories = DB::query("SELECT * FROM categories ORDER BY name");
         if (!empty($availableCategories) && empty($categoryId)) {
-            $errors['category'] = 'A categoria é obrigatória';
+            $errors['category'] = __('validation.category_required');
         }
 
         $availableTags = DB::query("SELECT * FROM tags ORDER BY name");
         if (!empty($availableTags) && empty($tagIds)) {
-            $errors['tags'] = 'Pelo menos uma tag é obrigatória';
+            $errors['tags'] = __('validation.tag_required');
         }
 
         $existingFeed = DB::queryFirstRow("SELECT id, status FROM feeds WHERE feed_url = %s", $feedUrl);
         if ($existingFeed) {
             if ($existingFeed['status'] == 'pending') {
-                $errors['feed_url'] = 'Este feed já foi sugerido e está aguardando aprovação';
+                $errors['feed_url'] = __('feed.already_pending');
             } else {
-                $errors['feed_url'] = 'Este feed já está cadastrado';
+                $errors['feed_url'] = __('feed.already_registered');
             }
         }
 
@@ -152,7 +152,7 @@ class SuggestionController
             $tags = DB::query("SELECT * FROM tags ORDER BY name");
 
             $html = $this->templates->render('suggest-feed', [
-                'title' => 'Sugerir Blog/Feed',
+                'title' => __('suggest.heading'),
                 'categories' => $categories,
                 'tags' => $tags,
                 'errors' => $errors,
@@ -215,7 +215,7 @@ class SuggestionController
                 $request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
                 return new JsonResponse([
                     'success' => true,
-                    'message' => 'Sugestão enviada com sucesso! Aguarde a aprovação do administrador.'
+                    'message' => __('success.suggestion_sent')
                 ]);
             }
 
@@ -223,10 +223,10 @@ class SuggestionController
             $tags = DB::query("SELECT * FROM tags ORDER BY name");
 
             $html = $this->templates->render('suggest-feed', [
-                'title' => 'Sugerir Blog/Feed',
+                'title' => __('suggest.heading'),
                 'categories' => $categories,
                 'tags' => $tags,
-                'success' => 'Sugestão enviada com sucesso! Aguarde a aprovação do administrador.'
+                'success' => __('success.suggestion_sent')
             ]);
 
             return new HtmlResponse($html);
@@ -235,7 +235,7 @@ class SuggestionController
                 $request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
                 return new JsonResponse([
                     'success' => false,
-                    'message' => 'Erro ao enviar sugestão: ' . $e->getMessage()
+                    'message' => __('error.suggestion_send') . ': ' . $e->getMessage()
                 ], 500);
             }
 
@@ -243,10 +243,10 @@ class SuggestionController
             $tags = DB::query("SELECT * FROM tags ORDER BY name");
 
             $html = $this->templates->render('suggest-feed', [
-                'title' => 'Sugerir Blog/Feed',
+                'title' => __('suggest.heading'),
                 'categories' => $categories,
                 'tags' => $tags,
-                'errors' => ['general' => 'Erro ao enviar sugestão: ' . $e->getMessage()],
+                'errors' => ['general' => __('error.suggestion_send') . ': ' . $e->getMessage()],
                 'data' => [
                     'title' => $title,
                     'feed_url' => $feedUrl,
@@ -271,7 +271,7 @@ class SuggestionController
             if (!$feedType) {
                 return [
                     'valid' => false,
-                    'error' => 'Não foi possível validar o feed. Verifique se a URL está correta e se o feed está acessível.'
+                    'error' => __('error.feed_validate')
                 ];
             }
 
@@ -282,7 +282,7 @@ class SuggestionController
         } catch (\Exception $e) {
             return [
                 'valid' => false,
-                'error' => 'Feed inválido ou inacessível: ' . $e->getMessage()
+                'error' => __('error.feed_invalid') . ': ' . $e->getMessage()
             ];
         }
     }

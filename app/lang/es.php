@@ -192,6 +192,7 @@ return [
     'admin.category_form.name' => 'Nombre',
     'admin.category_form.slug' => 'Slug',
     'admin.category_form.slug_help' => 'Deje en blanco para generar automáticamente',
+    'admin.category_form.edit_title' => 'Editar Categoría',
     
     // Admin - Tags
     'admin.tags.title' => 'Administrar Etiquetas',
@@ -199,6 +200,9 @@ return [
     'admin.tags.no_tags' => 'No hay etiquetas registradas',
     'admin.tags.feeds' => 'feeds',
     'admin.tags.delete_confirm' => '¿Está seguro de que desea eliminar esta etiqueta?',
+    
+    // Admin - Tag Form
+    'admin.tag_form.edit_title' => 'Editar Etiqueta',
     
     // Footer
     'footer.description' => 'Directorio y buscador de blogs personales actualizado en tiempo real.',
@@ -223,4 +227,72 @@ return [
     'shuffle.button' => 'Aleatorio',
     'shuffle.go' => 'Ir',
     'shuffle.open' => 'Abrir',
+    
+    // Validation Messages
+    'validation.title_required' => 'El título es obligatorio',
+    'validation.title_min_length' => 'El título debe tener al menos 3 caracteres',
+    'validation.title_not_empty' => 'El título no puede estar vacío',
+    'validation.feed_url_required' => 'La URL del feed es obligatoria',
+    'validation.feed_url_valid' => 'La URL del feed debe ser una URL válida',
+    'validation.feed_url_not_empty' => 'La URL del feed no puede estar vacía',
+    'validation.site_url_required' => 'La URL del sitio es obligatoria',
+    'validation.site_url_valid' => 'La URL del sitio debe ser una URL válida',
+    'validation.site_url_not_empty' => 'La URL del sitio no puede estar vacía',
+    'validation.language_invalid' => 'Idioma seleccionado inválido',
+    'validation.slug_exists' => 'Este slug ya existe',
+    'validation.name_required' => 'El nombre es obligatorio',
+    'validation.captcha_required' => 'El código de verificación es obligatorio',
+    'validation.captcha_invalid' => 'Código de verificación inválido',
+    'validation.email_invalid' => 'Email inválido',
+    'validation.category_required' => 'La categoría es obligatoria',
+    'validation.tag_required' => 'Al menos un tema es obligatorio',
+    'validation.status_invalid' => 'Estado inválido. Valores permitidos: online, offline, paused, pending, rejected',
+    
+    // Success Messages
+    'success.feed_created' => 'Feed creado con éxito',
+    'success.feed_updated' => 'Feed actualizado con éxito',
+    'success.feed_deleted' => 'Feed eliminado con éxito',
+    'success.item_updated' => 'Elemento actualizado con éxito',
+    'success.category_created' => 'Categoría creada con éxito',
+    'success.category_updated' => 'Categoría actualizada con éxito',
+    'success.category_deleted' => 'Categoría eliminada con éxito',
+    'success.tag_created' => 'Etiqueta creada con éxito',
+    'success.tag_updated' => 'Etiqueta actualizada con éxito',
+    'success.tag_deleted' => 'Etiqueta eliminada con éxito',
+    'success.categories_updated' => 'Categorías actualizadas con éxito para',
+    'success.tags_updated' => 'Temas actualizados con éxito para',
+    'success.status_updated' => 'Estado actualizado con éxito para',
+    'success.suggestion_sent' => '¡Sugerencia enviada con éxito! Espere la aprobación del administrador.',
+    'success.feeds' => 'feed(s)',
+    
+    // Error Messages
+    'error.feed_not_found' => 'Feed no encontrado',
+    'error.item_not_found' => 'Elemento no encontrado',
+    'error.category_not_found' => 'Categoría no encontrada',
+    'error.tag_not_found' => 'Etiqueta no encontrada',
+    'error.feed_create' => 'Error al crear feed',
+    'error.feed_update' => 'Error al actualizar feed',
+    'error.feed_delete' => 'Error al eliminar feed',
+    'error.item_update' => 'Error al actualizar elemento',
+    'error.category_create' => 'Error al crear categoría',
+    'error.category_update' => 'Error al actualizar categoría',
+    'error.category_delete' => 'Error al eliminar categoría',
+    'error.tag_create' => 'Error al crear etiqueta',
+    'error.tag_update' => 'Error al actualizar etiqueta',
+    'error.tag_delete' => 'Error al eliminar etiqueta',
+    'error.categories_update' => 'Error al actualizar categorías',
+    'error.tags_update' => 'Error al actualizar temas',
+    'error.status_update' => 'Error al actualizar estado',
+    'error.suggestion_send' => 'Error al enviar sugerencia',
+    'error.no_fields_update' => 'Ningún campo para actualizar',
+    'error.no_feed_selected' => 'Ningún feed seleccionado',
+    'error.no_category_selected' => 'Ninguna categoría seleccionada',
+    'error.no_tag_selected' => 'Ningún tema seleccionado',
+    'error.feed_validate' => 'No se pudo validar el feed. Verifique si la URL está correcta y si el feed está accesible.',
+    'error.feed_invalid' => 'Feed inválido o inaccesible',
+    'error.login_invalid' => 'Nombre de usuario o contraseña inválidos',
+    
+    // Feed Status Messages
+    'feed.already_pending' => 'Este feed ya ha sido sugerido y está esperando aprobación',
+    'feed.already_registered' => 'Este feed ya está registrado',
 ];
