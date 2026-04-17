@@ -306,4 +306,7 @@ return [
     // Feed Status Messages
     'feed.already_pending' => 'Este feed ya ha sido sugerido y está esperando aprobación',
     'feed.already_registered' => 'Este feed ya está registrado',
+
+    // Feed Item
+    'feed_item.no_title' => 'Sin título',
 ];

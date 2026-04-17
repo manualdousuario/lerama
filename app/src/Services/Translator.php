@@ -7,6 +7,7 @@ namespace App\Services {
         private $translations = [];
         private $language = 'pt-BR';
         private $fallbackLanguage = 'pt-BR';
+        private $languageCache = [];
 
         private function __construct()
         {
@@ -58,6 +59,28 @@ namespace App\Services {
         public function getLanguage(): string
         {
             return $this->language;
+        }
+
+        public function translateFor(string $key, string $language, array $replacements = []): string
+        {
+            $translation = $this->getKeyForLanguage($key, $language)
+                ?? $this->getKeyForLanguage($key, 'en')
+                ?? $key;
+
+            foreach ($replacements as $placeholder => $value) {
+                $translation = str_replace(':' . $placeholder, $value, $translation);
+            }
+
+            return $translation;
+        }
+
+        private function getKeyForLanguage(string $key, string $language): ?string
+        {
+            if (!isset($this->languageCache[$language])) {
+                $langFile = __DIR__ . '/../../lang/' . $language . '.php';
+                $this->languageCache[$language] = file_exists($langFile) ? require $langFile : [];
+            }
+            return $this->languageCache[$language][$key] ?? null;
         }
 
         public function getAvailableLanguages(): array

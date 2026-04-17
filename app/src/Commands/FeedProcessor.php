@@ -365,7 +365,7 @@ class FeedProcessor
                     $lastGuid = $guid;
                 }
 
-                $title = $item->get_title();
+                $title = $this->resolveTitle($item->get_title(), $feed);
                 $content = $item->get_content();
                 $author = $item->get_author() ? $item->get_author()->get_name() : null;
                 $url = $item->get_permalink();
@@ -481,7 +481,7 @@ class FeedProcessor
                         $lastGuid = $guid;
                     }
 
-                    $title = $item->get_title();
+                    $title = $this->resolveTitle($item->get_title(), $feed);
                     $content = $item->get_content();
                     $author = $item->get_author() ? $item->get_author()->get_name() : null;
                     $url = $item->get_permalink();
@@ -646,7 +646,7 @@ class FeedProcessor
                 }
 
                 $url = $data[$urlIndex];
-                $title = $data[$titleIndex];
+                $title = $this->resolveTitle($data[$titleIndex] ?? null, $feed);
 
                 $this->climate->whisper("Processing item: {$title} ({$url})");
 
@@ -782,7 +782,7 @@ class FeedProcessor
                     }
 
                     $url = $data[$urlIndex];
-                    $title = $data[$titleIndex];
+                    $title = $this->resolveTitle($data[$titleIndex] ?? null, $feed);
 
                     $this->climate->whisper("Processing item from page {$currentPage}: {$title} ({$url})");
 
@@ -890,7 +890,7 @@ class FeedProcessor
                     $lastGuid = $guid;
                 }
 
-                $title = $item['title'] ?? 'Sem título';
+                $title = $this->resolveTitle($item['title'] ?? null, $feed);
                 $itemContent = $item['content'] ?? $item['content_html'] ?? $item['summary'] ?? '';
                 $author = $item['author']['name'] ?? $item['author'] ?? null;
                 $url = $item['url'] ?? $item['link'] ?? '';
@@ -1004,7 +1004,7 @@ class FeedProcessor
                         $lastGuid = $guid;
                     }
 
-                    $title = $item['title'] ?? 'Sem título';
+                    $title = $this->resolveTitle($item['title'] ?? null, $feed);
                     $content = $item['content'] ?? $item['content_html'] ?? $item['summary'] ?? '';
                     $author = $item['author']['name'] ?? $item['author'] ?? null;
                     $url = $item['url'] ?? $item['link'] ?? '';
@@ -1107,7 +1107,7 @@ class FeedProcessor
                     $lastGuid = $guid;
                 }
 
-                $title = (string)($item->title ?? 'Sem título');
+                $title = $this->resolveTitle((string)($item->title ?? ''), $feed);
                 $itemContent = (string)($item->description ?? $item->content ?? $item->summary ?? '');
                 $author = (string)($item->author ?? $item->creator ?? '');
                 $url = (string)($item->link ?? $item->url ?? '');
@@ -1238,7 +1238,7 @@ class FeedProcessor
                         $lastGuid = $guid;
                     }
 
-                    $title = (string)($item->title ?? 'Sem título');
+                    $title = $this->resolveTitle((string)($item->title ?? ''), $feed);
                     $content = (string)($item->description ?? $item->content ?? $item->summary ?? '');
                     $author = (string)($item->author ?? $item->creator ?? '');
                     $url = (string)($item->link ?? $item->url ?? '');
@@ -1307,6 +1307,16 @@ class FeedProcessor
         $this->climate->out("Added {$count} new items from XML feed: {$feed['title']}");
     }
     
+    private function resolveTitle(?string $title, array $feed): string
+    {
+        $title = trim((string)$title);
+        if ($title !== '') {
+            return $title;
+        }
+        $language = $feed['language'] ?? 'en';
+        return \App\Services\Translator::getInstance()->translateFor('feed_item.no_title', $language);
+    }
+
     private function checkRealContent(?string $content, ?string $url = ''): array
     {
         if (empty($content)) {
