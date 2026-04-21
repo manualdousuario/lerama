@@ -12,6 +12,7 @@ use Laminas\Diactoros\Response\RedirectResponse;
 use League\Plates\Engine;
 use Lerama\Services\FeedTypeDetector;
 use Lerama\Services\EmailService;
+use Lerama\Services\CacheableQuery;
 use Gregwar\Captcha\CaptchaBuilder;
 use DB;
 
@@ -30,8 +31,14 @@ class SuggestionController
             session_start();
         }
 
-        $categories = DB::query("SELECT * FROM categories ORDER BY name");
-        $tags = DB::query("SELECT * FROM tags ORDER BY name");
+        $categories = CacheableQuery::query(
+            'categories', 'all', ['categories'], 300,
+            "SELECT * FROM categories ORDER BY name"
+        );
+        $tags = CacheableQuery::query(
+            'tags', 'all', ['tags'], 300,
+            "SELECT * FROM tags ORDER BY name"
+        );
 
         $html = $this->templates->render('suggest-feed', [
             'title' => __('suggest.heading'),
@@ -120,12 +127,18 @@ class SuggestionController
             $errors['email'] = __('validation.email_invalid');
         }
 
-        $availableCategories = DB::query("SELECT * FROM categories ORDER BY name");
+        $availableCategories = CacheableQuery::query(
+            'categories', 'all', ['categories'], 300,
+            "SELECT * FROM categories ORDER BY name"
+        );
         if (!empty($availableCategories) && empty($categoryId)) {
             $errors['category'] = __('validation.category_required');
         }
 
-        $availableTags = DB::query("SELECT * FROM tags ORDER BY name");
+        $availableTags = CacheableQuery::query(
+            'tags', 'all', ['tags'], 300,
+            "SELECT * FROM tags ORDER BY name"
+        );
         if (!empty($availableTags) && empty($tagIds)) {
             $errors['tags'] = __('validation.tag_required');
         }

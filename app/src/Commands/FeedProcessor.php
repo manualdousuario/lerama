@@ -12,7 +12,6 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use Lerama\Services\ProxyService;
 use Lerama\Services\EmailService;
-use Lerama\Services\CacheableQuery;
 use Lerama\Config\HttpClientConfig;
 
 class FeedProcessor
@@ -55,18 +54,11 @@ class FeedProcessor
         } else {
             $this->climate->info("Processing online feeds (max: {$this->maxFeedsPerRun}, interval: {$this->collectionIntervalMinutes} min)");
             
-            // Validate interval to prevent all feeds being selected
             if ($this->collectionIntervalMinutes <= 0) {
                 $this->climate->error("FEED_COLLECTION_INTERVAL must be greater than 0, using default 120 minutes");
                 $this->collectionIntervalMinutes = 120;
             }
             
-            // Select feeds that:
-            // 1. Are online
-            // 2. Haven't been checked in the last FEED_COLLECTION_INTERVAL minutes OR have never been checked
-            // 3. Limit to FEED_MAX_PER_RUN feeds
-            // Order by last_checked ASC (NULL first, then oldest) to ensure fair rotation
-            // Using COALESCE to explicitly handle NULL as epoch (very old date)
             $feeds = DB::query(
                 "SELECT * FROM feeds
                 WHERE status = 'online'
@@ -86,7 +78,6 @@ class FeedProcessor
         $totalFeeds = count($feeds);
         $this->climate->info("Found {$totalFeeds} feed(s) due for processing:");
         
-        // Log selected feeds with their last_checked times for debugging
         foreach ($feeds as $index => $feed) {
             $lastChecked = $feed['last_checked'] ?? 'never';
             $this->climate->whisper("  " . ($index + 1) . ". [{$feed['id']}] {$feed['title']} - last checked: {$lastChecked}");
@@ -121,8 +112,6 @@ class FeedProcessor
             $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
         }
 
-        // Update last_checked BEFORE processing to prevent re-selection on concurrent runs
-        // This ensures the feed won't be picked up again until FEED_COLLECTION_INTERVAL passes
         DB::update('feeds', [
             'last_checked' => DB::sqleval("NOW()")
         ], 'id=%i', $feed['id']);
@@ -408,9 +397,6 @@ class FeedProcessor
                     'last_post_id' => $lastGuid,
                     'last_updated' => DB::sqleval("NOW()")
                 ], 'id=%i', $feed['id']);
-                
-                // Invalidate cache for items and this specific feed
-                CacheableQuery::invalidate(['items', "feed:{$feed['id']}"]);
             }
 
             $this->climate->out("Added {$count} new items from feed: {$feed['title']}");
@@ -687,9 +673,6 @@ class FeedProcessor
                     'last_post_id' => $lastGuid,
                     'last_updated' => DB::sqleval("NOW()")
                 ], 'id=%i', $feed['id']);
-                
-                // Invalidate cache for items and this specific feed
-                CacheableQuery::invalidate(['items', "feed:{$feed['id']}"]);
             }
 
             $this->climate->out("Added {$count} new items from CSV feed: {$feed['title']}");
@@ -939,9 +922,6 @@ class FeedProcessor
                     'last_post_id' => $lastGuid,
                     'last_updated' => DB::sqleval("NOW()")
                 ], 'id=%i', $feed['id']);
-                
-                // Invalidate cache for items and this specific feed
-                CacheableQuery::invalidate(['items', "feed:{$feed['id']}"]);
             }
 
             $this->climate->out("Added {$count} new items from JSON feed: {$feed['title']}");
@@ -1154,9 +1134,6 @@ class FeedProcessor
                     'last_post_id' => $lastGuid,
                     'last_updated' => DB::sqleval("NOW()")
                 ], 'id=%i', $feed['id']);
-                
-                // Invalidate cache for items and this specific feed
-                CacheableQuery::invalidate(['items', "feed:{$feed['id']}"]);
             }
             $this->climate->out("Added {$count} new items from XML feed: {$feed['title']}");
         } catch (\Exception $e) {

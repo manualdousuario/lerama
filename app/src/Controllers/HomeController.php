@@ -49,9 +49,16 @@ class HomeController
                  FROM feed_items fi
                  JOIN feeds f ON fi.feed_id = f.id
                  WHERE fi.is_visible = 1";
-        $countQuery = "SELECT COUNT(*) FROM feed_items fi
-                      JOIN feeds f ON fi.feed_id = f.id
-                      WHERE fi.is_visible = 1";
+
+        // Count only JOINs feeds when a feed-level filter requires it.
+        $needsFeedJoinForCount = $latestPerFeed || !empty($categorySlug) || !empty($tagSlug);
+        if ($needsFeedJoinForCount) {
+            $countQuery = "SELECT COUNT(*) FROM feed_items fi
+                          JOIN feeds f ON fi.feed_id = f.id
+                          WHERE fi.is_visible = 1";
+        } else {
+            $countQuery = "SELECT COUNT(*) FROM feed_items fi WHERE fi.is_visible = 1";
+        }
 
         if ($latestPerFeed) {
             $query .= " AND fi.id = f.last_feed_item_id";
@@ -59,17 +66,20 @@ class HomeController
         }
 
         $queryParams = [];
+        $countQueryParams = [];
 
         if (!empty($search)) {
             $query .= " AND MATCH(fi.title, fi.content) AGAINST (%s IN BOOLEAN MODE)";
             $countQuery .= " AND MATCH(fi.title, fi.content) AGAINST (%s IN BOOLEAN MODE)";
             $queryParams[] = $search;
+            $countQueryParams[] = $search;
         }
 
         if ($feedId) {
             $query .= " AND fi.feed_id = %i";
             $countQuery .= " AND fi.feed_id = %i";
             $queryParams[] = $feedId;
+            $countQueryParams[] = $feedId;
         }
 
         if ($categorySlug) {
@@ -84,6 +94,7 @@ class HomeController
                 WHERE fc.feed_id = f.id AND c.slug = %s
             )";
             $queryParams[] = $categorySlug;
+            $countQueryParams[] = $categorySlug;
         }
 
         if ($tagSlug) {
@@ -98,6 +109,7 @@ class HomeController
                 WHERE ft.feed_id = f.id AND t.slug = %s
             )";
             $queryParams[] = $tagSlug;
+            $countQueryParams[] = $tagSlug;
         }
 
         $filterHash = $this->cache->hash([
@@ -110,9 +122,12 @@ class HomeController
             'latest' => $latestPerFeed ? 1 : 0
         ]);
 
+        $hasFilters = !empty($search) || $feedId || $categorySlug || $tagSlug || $latestPerFeed;
+        $countTtl = $hasFilters ? 60 : 300;
+
         $countCacheKey = $this->cache->key('items', 'count', $filterHash);
-        $totalCount = $this->cache->remember($countCacheKey, 60, ['items', 'feeds'], function() use ($countQuery, $queryParams) {
-            return DB::queryFirstField($countQuery, ...$queryParams);
+        $totalCount = $this->cache->remember($countCacheKey, $countTtl, ['items', 'feeds'], function() use ($countQuery, $countQueryParams) {
+            return DB::queryFirstField($countQuery, ...$countQueryParams);
         });
         
         $totalPages = ceil($totalCount / $perPage);
@@ -209,20 +224,26 @@ class HomeController
     public function random(ServerRequestInterface $request): ResponseInterface
     {
         $days = (int)($_ENV['RANDOM_POST_DAYS'] ?? 30);
-        
-        $item = DB::queryFirstRow(
-            "SELECT fi.url
-             FROM feed_items fi
-             JOIN feeds f ON fi.feed_id = f.id
-             WHERE fi.is_visible = 1
-             AND fi.published_at >= DATE_SUB(NOW(), INTERVAL %i DAY)
-             ORDER BY RAND()
-             LIMIT 1",
-            $days
-        );
 
-        if ($item && !empty($item['url'])) {
-            return new RedirectResponse($item['url']);
+        $poolKey = $this->cache->key('random', 'pool', (string)$days);
+        $pool = $this->cache->remember($poolKey, 300, ['items'], function() use ($days) {
+            $rows = DB::query(
+                "SELECT fi.url
+                 FROM feed_items fi
+                 WHERE fi.is_visible = 1
+                 AND fi.published_at >= DATE_SUB(NOW(), INTERVAL %i DAY)
+                 ORDER BY fi.published_at DESC
+                 LIMIT 500",
+                $days
+            ) ?: [];
+            return array_column($rows, 'url');
+        });
+
+        if (!empty($pool)) {
+            $url = $pool[array_rand($pool)];
+            if (!empty($url)) {
+                return new RedirectResponse($url);
+            }
         }
 
         return new RedirectResponse('/');
@@ -232,12 +253,16 @@ class HomeController
     {
         $params = $request->getQueryParams();
         $isAjax = isset($params['ajax']) && $params['ajax'] === '1';
-        
-        $query = "SELECT f.site_url FROM feeds f WHERE f.status = 'online' AND f.shuffle = 1 ORDER BY RAND() LIMIT 1";
-        
-        $randomFeed = DB::queryFirstRow($query);
 
-        $url = $randomFeed['site_url'] ?? '';
+        $poolKey = $this->cache->key('shuffle', 'pool');
+        $pool = $this->cache->remember($poolKey, 300, ['feeds'], function() {
+            $rows = DB::query(
+                "SELECT f.site_url FROM feeds f WHERE f.status = 'online' AND f.shuffle = 1"
+            ) ?: [];
+            return array_column($rows, 'site_url');
+        });
+
+        $url = !empty($pool) ? ($pool[array_rand($pool)] ?? '') : '';
         
         if ($isAjax) {
             $response = new \Laminas\Diactoros\Response\JsonResponse([

@@ -39,11 +39,7 @@ class FeedController
         $categorySlug = $params['category'] ?? null;
         $tagSlug = $params['tag'] ?? null;
 
-        $query = "SELECT f.*,
-                  (SELECT COUNT(*) FROM feed_items WHERE feed_id = f.id) as item_count,
-                  (SELECT MAX(published_at) FROM feed_items WHERE feed_id = f.id) as latest_item_date
-            FROM feeds f
-            WHERE 1=1";
+        $query = "SELECT f.* FROM feeds f WHERE 1=1";
         $countQuery = "SELECT COUNT(*) FROM feeds f WHERE 1=1";
         $queryParams = [];
 
@@ -83,7 +79,7 @@ class FeedController
         ]);
 
         $countCacheKey = $this->cache->key('feeds', 'count', $filterHash);
-        $totalCount = $this->cache->remember($countCacheKey, 120, ['feeds'], function() use ($countQuery, $queryParams) {
+        $totalCount = $this->cache->remember($countCacheKey, 300, ['feeds'], function() use ($countQuery, $queryParams) {
             return DB::queryFirstField($countQuery, ...$queryParams);
         });
         $totalPages = ceil($totalCount / $perPage);
@@ -92,25 +88,45 @@ class FeedController
         $finalQueryParams = [...$queryParams, $offset, $perPage];
 
         $feedsCacheKey = $this->cache->key('feeds', 'list', $filterHash);
-        $feeds = $this->cache->remember($feedsCacheKey, 120, ['feeds', 'categories', 'tags'], function() use ($query, $finalQueryParams) {
+        $feeds = $this->cache->remember($feedsCacheKey, 300, ['feeds', 'categories', 'tags'], function() use ($query, $finalQueryParams) {
             $feeds = DB::query($query, ...$finalQueryParams) ?: [];
-            
-            foreach ($feeds as &$feed) {
-                $feed['categories'] = DB::query("
-                    SELECT c.* FROM categories c
-                    JOIN feed_categories fc ON c.id = fc.category_id
-                    WHERE fc.feed_id = %i
-                    ORDER BY c.name
-                ", $feed['id']) ?: [];
-
-                $feed['tags'] = DB::query("
-                    SELECT t.* FROM tags t
-                    JOIN feed_tags ft ON t.id = ft.tag_id
-                    WHERE ft.feed_id = %i
-                    ORDER BY t.name
-                ", $feed['id']) ?: [];
+            if (empty($feeds)) {
+                return $feeds;
             }
-            
+
+            $feedIds = array_column($feeds, 'id');
+
+            $categoryRows = DB::query("
+                SELECT fc.feed_id, c.id, c.name, c.slug
+                FROM feed_categories fc
+                JOIN categories c ON c.id = fc.category_id
+                WHERE fc.feed_id IN %li
+                ORDER BY c.name
+            ", $feedIds) ?: [];
+
+            $tagRows = DB::query("
+                SELECT ft.feed_id, t.id, t.name, t.slug
+                FROM feed_tags ft
+                JOIN tags t ON t.id = ft.tag_id
+                WHERE ft.feed_id IN %li
+                ORDER BY t.name
+            ", $feedIds) ?: [];
+
+            $categoriesByFeed = [];
+            foreach ($categoryRows as $row) {
+                $categoriesByFeed[$row['feed_id']][] = $row;
+            }
+            $tagsByFeed = [];
+            foreach ($tagRows as $row) {
+                $tagsByFeed[$row['feed_id']][] = $row;
+            }
+
+            foreach ($feeds as &$feed) {
+                $feed['categories'] = $categoriesByFeed[$feed['id']] ?? [];
+                $feed['tags'] = $tagsByFeed[$feed['id']] ?? [];
+            }
+            unset($feed);
+
             return $feeds;
         });
 

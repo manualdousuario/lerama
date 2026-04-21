@@ -117,7 +117,10 @@ class AdminController
         $totalCount = DB::queryFirstField($countQuery, ...$queryParams);
         $totalPages = ceil($totalCount / $perPage);
 
-        $feeds = DB::query("SELECT id, title FROM feeds ORDER BY title");
+        $feeds = CacheableQuery::query(
+            'feeds', 'dropdown', ['feeds'], 300,
+            "SELECT id, title FROM feeds ORDER BY title"
+        );
 
         $html = $this->templates->render('admin/items', [
             'items' => $items,
@@ -148,12 +151,7 @@ class AdminController
         $shuffle = isset($params['shuffle']) && $params['shuffle'] !== '' ? (int)$params['shuffle'] : null;
         $search = $params['search'] ?? '';
 
-        $query = "
-            SELECT f.*,
-                  (SELECT COUNT(*) FROM feed_items WHERE feed_id = f.id) as item_count,
-                  (SELECT MAX(published_at) FROM feed_items WHERE feed_id = f.id) as latest_item_date
-            FROM feeds f
-        ";
+        $query = "SELECT f.* FROM feeds f";
         $countQuery = "SELECT COUNT(*) FROM feeds f";
         $queryParams = [];
         $whereConditions = [];
@@ -185,32 +183,54 @@ class AdminController
         $query .= " ORDER BY f.title ASC LIMIT %i, %i";
         $finalQueryParams = [...$queryParams, $offset, $perPage];
 
-        $feeds = DB::query($query, ...$finalQueryParams);
+        $feeds = DB::query($query, ...$finalQueryParams) ?: [];
         $totalCount = DB::queryFirstField($countQuery, ...$queryParams);
         $totalPages = ceil($totalCount / $perPage);
 
-        // Get categories and tags for each feed
-        foreach ($feeds as &$feed) {
-            $feed['categories'] = DB::query("
-                SELECT c.name
-                FROM categories c
-                JOIN feed_categories fc ON c.id = fc.category_id
-                WHERE fc.feed_id = %i
+        if (!empty($feeds)) {
+            $feedIds = array_column($feeds, 'id');
+
+            $categoryRows = DB::query("
+                SELECT fc.feed_id, c.name
+                FROM feed_categories fc
+                JOIN categories c ON c.id = fc.category_id
+                WHERE fc.feed_id IN %li
                 ORDER BY c.name
-            ", $feed['id']);
-            
-            $feed['tags'] = DB::query("
-                SELECT t.name
-                FROM tags t
-                JOIN feed_tags ft ON t.id = ft.tag_id
-                WHERE ft.feed_id = %i
+            ", $feedIds) ?: [];
+
+            $tagRows = DB::query("
+                SELECT ft.feed_id, t.name
+                FROM feed_tags ft
+                JOIN tags t ON t.id = ft.tag_id
+                WHERE ft.feed_id IN %li
                 ORDER BY t.name
-            ", $feed['id']);
+            ", $feedIds) ?: [];
+
+            $categoriesByFeed = [];
+            foreach ($categoryRows as $row) {
+                $categoriesByFeed[$row['feed_id']][] = ['name' => $row['name']];
+            }
+            $tagsByFeed = [];
+            foreach ($tagRows as $row) {
+                $tagsByFeed[$row['feed_id']][] = ['name' => $row['name']];
+            }
+
+            foreach ($feeds as &$feed) {
+                $feed['categories'] = $categoriesByFeed[$feed['id']] ?? [];
+                $feed['tags'] = $tagsByFeed[$feed['id']] ?? [];
+            }
+            unset($feed);
         }
 
-        // Get all categories and tags for bulk editing
-        $allCategories = DB::query("SELECT * FROM categories ORDER BY name");
-        $allTags = DB::query("SELECT * FROM tags ORDER BY name");
+        // Admin dropdowns are warm; cache for 5 min
+        $allCategories = CacheableQuery::query(
+            'categories', 'all', ['categories'], 300,
+            "SELECT * FROM categories ORDER BY name"
+        );
+        $allTags = CacheableQuery::query(
+            'tags', 'all', ['tags'], 300,
+            "SELECT * FROM tags ORDER BY name"
+        );
 
         $html = $this->templates->render('admin/feeds', [
             'feeds' => $feeds,
