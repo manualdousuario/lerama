@@ -23,8 +23,11 @@ class FeedProcessor
     private array $defaultClientConfig;
     private bool $subscriberTextShow;
     private int $maxFeedsPerRun;
-    private int $collectionIntervalMinutes;
     private int $errorThreshold;
+
+    private const FETCH_INTERVAL_SUCCESS = 86400;
+    private const FETCH_INTERVAL_NOT_MODIFIED = 86400;
+    private const FETCH_INTERVAL_ERROR = 3600;
 
     public function __construct(CLImate $climate)
     {
@@ -35,14 +38,13 @@ class FeedProcessor
         $this->defaultClientConfig = HttpClientConfig::getDefaultConfig();
 
         $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
-        
+
         $this->subscriberTextShow = filter_var(
             $_ENV['SUBSCRIBER_SHOW_POST'] ?? 'false',
             FILTER_VALIDATE_BOOLEAN
         );
-        
+
         $this->maxFeedsPerRun = (int)($_ENV['FEED_MAX_PER_RUN'] ?? 3);
-        $this->collectionIntervalMinutes = (int)($_ENV['FEED_COLLECTION_INTERVAL'] ?? 120);
         $this->errorThreshold = (int)($_ENV['FEED_ITEM_ERROR_THRESHOLD'] ?? 5);
     }
 
@@ -52,26 +54,20 @@ class FeedProcessor
             $this->climate->info("Processing feed ID: {$feedId}");
             $feeds = DB::query("SELECT * FROM feeds WHERE id = %i AND (status = 'online' OR status = 'paused')", $feedId);
         } else {
-            $this->climate->info("Processing online feeds (max: {$this->maxFeedsPerRun}, interval: {$this->collectionIntervalMinutes} min)");
-            
-            if ($this->collectionIntervalMinutes <= 0) {
-                $this->climate->error("FEED_COLLECTION_INTERVAL must be greater than 0, using default 120 minutes");
-                $this->collectionIntervalMinutes = 120;
-            }
-            
+            $this->climate->info("Processing online feeds (max: {$this->maxFeedsPerRun}, scheduled via next_fetch_at)");
+
             $feeds = DB::query(
                 "SELECT * FROM feeds
                 WHERE status = 'online'
-                AND (last_checked IS NULL OR last_checked <= DATE_SUB(NOW(), INTERVAL %i MINUTE))
-                ORDER BY COALESCE(last_checked, '1970-01-01 00:00:00') ASC
+                AND next_fetch_at <= UNIX_TIMESTAMP()
+                ORDER BY next_fetch_at ASC
                 LIMIT %i",
-                $this->collectionIntervalMinutes,
                 $this->maxFeedsPerRun
             );
         }
 
         if (empty($feeds)) {
-            $this->climate->warning("No feeds found to process (all feeds were checked within the last {$this->collectionIntervalMinutes} minutes)");
+            $this->climate->warning("No feeds due right now (all online feeds scheduled for later)");
             return;
         }
 
@@ -113,7 +109,8 @@ class FeedProcessor
         }
 
         DB::update('feeds', [
-            'last_checked' => DB::sqleval("NOW()")
+            'last_checked' => DB::sqleval("NOW()"),
+            'next_fetch_at' => DB::sqleval("UNIX_TIMESTAMP() + " . self::FETCH_INTERVAL_ERROR)
         ], 'id=%i', $feed['id']);
 
         try {
@@ -122,13 +119,14 @@ class FeedProcessor
             $updateData = [
                 'status' => 'online',
                 'retry_count' => 0,
-                'paused_at' => null
+                'paused_at' => null,
+                'next_fetch_at' => DB::sqleval("UNIX_TIMESTAMP() + " . self::FETCH_INTERVAL_SUCCESS)
             ];
-            
+
             if (!$proxyOnly) {
                 $updateData['retry_proxy'] = 0;
             }
-            
+
             DB::update('feeds', $updateData, 'id=%i', $feed['id']);
 
             $this->climate->green("✓ Feed processed successfully: {$feed['title']}");
@@ -296,10 +294,58 @@ class FeedProcessor
         return true;
     }
 
+    private function isNotModified(array $feed): bool
+    {
+        $etag = $feed['etag'] ?? null;
+        $lastModified = $feed['last_modified'] ?? null;
+
+        $headers = [];
+        if ($etag) {
+            $headers['If-None-Match'] = $etag;
+        }
+        if ($lastModified) {
+            $headers['If-Modified-Since'] = $lastModified;
+        }
+
+        try {
+            $response = $this->httpClient->head($feed['feed_url'], ['headers' => $headers]);
+            $status = $response->getStatusCode();
+
+            if ($status === 304) {
+                return true;
+            }
+
+            if ($status >= 200 && $status < 300) {
+                $newEtag = $response->getHeaderLine('ETag') ?: null;
+                $newLastModified = $response->getHeaderLine('Last-Modified') ?: null;
+
+                if (($newEtag && $newEtag !== $etag) || ($newLastModified && $newLastModified !== $lastModified)) {
+                    DB::update('feeds', [
+                        'etag' => $newEtag,
+                        'last_modified' => $newLastModified
+                    ], 'id=%i', $feed['id']);
+                }
+            }
+
+            return false;
+        } catch (\Exception $e) {
+            $this->climate->whisper("Conditional request failed for {$feed['title']}: {$e->getMessage()}");
+            return false;
+        }
+    }
+
     private function processFeed(array $feed): void
     {
         $feedType = $feed['feed_type'];
         $feedUrl = $feed['feed_url'];
+
+        if ($this->isNotModified($feed)) {
+            $this->climate->out("Feed not modified (304): {$feed['title']}");
+            DB::update('feeds', [
+                'next_fetch_at' => DB::sqleval("UNIX_TIMESTAMP() + " . self::FETCH_INTERVAL_NOT_MODIFIED)
+            ], 'id=%i', $feed['id']);
+            return;
+        }
 
         switch ($feedType) {
             case 'rss1':
