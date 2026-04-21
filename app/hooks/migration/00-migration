@@ -1,11 +1,10 @@
 #!/bin/bash
+set -e
 
 echo "Running database migrations..."
-php /app/setup/migration.php ENV_SOURCE=/app/.env
 
-if [ $? -eq 0 ]; then
-    echo "Database migrations completed successfully"
-else
-    echo "Database migrations failed"
-    exit 1
-fi
+cd /app
+
+php vendor/bin/phinx migrate -c phinx.php -e production
+
+echo "Database migrations completed successfully"
