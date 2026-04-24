@@ -9,6 +9,7 @@ use GuzzleHttp\Exception\GuzzleException;
 class ProxyService
 {
     private array $proxyList = [];
+    private array $directProxies = [];
     private string $cacheFile;
     private Client $httpClient;
 
@@ -20,26 +21,84 @@ class ProxyService
             'connect_timeout' => 5,
             'http_errors' => false
         ]);
-        
+
         $storageDir = dirname($this->cacheFile);
         if (!is_dir($storageDir)) {
             mkdir($storageDir, 0755, true);
         }
-        
-        $this->loadCachedProxyList();
+
+        if (empty($_ENV['PROXY_LIST'] ?? '')) {
+            $this->clearCachedProxyList();
+        } else {
+            $this->loadCachedProxyList();
+        }
+
+        $this->loadProxyUrlEnv();
+    }
+
+    public function clearCachedProxyList(): bool
+    {
+        $this->proxyList = [];
+
+        if (file_exists($this->cacheFile)) {
+            return unlink($this->cacheFile);
+        }
+
+        return true;
     }
 
     public function getRandomProxy(): ?array
     {
-        if (empty($this->proxyList)) {
+        if (empty($this->proxyList) && !empty($_ENV['PROXY_LIST'] ?? '')) {
             $this->fetchProxyList();
         }
-        
-        if (empty($this->proxyList)) {
+
+        $combined = array_merge($this->proxyList, $this->directProxies);
+
+        if (empty($combined)) {
             return null;
         }
-        
-        return $this->proxyList[array_rand($this->proxyList)];
+
+        return $combined[array_rand($combined)];
+    }
+
+    public function loadProxyUrlEnv(): void
+    {
+        $proxyUrls = $_ENV['PROXY_URL'] ?? null;
+
+        if (empty($proxyUrls)) {
+            return;
+        }
+
+        $this->directProxies = [];
+        $urls = explode(',', $proxyUrls);
+
+        foreach ($urls as $url) {
+            $url = trim($url);
+            if (empty($url)) {
+                continue;
+            }
+
+            $proxy = $this->parseProxyUrl($url);
+            if ($proxy) {
+                $this->directProxies[] = $proxy;
+            }
+        }
+    }
+
+    public function parseProxyUrl(string $url): ?array
+    {
+        $parts = parse_url($url);
+        if ($parts === false || empty($parts['host']) || empty($parts['port'])) {
+            return null;
+        }
+
+        return [
+            'host' => $parts['host'],
+            'port' => (int) $parts['port'],
+            'username' => $parts['user'] ?? null,
+            'password' => isset($parts['pass']) ? urldecode($parts['pass']) : null,
+        ];
     }
 
     public function fetchProxyList(): bool
