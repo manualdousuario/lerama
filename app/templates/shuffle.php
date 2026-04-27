@@ -57,7 +57,10 @@
         }
 
         function getRandomUrl() {
-            fetch('/shuffle?ajax=1')
+            fetch('/shuffle?ajax=1&_=' + Date.now(), {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache' }
+            })
                 .then(response => response.json())
                 .then(data => {
                     if (data.url) {

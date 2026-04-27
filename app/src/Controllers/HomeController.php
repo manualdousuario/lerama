@@ -268,11 +268,14 @@ class HomeController
             $response = new \Laminas\Diactoros\Response\JsonResponse([
                 'url' => $url
             ]);
-            
+
             return $response
                 ->withHeader('Access-Control-Allow-Origin', '*')
                 ->withHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
-                ->withHeader('Access-Control-Allow-Headers', 'Content-Type');
+                ->withHeader('Access-Control-Allow-Headers', 'Content-Type')
+                ->withHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+                ->withHeader('Pragma', 'no-cache')
+                ->withHeader('Expires', '0');
         }
         
         $html = $this->templates->render('shuffle', [
