@@ -36,6 +36,10 @@ $router = new Router();
 // Public routes
 $router->map('GET', '/', [HomeController::class, 'index']);
 $router->map('GET', '/page/{page:number}', [HomeController::class, 'index']);
+$router->map('GET', '/tag/{tag}', [HomeController::class, 'index']);
+$router->map('GET', '/tag/{tag}/page/{page:number}', [HomeController::class, 'index']);
+$router->map('GET', '/category/{category}', [HomeController::class, 'index']);
+$router->map('GET', '/category/{category}/page/{page:number}', [HomeController::class, 'index']);
 $router->map('GET', '/feeds', [FeedController::class, 'index']);
 $router->map('GET', '/feeds/page/{page:number}', [FeedController::class, 'index']);
 $router->map('GET', '/categories', [HomeController::class, 'categories']);

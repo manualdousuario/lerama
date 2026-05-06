@@ -29,6 +29,30 @@ class HomeController
 
     public function index(ServerRequestInterface $request, array $args = []): ResponseInterface
     {
+        $params = $request->getQueryParams();
+
+        $categoryFromPath = $args['category'] ?? null;
+        $tagFromPath = $args['tag'] ?? null;
+
+        if ($categoryFromPath === null && $tagFromPath === null) {
+            $redirectPath = null;
+            $remainingParams = $params;
+            if (!empty($params['category'])) {
+                $redirectPath = '/category/' . rawurlencode($params['category']);
+                unset($remainingParams['category']);
+            } elseif (!empty($params['tag'])) {
+                $redirectPath = '/tag/' . rawurlencode($params['tag']);
+                unset($remainingParams['tag']);
+            }
+            if ($redirectPath !== null) {
+                $url = $redirectPath;
+                if (!empty($remainingParams)) {
+                    $url .= '?' . http_build_query($remainingParams);
+                }
+                return new RedirectResponse($url, 301);
+            }
+        }
+
         $page = isset($args['page']) ? (int)$args['page'] : 1;
         if ($page < 1) {
             $page = 1;
@@ -37,12 +61,19 @@ class HomeController
         $perPage = (int)($_ENV['ITEMS_PER_PAGE'] ?? 21);
         $offset = ($page - 1) * $perPage;
 
-        $params = $request->getQueryParams();
         $search = $params['search'] ?? '';
         $feedId = isset($params['feed']) ? (int)$params['feed'] : null;
-        $categorySlug = $params['category'] ?? null;
-        $tagSlug = $params['tag'] ?? null;
+        $categorySlug = $categoryFromPath ?? ($params['category'] ?? null);
+        $tagSlug = $tagFromPath ?? ($params['tag'] ?? null);
         $latestPerFeed = !empty($params['latest']);
+
+        if ($categoryFromPath !== null) {
+            $paginationBaseUrl = '/category/' . $categoryFromPath . '/page/';
+        } elseif ($tagFromPath !== null) {
+            $paginationBaseUrl = '/tag/' . $tagFromPath . '/page/';
+        } else {
+            $paginationBaseUrl = '/page/';
+        }
 
 
         $query = "SELECT fi.*, f.title as feed_title, f.site_url, f.language
@@ -132,7 +163,7 @@ class HomeController
         
         $totalPages = ceil($totalCount / $perPage);
         if ($page > $totalPages && $totalPages > 0) {
-            return new RedirectResponse('/page/' . $totalPages . $this->buildQueryString($params));
+            return new RedirectResponse($paginationBaseUrl . $totalPages . $this->buildQueryString($params));
         }
 
         $query .= " ORDER BY fi.published_at DESC LIMIT %i, %i";
@@ -171,8 +202,10 @@ class HomeController
             'pagination' => [
                 'current' => $page,
                 'total' => $totalPages,
-                'baseUrl' => '/page/'
+                'baseUrl' => $paginationBaseUrl
             ],
+            'tagInPath' => $tagFromPath,
+            'categoryInPath' => $categoryFromPath,
             'title' => 'Últimos Artigos',
             'thumbnailService' => $this->thumbnailService
         ]);
