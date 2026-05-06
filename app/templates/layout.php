@@ -121,71 +121,14 @@
             </p>
         </div>
     </footer>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const darkModeToggle = document.getElementById('darkModeToggle');
-            const html = document.documentElement;
-            const lightIcon = document.getElementById('lightIcon');
-            const darkIcon = document.getElementById('darkIcon');
-            const savedTheme = localStorage.getItem('theme');
-
-            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                html.setAttribute('data-bs-theme', 'dark');
-                document.body.classList.remove('bg-light');
-                document.body.classList.add('bg-dark');
-                lightIcon.classList.remove('d-none');
-                darkIcon.classList.add('d-none');
-            } else {
-                html.setAttribute('data-bs-theme', 'light');
-                document.body.classList.add('bg-light');
-                document.body.classList.remove('bg-dark');
-                lightIcon.classList.add('d-none');
-                darkIcon.classList.remove('d-none');
-            }
-
-            darkModeToggle.addEventListener('click', function() {
-                if (html.getAttribute('data-bs-theme') === 'dark') {
-                    html.setAttribute('data-bs-theme', 'light');
-                    document.body.classList.add('bg-light');
-                    document.body.classList.remove('bg-dark');
-                    lightIcon.classList.add('d-none');
-                    darkIcon.classList.remove('d-none');
-                    localStorage.setItem('theme', 'light');
-                } else {
-                    html.setAttribute('data-bs-theme', 'dark');
-                    document.body.classList.remove('bg-light');
-                    document.body.classList.add('bg-dark');
-                    lightIcon.classList.remove('d-none');
-                    darkIcon.classList.add('d-none');
-                    localStorage.setItem('theme', 'dark');
-                }
-            });
-        });
-    </script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const copySeloButton = document.getElementById('copySeloLerama');
-
-            copySeloButton.addEventListener('click', function() {
-                const seloHtml = `<a href="<?= $_ENV['APP_URL'] ?>"><img src="<?= $_ENV['APP_URL'] ?>/88x31.gif" alt="Lerama" width="81" height="33"></a>`;
-
-                navigator.clipboard.writeText(seloHtml)
-                    .then(() => {
-                        const originalText = copySeloButton.innerHTML;
-                        copySeloButton.innerHTML = '<i class="bi bi-check-lg"></i> <?= __('footer.copied') ?>';
-
-                        setTimeout(() => {
-                            copySeloButton.innerHTML = originalText;
-                        }, 2000);
-                    })
-                    .catch(err => {
-                        console.error('Erro ao copiar: ', err);
-                        alert('<?= __('footer.copy_error') ?>');
-                    });
-            });
-        });
-    </script>
+    <script>window.LERAMA = {
+        appUrl: '<?= $_ENV['APP_URL'] ?>',
+        i18n: {
+            footerCopied:    '<?= __('footer.copied') ?>',
+            footerCopyError: '<?= __('footer.copy_error') ?>'
+        }
+    };</script>
+    <script src="/assets/js/layout.min.js"></script>
 
     <?= $this->section('scripts', '') ?>
 </body>

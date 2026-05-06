@@ -22,47 +22,6 @@
 <body class="bg-light min-vh-100 d-flex flex-column">
     <?= $this->section('content') ?>
     
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const darkModeToggle = document.getElementById('darkModeToggle');
-            const html = document.documentElement;
-            const lightIcon = document.getElementById('lightIcon');
-            const darkIcon = document.getElementById('darkIcon');
-            const savedTheme = localStorage.getItem('theme');
-
-            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                html.setAttribute('data-bs-theme', 'dark');
-                document.body.classList.remove('bg-light');
-                document.body.classList.add('bg-dark');
-                lightIcon.classList.remove('d-none');
-                darkIcon.classList.add('d-none');
-            } else {
-                html.setAttribute('data-bs-theme', 'light');
-                document.body.classList.add('bg-light');
-                document.body.classList.remove('bg-dark');
-                lightIcon.classList.add('d-none');
-                darkIcon.classList.remove('d-none');
-            }
-
-            darkModeToggle.addEventListener('click', function() {
-                if (html.getAttribute('data-bs-theme') === 'dark') {
-                    html.setAttribute('data-bs-theme', 'light');
-                    document.body.classList.add('bg-light');
-                    document.body.classList.remove('bg-dark');
-                    lightIcon.classList.add('d-none');
-                    darkIcon.classList.remove('d-none');
-                    localStorage.setItem('theme', 'light');
-                } else {
-                    html.setAttribute('data-bs-theme', 'dark');
-                    document.body.classList.remove('bg-light');
-                    document.body.classList.add('bg-dark');
-                    lightIcon.classList.remove('d-none');
-                    darkIcon.classList.add('d-none');
-                    localStorage.setItem('theme', 'dark');
-                }
-            });
-        });
-    </script>
 </body>
 
 </html>
