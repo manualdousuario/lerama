@@ -1,6 +1,14 @@
 <?php
 
 return [
+    // Accessibility
+    'a11y.skip_to_content' => 'Pular para o conteúdo principal',
+    'a11y.toggle_dark_mode' => 'Alternar entre modo claro e escuro',
+    'a11y.back_home' => 'Voltar para a página inicial',
+    'a11y.refresh_captcha' => 'Atualizar imagem do captcha',
+    'a11y.previous_page' => 'Página anterior',
+    'a11y.next_page' => 'Próxima página',
+
     // Navigation
     'nav.home' => 'Início',
     'nav.feeds' => 'Feeds',

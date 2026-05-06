@@ -6,13 +6,13 @@
     <div class="card-header">
         <div class="row">
             <div class="col-12">
-                <h3 class="fs-5 fw-medium m-0 py-1">
-                    <i class="bi bi-grid me-1"></i>
+                <h1 class="fs-5 fw-medium m-0 py-1">
+                    <i class="bi bi-grid me-1" aria-hidden="true"></i>
                     <?= __('home.title') ?>
-                </h3>
+                </h1>
             </div>
             <div class="border-top col-12 pb-0 pt-2 mt-2">
-                <form action="<?= isset($pagination) && $pagination['current'] > 1 ? $pagination['baseUrl'] . $pagination['current'] : '/' ?>" method="GET">
+                <form action="/" method="GET">
                     <div class="d-md-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center me-md-2 mb-2 mb-md-0">
                             <div class="me-2 mb-2 mb-md-0">
@@ -183,8 +183,8 @@
                             $queryParams = array_filter([
                                 'search' => $search,
                                 'feed' => $selectedFeed,
-                                'category' => $selectedCategory ?? null,
-                                'tag' => $selectedTag ?? null,
+                                'category' => empty($categoryInPath) ? ($selectedCategory ?? null) : null,
+                                'tag' => empty($tagInPath) ? ($selectedTag ?? null) : null,
                                 'latest' => !empty($latestPerFeed) ? '1' : null
                             ]);
                             $queryString = !empty($queryParams) ? '?' . http_build_query($queryParams) : '';
@@ -192,7 +192,7 @@
                             
                             <?php if ($pagination['current'] > 1): ?>
                                 <li class="page-item">
-                                    <a href="<?= $pagination['baseUrl'] . ($pagination['current'] - 1) . $queryString ?>" class="page-link" aria-label="Previous">
+                                    <a href="<?= $pagination['baseUrl'] . ($pagination['current'] - 1) . $queryString ?>" class="page-link" aria-label="<?= __('a11y.previous_page') ?>" rel="prev">
                                         <span aria-hidden="true">&laquo;</span>
                                     </a>
                                 </li>
@@ -227,7 +227,7 @@
 
                             <?php if ($pagination['current'] < $pagination['total']): ?>
                                 <li class="page-item">
-                                    <a href="<?= $pagination['baseUrl'] . ($pagination['current'] + 1) . $queryString ?>" class="page-link" aria-label="Next">
+                                    <a href="<?= $pagination['baseUrl'] . ($pagination['current'] + 1) . $queryString ?>" class="page-link" aria-label="<?= __('a11y.next_page') ?>" rel="next">
                                         <span aria-hidden="true">&raquo;</span>
                                     </a>
                                 </li>

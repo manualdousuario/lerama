@@ -16,12 +16,14 @@
     <meta property="og:url" content="<?= $_ENV['APP_URL'] ?>">
     <meta property="og:image" content="/assets/ogimage.png">
     <meta property="og:description" content="<?= __('meta.description') ?>">
-    <link href="/assets/css/lerama.min.css" rel="stylesheet">
+    <style><?php echo file_get_contents(__DIR__ . '/../public/assets/css/lerama.min.css'); ?></style>
 </head>
 
 <body class="bg-light min-vh-100 d-flex flex-column">
+    <a href="#main-content" class="skip-link"><?= __('a11y.skip_to_content') ?></a>
     <?= $this->section('content') ?>
     
+    <script src="/assets/js/shuffle.min.js"></script>
 </body>
 
 </html>

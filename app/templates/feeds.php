@@ -6,10 +6,10 @@
     <div class="card-header">
         <div class="row">
             <div class="col-12 col-md-4">
-                <h3 class="fs-5 fw-medium mb-0 mt-1 mt-md-2">
-                    <i class="bi bi-journal-text me-1"></i>
+                <h1 class="fs-5 fw-medium mb-0 mt-1 mt-md-2">
+                    <i class="bi bi-journal-text me-1" aria-hidden="true"></i>
                     <?= __('feeds.title') ?>
-                </h3>
+                </h1>
             </div>
             <div class="col-12 col-md-8 pb-1 pb-md-0 pt-3 pt-md-0">
                 <form action="/feeds" method="GET">
@@ -192,7 +192,7 @@
                             
                             <?php if ($pagination['current'] > 1): ?>
                                 <li class="page-item">
-                                    <a href="<?= $pagination['baseUrl'] . ($pagination['current'] - 1) . $queryString ?>" class="page-link" aria-label="Previous">
+                                    <a href="<?= $pagination['baseUrl'] . ($pagination['current'] - 1) . $queryString ?>" class="page-link" aria-label="<?= __('a11y.previous_page') ?>" rel="prev">
                                         <span aria-hidden="true">&laquo;</span>
                                     </a>
                                 </li>
@@ -227,7 +227,7 @@
 
                             <?php if ($pagination['current'] < $pagination['total']): ?>
                                 <li class="page-item">
-                                    <a href="<?= $pagination['baseUrl'] . ($pagination['current'] + 1) . $queryString ?>" class="page-link" aria-label="Next">
+                                    <a href="<?= $pagination['baseUrl'] . ($pagination['current'] + 1) . $queryString ?>" class="page-link" aria-label="<?= __('a11y.next_page') ?>" rel="next">
                                         <span aria-hidden="true">&raquo;</span>
                                     </a>
                                 </li>

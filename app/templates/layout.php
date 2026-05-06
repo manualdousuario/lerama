@@ -16,11 +16,12 @@
     <meta property="og:url" content="<?= $_ENV['APP_URL'] ?>">
     <meta property="og:image" content="/assets/ogimage.png">
     <meta property="og:description" content="<?= __('meta.description') ?>">
-    <link href="/assets/css/lerama.min.css" rel="stylesheet">
+    <style><?php echo file_get_contents(__DIR__ . '/../public/assets/css/lerama.min.css'); ?></style>
 </head>
 
 <body class="bg-light min-vh-100">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom shadow">
+    <a href="#main-content" class="skip-link"><?= __('a11y.skip_to_content') ?></a>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom shadow lerama-topbar" aria-label="<?= __('nav.home') ?>">
         <div class="container">
             <div class="d-block d-md-flex">
                 <div class="me-3">
@@ -55,20 +56,20 @@
                             <?= __('nav.logout') ?>
                         </a>
                     <?php else : ?>
-                        <a href="/" class="d-inline-flex align-items-center pe-1 py-2 me-1 me-md-3 text-decoration-none <?= $this->section('active') === 'home' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
-                            <i class="bi bi-house-door me-1"></i>
+                        <a href="/" class="d-inline-flex align-items-center pe-1 py-2 me-1 me-md-3 text-decoration-none <?= $this->section('active') === 'home' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>" <?= $this->section('active') === 'home' ? 'aria-current="page"' : '' ?>>
+                            <i class="bi bi-house-door me-1" aria-hidden="true"></i>
                             <?= __('nav.home') ?>
                         </a>
-                        <a href="/feeds" class="d-inline-flex align-items-center pe-1 py-2 me-1 me-md-3 text-decoration-none <?= $this->section('active') === 'feeds' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
-                            <i class="bi bi-journal-text me-1"></i>
+                        <a href="/feeds" class="d-inline-flex align-items-center pe-1 py-2 me-1 me-md-3 text-decoration-none <?= $this->section('active') === 'feeds' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>" <?= $this->section('active') === 'feeds' ? 'aria-current="page"' : '' ?>>
+                            <i class="bi bi-journal-text me-1" aria-hidden="true"></i>
                             <?= __('nav.feeds') ?>
                         </a>
-                        <a href="/suggest-feed" class="d-inline-flex align-items-center pe-1 py-2 me-1 me-md-3 text-decoration-none <?= $this->section('active') === 'suggest-feed' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
-                            <i class="bi bi-plus-circle me-1"></i>
+                        <a href="/suggest-feed" class="d-inline-flex align-items-center pe-1 py-2 me-1 me-md-3 text-decoration-none <?= $this->section('active') === 'suggest-feed' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>" <?= $this->section('active') === 'suggest-feed' ? 'aria-current="page"' : '' ?>>
+                            <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>
                             <?= __('nav.suggest') ?>
                         </a>
-                        <a href="/shuffle" class="d-inline-flex align-items-center pe-1 py-2 me-1 me-md-3 text-decoration-none <?= $this->section('active') === 'shuffle' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>">
-                            <i class="bi bi-arrow-clockwise me-1"></i>
+                        <a href="/shuffle" class="d-inline-flex align-items-center pe-1 py-2 me-1 me-md-3 text-decoration-none <?= $this->section('active') === 'shuffle' ? 'border-white text-white' : 'text-secondary hover-text-white' ?>" <?= $this->section('active') === 'shuffle' ? 'aria-current="page"' : '' ?>>
+                            <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>
                             <?= __('nav.shuffle') ?>
                         </a>
                         <a href="/random" target="_blank" class="d-inline-flex align-items-center pe-1 py-2 me-1 me-md-3 text-decoration-none text-secondary hover-text-white">
@@ -82,9 +83,9 @@
                 <a href="/feed-builder" class="btn btn-sm btn-outline-secondary me-2" title="<?= __('nav.feed_builder') ?>">
                     <i class="bi bi-braces"></i> Feed
                 </a>
-                <button id="darkModeToggle" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-sun d-none" id="lightIcon"></i>
-                    <i class="bi bi-moon" id="darkIcon"></i>
+                <button id="darkModeToggle" class="btn btn-sm btn-outline-secondary" type="button" aria-label="<?= __('a11y.toggle_dark_mode') ?>" aria-pressed="false">
+                    <i class="bi bi-sun d-none" id="lightIcon" aria-hidden="true"></i>
+                    <i class="bi bi-moon" id="darkIcon" aria-hidden="true"></i>
                 </button>
             </div>
         </div>
@@ -92,7 +93,7 @@
     
     <?php if (file_exists(__DIR__ . '/partner.php')) include __DIR__ . '/partner.php'; ?>
     
-    <main>
+    <main id="main-content" tabindex="-1">
         <div class="container py-4">
             <?= $this->section('content') ?>
         </div>
