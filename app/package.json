@@ -3,14 +3,19 @@
   "version": "1.0.0",
   "description": "Lerama",
   "scripts": {
-    "build": "gulp",
-    "watch": "gulp watch"
+    "build": "grunt",
+    "watch": "grunt watch"
   },
   "devDependencies": {
-    "gulp": "^5.0.0",
-    "gulp-concat": "^2.6.1",
-    "gulp-clean-css": "^4.3.0",
-    "gulp-rename": "^2.0.0"
+    "grunt": "^1.6.1",
+    "grunt-contrib-concat": "^2.1.0",
+    "grunt-contrib-cssmin": "^5.0.0",
+    "grunt-contrib-copy": "^1.0.0",
+    "grunt-contrib-uglify": "^5.2.2",
+    "grunt-contrib-clean": "^2.0.1",
+    "grunt-contrib-watch": "^1.1.0",
+    "grunt-sass": "^3.1.0",
+    "sass": "^1.77.0"
   },
   "dependencies": {
     "bootstrap": "^5.3.8",
