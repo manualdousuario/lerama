@@ -17,7 +17,7 @@
     <?php else: ?>
         <div class="list-group list-group-flush">
             <?php foreach ($tags as $tag): ?>
-                <a href="/?tag=<?= $this->e($tag['slug']) ?>" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <a href="/tag/<?= $this->e($tag['slug']) ?>" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                     <div>
                         <h5 class="m-0 fs-6 d-flex justify-content-center align-items-center">
                             <i class="bi bi-tag me-2"></i>

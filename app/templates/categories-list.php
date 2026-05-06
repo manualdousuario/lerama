@@ -17,7 +17,7 @@
     <?php else: ?>
         <div class="list-group list-group-flush">
             <?php foreach ($categories as $category): ?>
-                <a href="/?category=<?= $this->e($category['slug']) ?>" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <a href="/category/<?= $this->e($category['slug']) ?>" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                     <div>
                         <h5 class="m-0 fs-6 d-flex justify-content-center align-items-center">
                             <i class="bi bi-folder me-2"></i>
