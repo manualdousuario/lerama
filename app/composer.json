@@ -7,7 +7,6 @@
         "vlucas/phpdotenv": "^5.6",
         "league/climate": "^3.10",
         "league/route": "^6.2",
-        "simplepie/simplepie": "1.9.0",
         "sergeytsalkov/meekrodb": "^3.1",
         "laminas/laminas-diactoros": "^3.8",
         "laminas/laminas-httphandlerrunner": "^2.13",
@@ -16,16 +15,25 @@
         "phpmailer/phpmailer": "^7.0",
         "gregwar/captcha": "1.3",
         "predis/predis": "^3.4",
-        "robmorgan/phinx": "^0.16"
+        "robmorgan/phinx": "^0.16",
+        "laminas/laminas-feed": "^2.26"
     },
     "autoload": {
         "psr-4": {
             "Lerama\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
     "scripts": {
         "post-create-project-cmd": [
             "php -r \"file_exists('.env') || copy('.env.example', '.env');\""
         ]
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^13.1"
     }
 }
