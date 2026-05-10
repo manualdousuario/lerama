@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Lerama\Commands;
 
 use League\CLImate\CLImate;
-use SimplePie\SimplePie;
+use Laminas\Feed\Reader\Reader;
 use DB;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -370,27 +370,20 @@ class FeedProcessor
 
     private function processRssFeed(array $feed): void
     {
-        $simplePie = new SimplePie();
-        $items = null;
-        
+        $reader = null;
+
         try {
-            $simplePie->set_feed_url($feed['feed_url']);
-            $simplePie->enable_cache(false);
-            $simplePie->init();
+            $feedContent = $this->fetchFeedContent($feed['feed_url']);
+            $reader = Reader::importString($feedContent);
 
-            if ($simplePie->error()) {
-                throw new \Exception($simplePie->error());
-            }
-
-            $items = $simplePie->get_items();
             $count = 0;
             $updated = false;
             $lastGuid = null;
             $processedItems = 0;
             $maxItemsToProcess = 100;
 
-            foreach ($items as $item) {
-                $guid = $item->get_id();
+            foreach ($reader as $entry) {
+                $guid = $entry->getId();
 
                 if ($feed['last_post_id'] === $guid) {
                     break;
@@ -400,11 +393,17 @@ class FeedProcessor
                     $lastGuid = $guid;
                 }
 
-                $title = $this->resolveTitle($item->get_title(), $feed);
-                $content = $item->get_content();
-                $author = $item->get_author() ? $item->get_author()->get_name() : null;
-                $url = $item->get_permalink();
-                $date = $item->get_date('Y-m-d H:i:s') ?: date('Y-m-d H:i:s');
+                $title = $this->resolveTitle($entry->getTitle(), $feed);
+                $content = $entry->getContent();
+                $authors = $entry->getAuthors();
+                $author = null;
+                foreach ($authors as $authorData) {
+                    $author = $authorData['name'] ?? null;
+                    break;
+                }
+                $url = $entry->getLink();
+                $dateObj = $entry->getDateCreated() ?? $entry->getDateModified();
+                $date = $dateObj ? $dateObj->format('Y-m-d H:i:s') : date('Y-m-d H:i:s');
 
                 $imageUrl = $this->extractImageFromUrl($url);
                 $contentCheck = $this->checkRealContent($content, $url);
@@ -434,7 +433,7 @@ class FeedProcessor
                 }
             }
 
-            $this->processPaginatedRssFeed($feed, $simplePie, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
+            $this->processPaginatedRssFeed($feed, $feedContent, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
 
             if ($updated && $lastGuid) {
                 $lastFeedItemId = DB::queryFirstField("SELECT id FROM feed_items WHERE guid = %s ORDER BY id DESC LIMIT 1", $lastGuid);
@@ -447,63 +446,30 @@ class FeedProcessor
 
             $this->climate->out("Added {$count} new items from feed: {$feed['title']}");
         } finally {
-            unset($items);
-            $simplePie->__destruct();
-            unset($simplePie);
+            unset($reader);
             gc_collect_cycles();
         }
     }
 
-    private function processPaginatedRssFeed(array $feed, SimplePie $simplePie, &$count, &$updated, &$lastGuid, &$processedItems, $maxItemsToProcess): void
+    private function processPaginatedRssFeed(array $feed, string $feedContent, &$count, &$updated, &$lastGuid, &$processedItems, $maxItemsToProcess): void
     {
-        $links = $simplePie->get_links();
-        $nextPageUrl = null;
-
-        if ($links) {
-            foreach ($links as $link) {
-                if (isset($link['rel']) && ($link['rel'] === 'next' || $link['rel'] === 'self' && strpos($link['href'], 'page=') !== false)) {
-                    $nextPageUrl = $link['href'];
-                    break;
-                }
-            }
-        }
-
-        if (!$nextPageUrl && strpos($feed['feed_url'], 'page=') !== false) {
-            $urlParts = parse_url($feed['feed_url']);
-            parse_str($urlParts['query'] ?? '', $queryParams);
-
-            if (isset($queryParams['page'])) {
-                $queryParams['page'] = (int)$queryParams['page'] + 1;
-                $urlParts['query'] = http_build_query($queryParams);
-
-                $nextPageUrl = $this->buildUrl($urlParts);
-            }
-        }
+        $nextPageUrl = $this->extractNextLink($feedContent, $feed['feed_url']);
 
         $maxPages = 5;
         $currentPage = 1;
 
         while ($nextPageUrl && $currentPage < $maxPages && $processedItems < $maxItemsToProcess) {
             $this->climate->out("Processing next page: {$nextPageUrl}");
-            
-            $nextSimplePie = null;
-            $nextItems = null;
+
+            $nextReader = null;
+            $nextContent = null;
 
             try {
-                $nextSimplePie = new SimplePie();
-                $nextSimplePie->set_feed_url($nextPageUrl);
-                $nextSimplePie->enable_cache(false);
-                $nextSimplePie->init();
+                $nextContent = $this->fetchFeedContent($nextPageUrl);
+                $nextReader = Reader::importString($nextContent);
 
-                if ($nextSimplePie->error()) {
-                    $this->climate->yellow("Error loading next page: {$nextSimplePie->error()}");
-                    break;
-                }
-
-                $nextItems = $nextSimplePie->get_items();
-
-                foreach ($nextItems as $item) {
-                    $guid = $item->get_id();
+                foreach ($nextReader as $entry) {
+                    $guid = $entry->getId();
 
                     if ($feed['last_post_id'] === $guid) {
                         break 2;
@@ -513,11 +479,17 @@ class FeedProcessor
                         $lastGuid = $guid;
                     }
 
-                    $title = $this->resolveTitle($item->get_title(), $feed);
-                    $content = $item->get_content();
-                    $author = $item->get_author() ? $item->get_author()->get_name() : null;
-                    $url = $item->get_permalink();
-                    $date = $item->get_date('Y-m-d H:i:s') ?: date('Y-m-d H:i:s');
+                    $title = $this->resolveTitle($entry->getTitle(), $feed);
+                    $content = $entry->getContent();
+                    $authors = $entry->getAuthors();
+                    $author = null;
+                    foreach ($authors as $authorData) {
+                        $author = $authorData['name'] ?? null;
+                        break;
+                    }
+                    $url = $entry->getLink();
+                    $dateObj = $entry->getDateCreated() ?? $entry->getDateModified();
+                    $date = $dateObj ? $dateObj->format('Y-m-d H:i:s') : date('Y-m-d H:i:s');
 
                     $imageUrl = $this->extractImageFromUrl($url);
                     $contentCheck = $this->checkRealContent($content, $url);
@@ -547,18 +519,7 @@ class FeedProcessor
                     }
                 }
 
-                $links = $nextSimplePie->get_links();
-                $nextPageUrl = null;
-
-                if ($links) {
-                    foreach ($links as $link) {
-                        if (isset($link['rel']) && ($link['rel'] === 'next' || $link['rel'] === 'self' && strpos($link['href'], 'page=') !== false)) {
-                            $nextPageUrl = $link['href'];
-                            break;
-                        }
-                    }
-                }
-
+                $nextPageUrl = $this->extractNextLink($nextContent, $nextPageUrl);
                 if (!$nextPageUrl) {
                     break;
                 }
@@ -568,15 +529,55 @@ class FeedProcessor
                 $this->climate->yellow("Erro ao processar próxima página: {$e->getMessage()}");
                 break;
             } finally {
-                unset($nextItems);
-                if ($nextSimplePie !== null) {
-                    $nextSimplePie->__destruct();
-                    unset($nextSimplePie);
+                unset($nextReader);
+                unset($nextContent);
+            }
+        }
+
+        gc_collect_cycles();
+    }
+
+    private function fetchFeedContent(string $url): string
+    {
+        $response = $this->httpClient->get($url);
+        $statusCode = $response->getStatusCode();
+
+        if ($statusCode !== 200) {
+            throw new \Exception("Failed to fetch feed: HTTP Status {$statusCode}");
+        }
+
+        return (string) $response->getBody();
+    }
+
+    private function extractNextLink(string $feedXml, string $feedUrl): ?string
+    {
+        libxml_use_internal_errors(true);
+        $dom = new \DOMDocument();
+        $dom->loadXML($feedXml);
+        libxml_clear_errors();
+
+        if ($dom->documentElement !== null) {
+            $xpath = new \DOMXPath($dom);
+            $links = $xpath->query('//*[local-name()="link"][@rel="next"]');
+            if ($links && $links->length > 0) {
+                $href = $links->item(0)->getAttribute('href');
+                if ($href) {
+                    return $href;
                 }
             }
         }
-        
-        gc_collect_cycles();
+
+        if (strpos($feedUrl, 'page=') !== false) {
+            $urlParts = parse_url($feedUrl);
+            parse_str($urlParts['query'] ?? '', $queryParams);
+            if (isset($queryParams['page'])) {
+                $queryParams['page'] = (int)$queryParams['page'] + 1;
+                $urlParts['query'] = http_build_query($queryParams);
+                return $this->buildUrl($urlParts);
+            }
+        }
+
+        return null;
     }
 
     private function buildUrl(array $parts): string
@@ -1503,8 +1504,6 @@ class FeedProcessor
 
     private function extractFeedTitle(array $feed): ?string
     {
-        $simplePie = null;
-        
         try {
             $feedUrl = $feed['feed_url'];
             $feedType = $feed['feed_type'];
@@ -1512,17 +1511,14 @@ class FeedProcessor
             $this->climate->whisper("Extracting feed title from: {$feedUrl}");
 
             if (in_array($feedType, ['rss1', 'rss2', 'atom', 'rdf'])) {
-                $simplePie = new SimplePie();
-                $simplePie->set_feed_url($feedUrl);
-                $simplePie->enable_cache(false);
-                $simplePie->init();
+                $feedContent = $this->fetchFeedContent($feedUrl);
+                $reader = Reader::importString($feedContent);
+                $title = $reader->getTitle();
+                unset($reader);
 
-                if (!$simplePie->error()) {
-                    $title = $simplePie->get_title();
-                    if ($title) {
-                        $this->climate->whisper("Feed title extracted: {$title}");
-                        return $title;
-                    }
+                if ($title) {
+                    $this->climate->whisper("Feed title extracted: {$title}");
+                    return $title;
                 }
             }
 
@@ -1533,10 +1529,6 @@ class FeedProcessor
             $this->climate->whisper("Error extracting feed title: {$e->getMessage()}");
             return null;
         } finally {
-            if ($simplePie !== null) {
-                $simplePie->__destruct();
-                unset($simplePie);
-            }
             gc_collect_cycles();
         }
     }
