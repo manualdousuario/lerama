@@ -116,8 +116,8 @@ class FeedProcessor
         try {
             $this->processFeed($feed);
 
+
             $updateData = [
-                'status' => 'online',
                 'retry_count' => 0,
                 'paused_at' => null,
                 'next_fetch_at' => DB::sqleval("UNIX_TIMESTAMP() + " . self::FETCH_INTERVAL_SUCCESS)
@@ -125,6 +125,9 @@ class FeedProcessor
 
             if (!$proxyOnly) {
                 $updateData['retry_proxy'] = 0;
+            }
+
+                $updateData['status'] = 'online';
             }
 
             DB::update('feeds', $updateData, 'id=%i', $feed['id']);
@@ -136,25 +139,34 @@ class FeedProcessor
             $retryCount = ($feed['retry_count'] ?? 0) + 1;
             $this->climate->info("Attempt {$retryCount} for feed: {$feed['title']} (threshold: {$this->errorThreshold})");
 
+            $isAutoManaged = in_array($currentStatus, ['online', 'paused']);
+
             if ($retryCount >= $this->errorThreshold) {
                 $this->climate->yellow("Feed {$feed['title']} marked as paused after {$retryCount} attempts (threshold: {$this->errorThreshold})");
-                DB::update('feeds', [
-                    'status' => 'paused',
+                $errorData = [
                     'retry_count' => $retryCount,
                     'paused_at' => DB::sqleval("NOW()")
-                ], 'id=%i', $feed['id']);
+                ];
+                if ($isAutoManaged) {
+                    $errorData['status'] = 'paused';
+                }
+                DB::update('feeds', $errorData, 'id=%i', $feed['id']);
             } else if ($retryCount > 3 && !$proxyOnly) {
                 $this->climate->yellow("Feed {$feed['title']} will use proxy in next attempts");
-                DB::update('feeds', [
-                    'status' => 'online',
+                $errorData = [
                     'retry_count' => $retryCount,
                     'retry_proxy' => 1
-                ], 'id=%i', $feed['id']);
+                ];
+                if ($isAutoManaged) {
+                    $errorData['status'] = 'online';
+                }
+                DB::update('feeds', $errorData, 'id=%i', $feed['id']);
             } else {
-                DB::update('feeds', [
-                    'status' => 'online',
-                    'retry_count' => $retryCount
-                ], 'id=%i', $feed['id']);
+                $errorData = ['retry_count' => $retryCount];
+                if ($isAutoManaged) {
+                    $errorData['status'] = 'online';
+                }
+                DB::update('feeds', $errorData, 'id=%i', $feed['id']);
             }
         }
     }
