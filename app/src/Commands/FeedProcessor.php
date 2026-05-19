@@ -127,8 +127,7 @@ class FeedProcessor
                 $updateData['retry_proxy'] = 0;
             }
 
-                $updateData['status'] = 'online';
-            }
+            $updateData['status'] = 'online';
 
             DB::update('feeds', $updateData, 'id=%i', $feed['id']);
 
