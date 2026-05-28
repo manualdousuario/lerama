@@ -34,7 +34,7 @@ jobs:
           if [ -z "$PREVIOUS_TAG" ]; then
             FILES=$(git ls-files | grep '\.php$' || true)
           else
-            FILES=$(git diff --name-only "$PREVIOUS_TAG"..HEAD | grep '\.php$' || true)
+            FILES=$(git diff --name-only --diff-filter=d "$PREVIOUS_TAG"..HEAD | grep '\.php$' || true)
           fi
           if [ -z "$FILES" ]; then
             echo "No PHP files changed since last tag."
