@@ -184,7 +184,7 @@
                     </div>
                 <?php endif; ?>
 
-                <?php $proxyAvailable = !empty($_ENV['PROXY_LIST']) || !empty($_ENV['PROXY_URL']); ?>
+                <?php $proxyAvailable = !empty($_ENV['PROXY_URL']); ?>
                 <div class="mb-3">
                     <div class="form-check">
                         <input type="checkbox"

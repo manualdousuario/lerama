@@ -194,7 +194,7 @@ return [
     'admin.feed_form.saving' => 'Salvando...',
     'admin.feed_form.proxy_only' => 'Usar somente proxy',
     'admin.feed_form.proxy_only_help' => 'Se habilitado, este feed sempre usará proxy para coleta, ignorando a conexão direta.',
-    'admin.feed_form.proxy_only_disabled' => 'Configure PROXY_LIST para habilitar esta opção.',
+    'admin.feed_form.proxy_only_disabled' => 'Configure PROXY_URL para habilitar esta opção.',
     'admin.feed_form.shuffle' => 'Incluir no Rolêrama',
     'admin.feed_form.shuffle_help' => 'Se habilitado, este feed será incluído na funcionalidade de rolêrama.',
     

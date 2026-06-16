@@ -28,7 +28,6 @@ LERAMA_DB_USER=${LERAMA_DB_USER:-root}
 LERAMA_DB_PASS=${LERAMA_DB_PASS:-root}
 ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
 ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
-PROXY_LIST=${PROXY_LIST:-}
 PROXY_URL=${PROXY_URL:-}
 ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
 SMTP_HOST=${SMTP_HOST:-}
@@ -41,8 +40,3 @@ SMTP_FROM_NAME=${SMTP_FROM_NAME:-"Lerama"}
 EOL
 
 log_success "Environment variables set in /app/.env"
-
-# Update proxy list if PROXY_LIST environment variable is defined
-if [ -n "$PROXY_LIST" ]; then
-    log_info "PROXY_LIST environment variable detected, will update proxy list after startup..."
-fi

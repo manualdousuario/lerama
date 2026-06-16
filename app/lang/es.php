@@ -194,7 +194,7 @@ return [
     'admin.feed_form.saving' => 'Guardando...',
     'admin.feed_form.proxy_only' => 'Usar solo proxy',
     'admin.feed_form.proxy_only_help' => 'Si está habilitado, este feed siempre usará proxy para la recolección, omitiendo la conexión directa.',
-    'admin.feed_form.proxy_only_disabled' => 'Configure PROXY_LIST para habilitar esta opción.',
+    'admin.feed_form.proxy_only_disabled' => 'Configure PROXY_URL para habilitar esta opción.',
     'admin.feed_form.shuffle' => 'Incluir en Aleatorio',
     'admin.feed_form.shuffle_help' => 'Si está habilitado, este feed será incluido en la funcionalidad de aleatorio.',
     

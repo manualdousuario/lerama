@@ -10,4 +10,4 @@ $_ENV['FEED_ITEM_ERROR_THRESHOLD']  = '5';
 $_ENV['SMTP_HOST']                  = '';
 $_ENV['SMTP_PORT']                  = '';
 $_ENV['ADMIN_EMAIL']                = '';
-$_ENV['PROXY_LIST']                 = '';
+$_ENV['PROXY_URL']                  = '';

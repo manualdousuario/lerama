@@ -194,7 +194,7 @@ return [
     'admin.feed_form.saving' => 'Saving...',
     'admin.feed_form.proxy_only' => 'Use proxy only',
     'admin.feed_form.proxy_only_help' => 'If enabled, this feed will always use proxy for collection, bypassing direct connection.',
-    'admin.feed_form.proxy_only_disabled' => 'Configure PROXY_LIST to enable this option.',
+    'admin.feed_form.proxy_only_disabled' => 'Configure PROXY_URL to enable this option.',
     'admin.feed_form.shuffle' => 'Include in Shuffle',
     'admin.feed_form.shuffle_help' => 'If enabled, this feed will be included in the shuffle feature.',
     

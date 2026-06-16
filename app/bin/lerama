@@ -8,7 +8,6 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use League\CLImate\CLImate;
 use Lerama\Commands\FeedProcessor;
 use Lerama\Commands\FeedImporter;
-use Lerama\Services\ProxyService;
 use Lerama\Services\EmailService;
 use Lerama\Services\CacheService;
 use Lerama\Services\CacheableQuery;
@@ -59,18 +58,6 @@ switch ($command) {
     case 'feed:check-real-content':
         // Check all feed items for real contents
         $processor->checkItemsContent();
-        break;
-
-    case 'proxy:update':
-        // Update proxy list
-        $climate->info("Updating proxy list...");
-        $proxyService = new ProxyService();
-        if ($proxyService->fetchProxyList()) {
-            $climate->green("Proxy list updated successfully");
-        } else {
-            $climate->red("Failed to update proxy list");
-            exit(1);
-        }
         break;
 
     case 'feed:import':
@@ -203,9 +190,6 @@ function showUsage(CLImate $climate): void
     $climate->out("  php bin/lerama cache:warm                      Warm cache");
     $climate->out("  php bin/lerama cache:stats                     Cache statistics");
     $climate->out("  php bin/lerama cache:invalidate <tag>          Invalidate cache by tag (categories, tags, feeds, items)");
-    $climate->out("");
-    $climate->out("Proxy Commands:");
-    $climate->out("  php bin/lerama proxy:update                    Update proxy list from PROXY_LIST URL");
     $climate->out("");
     $climate->out("Examples:");
     $climate->out("  php bin/lerama feed:process                    Process all feeds");

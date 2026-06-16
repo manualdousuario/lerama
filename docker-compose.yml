@@ -13,7 +13,6 @@ services:
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: admin
       ADMIN_EMAIL:
-      PROXY_LIST: # optional
       PROXY_URL: # optional, comma-separated proxy URLs (http://user:pass@host:port)
       SMTP_HOST: smtp.resend.com
       SMTP_PORT: 587

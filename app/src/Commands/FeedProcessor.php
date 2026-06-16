@@ -24,6 +24,7 @@ class FeedProcessor
     private bool $subscriberTextShow;
     private int $maxFeedsPerRun;
     private int $errorThreshold;
+    private bool $usingProxy = false;
 
     private const FETCH_INTERVAL_SUCCESS = 86400;
     private const FETCH_INTERVAL_NOT_MODIFIED = 86400;
@@ -106,6 +107,7 @@ class FeedProcessor
             }
         } else {
             $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
+            $this->usingProxy = false;
         }
 
         DB::update('feeds', [
@@ -138,7 +140,7 @@ class FeedProcessor
             $retryCount = ($feed['retry_count'] ?? 0) + 1;
             $this->climate->info("Attempt {$retryCount} for feed: {$feed['title']} (threshold: {$this->errorThreshold})");
 
-            $isAutoManaged = in_array($currentStatus, ['online', 'paused']);
+            $isAutoManaged = in_array($feed['status'] ?? null, ['online', 'paused']);
 
             if ($retryCount >= $this->errorThreshold) {
                 $this->climate->yellow("Feed {$feed['title']} marked as paused after {$retryCount} attempts (threshold: {$this->errorThreshold})");
@@ -199,6 +201,7 @@ class FeedProcessor
                         $this->climate->info("Using proxy (proxy_only) for feed: {$feed['title']}");
                     } else {
                         $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
+                        $this->usingProxy = false;
                     }
 
                     $this->processFeed($feed);
@@ -286,6 +289,7 @@ class FeedProcessor
         if (!$proxy) {
             $this->climate->warning("No proxy available, using direct connection");
             $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
+            $this->usingProxy = false;
             return false;
         }
 
@@ -300,6 +304,7 @@ class FeedProcessor
 
         $config['proxy'] = $proxyUrl;
         $this->httpClient = new \GuzzleHttp\Client($config);
+        $this->usingProxy = true;
 
         $this->climate->info("Using proxy: {$proxy['host']}:{$proxy['port']}");
         return true;
@@ -552,12 +557,77 @@ class FeedProcessor
     {
         $response = $this->httpClient->get($url);
         $statusCode = $response->getStatusCode();
+        $body = (string) $response->getBody();
 
-        if ($statusCode !== 200) {
-            throw new \Exception("Failed to fetch feed: HTTP Status {$statusCode}");
+        if ($statusCode === 200 && !$this->isCdnBlocked($statusCode, $body, $response)) {
+            return $body;
         }
 
-        return (string) $response->getBody();
+        $blocked = $this->isCdnBlocked($statusCode, $body, $response);
+
+        if ($blocked && !$this->usingProxy && $this->proxyService->getRandomProxy() !== null) {
+            $this->climate->yellow("CDN block detected for {$url}, retrying via proxy...");
+            $this->setupProxyClient();
+
+            $response = $this->httpClient->get($url);
+            $statusCode = $response->getStatusCode();
+            $body = (string) $response->getBody();
+
+            if ($statusCode === 200 && !$this->isCdnBlocked($statusCode, $body, $response)) {
+                return $body;
+            }
+
+            throw new \Exception("CDN block (Cloudflare) persists after proxy retry on {$url} (HTTP {$statusCode})");
+        }
+
+        if ($blocked) {
+            throw new \Exception("CDN block (Cloudflare) on {$url} (HTTP {$statusCode})");
+        }
+
+        throw new \Exception("Failed to fetch feed: HTTP Status {$statusCode}");
+    }
+
+    /**
+     * Detect CDN/anti-bot blocks (Cloudflare challenge, captcha, rate limit).
+     * Catches both explicit block status codes and HTTP 200 challenge pages.
+     */
+    private function isCdnBlocked(int $status, string $body, $response = null): bool
+    {
+        if (in_array($status, [403, 429, 503], true)) {
+            return true;
+        }
+
+        if ($response !== null) {
+            $cfMitigated = $response->getHeaderLine('cf-mitigated');
+            if (stripos($cfMitigated, 'challenge') !== false) {
+                return true;
+            }
+        }
+
+        $sample = substr($body, 0, 4096);
+        $markers = [
+            'Just a moment',
+            'Attention Required',
+            'cf-browser-verification',
+            'Checking your browser',
+            'challenge-platform',
+            '_cf_chl',
+            'cf_chl_opt',
+            'Cloudflare Ray ID',
+            'DDoS protection by',
+            'enable JavaScript and cookies',
+            'Please enable Cookies',
+            'cf-turnstile',
+            'hcaptcha',
+        ];
+
+        foreach ($markers as $marker) {
+            if (stripos($sample, $marker) !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function extractNextLink(string $feedXml, string $feedUrl): ?string
@@ -640,14 +710,7 @@ class FeedProcessor
         $lines = null;
 
         try {
-            $response = $this->httpClient->get($feed['feed_url']);
-            $statusCode = $response->getStatusCode();
-
-            if ($statusCode !== 200) {
-                throw new \Exception("Failed to fetch CSV feed: HTTP Status {$statusCode}");
-            }
-
-            $content = (string) $response->getBody();
+            $content = $this->fetchFeedContent($feed['feed_url']);
         } catch (\Exception $e) {
             throw new \Exception("Failed to fetch CSV feed: " . $e->getMessage());
         }
@@ -779,15 +842,7 @@ class FeedProcessor
 
             try {
                 $this->climate->whisper("Fetching next CSV page: {$nextPageUrl}");
-                $response = $this->httpClient->get($nextPageUrl);
-                $statusCode = $response->getStatusCode();
-
-                if ($statusCode !== 200) {
-                    $this->climate->yellow("Failed to fetch next CSV page: HTTP Status {$statusCode}");
-                    break;
-                }
-
-                $content = (string) $response->getBody();
+                $content = $this->fetchFeedContent($nextPageUrl);
 
                 $lines = explode("\n", $content);
                 $headers = str_getcsv(array_shift($lines));
@@ -886,14 +941,7 @@ class FeedProcessor
         $items = null;
 
         try {
-            $response = $this->httpClient->get($feed['feed_url']);
-            $statusCode = $response->getStatusCode();
-
-            if ($statusCode !== 200) {
-                throw new \Exception("Failed to fetch JSON feed: HTTP Status {$statusCode}");
-            }
-
-            $content = (string) $response->getBody();
+            $content = $this->fetchFeedContent($feed['feed_url']);
 
             $data = json_decode($content, true);
             unset($content);
@@ -1003,15 +1051,7 @@ class FeedProcessor
 
             try {
                 $this->climate->whisper("Fetching next JSON page: {$nextPageUrl}");
-                $response = $this->httpClient->get($nextPageUrl);
-                $statusCode = $response->getStatusCode();
-
-                if ($statusCode !== 200) {
-                    $this->climate->yellow("Failed to fetch next JSON page: HTTP Status {$statusCode}");
-                    break;
-                }
-
-                $content = (string) $response->getBody();
+                $content = $this->fetchFeedContent($nextPageUrl);
 
                 $data = json_decode($content, true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
@@ -1107,14 +1147,7 @@ class FeedProcessor
         $items = null;
 
         try {
-            $response = $this->httpClient->get($feed['feed_url']);
-            $statusCode = $response->getStatusCode();
-
-            if ($statusCode !== 200) {
-                throw new \Exception("Failed to fetch XML feed: HTTP Status {$statusCode}");
-            }
-
-            $content = (string) $response->getBody();
+            $content = $this->fetchFeedContent($feed['feed_url']);
 
             $xml = simplexml_load_string($content);
             unset($content);
@@ -1239,15 +1272,7 @@ class FeedProcessor
 
             try {
                 $this->climate->whisper("Fetching next XML page: {$nextPageUrl}");
-                $response = $this->httpClient->get($nextPageUrl);
-                $statusCode = $response->getStatusCode();
-
-                if ($statusCode !== 200) {
-                    $this->climate->yellow("Failed to fetch next XML page: HTTP Status {$statusCode}");
-                    break;
-                }
-
-                $content = (string) $response->getBody();
+                $content = $this->fetchFeedContent($nextPageUrl);
 
                 $nextXml = simplexml_load_string($content);
                 if ($nextXml === false) {
