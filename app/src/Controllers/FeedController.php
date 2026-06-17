@@ -13,16 +13,20 @@ use League\Plates\Engine;
 use DB;
 use Lerama\Services\CacheService;
 use Lerama\Services\CacheableQuery;
+use Lerama\Services\HtmlSanitizer;
+use Lerama\Services\ThumbnailService;
 
 class FeedController
 {
     private Engine $templates;
     private CacheService $cache;
+    private ThumbnailService $thumbnailService;
 
     public function __construct()
     {
         $this->templates = new Engine(__DIR__ . '/../../templates');
         $this->cache = CacheService::getInstance();
+        $this->thumbnailService = new ThumbnailService();
     }
 
     public function index(ServerRequestInterface $request, array $args = []): ResponseInterface
@@ -157,6 +161,80 @@ class FeedController
         return new HtmlResponse($html);
     }
 
+    public function show(ServerRequestInterface $request, array $args = []): ResponseInterface
+    {
+        $feedId = (int)($args['id'] ?? 0);
+        $page = isset($args['page']) ? (int)$args['page'] : 1;
+        if ($page < 1) {
+            $page = 1;
+        }
+
+        $perPage = (int)($_ENV['ITEMS_PER_PAGE'] ?? 21);
+        $offset = ($page - 1) * $perPage;
+
+        $feed = DB::queryFirstRow("SELECT * FROM feeds WHERE id = %i", $feedId);
+        if (!$feed) {
+            return new RedirectResponse('/feeds');
+        }
+
+        $filterHash = $this->cache->hash([
+            'feed' => $feedId,
+            'page' => $page,
+            'perPage' => $perPage
+        ]);
+
+        $countCacheKey = $this->cache->key('items', 'feed', 'count', $filterHash);
+        $totalCount = $this->cache->remember($countCacheKey, 60, ['items', 'feeds'], function() use ($feedId) {
+            return DB::queryFirstField(
+                "SELECT COUNT(*) FROM feed_items WHERE feed_id = %i AND is_visible = 1",
+                $feedId
+            );
+        });
+
+        $totalPages = (int)ceil($totalCount / $perPage);
+        if ($page > $totalPages && $totalPages > 0) {
+            return new RedirectResponse('/feeds/' . $feedId . '/page/' . $totalPages);
+        }
+
+        $itemsCacheKey = $this->cache->key('items', 'feed', $filterHash);
+        $items = $this->cache->remember($itemsCacheKey, 60, ['items', 'feeds'], function() use ($feedId, $offset, $perPage) {
+            return DB::query("SELECT fi.*, f.title as feed_title, f.site_url, f.language
+                FROM feed_items fi
+                JOIN feeds f ON fi.feed_id = f.id
+                WHERE fi.feed_id = %i AND fi.is_visible = 1
+                ORDER BY fi.published_at DESC
+                LIMIT %i, %i",
+                $feedId, $offset, $perPage
+            ) ?: [];
+        });
+
+        $categories = CacheableQuery::query(
+            'categories', 'all', ['categories'], 300,
+            "SELECT * FROM categories ORDER BY name"
+        );
+
+        $tags = CacheableQuery::query(
+            'tags', 'all', ['tags'], 300,
+            "SELECT * FROM tags ORDER BY name"
+        );
+
+        $html = $this->templates->render('feed-items', [
+            'feed' => $feed,
+            'items' => $items,
+            'categories' => $categories,
+            'tags' => $tags,
+            'pagination' => [
+                'current' => $page,
+                'total' => $totalPages,
+                'baseUrl' => '/feeds/' . $feedId . '/page/'
+            ],
+            'title' => $feed['title'],
+            'thumbnailService' => $this->thumbnailService
+        ]);
+
+        return new HtmlResponse($html);
+    }
+
     public function json(ServerRequestInterface $request): ResponseInterface
     {
         $params = $request->getQueryParams();
@@ -237,9 +315,13 @@ class FeedController
             $author = !empty($item['author'])
                 ? $item['author'] . ' em ' . $item['feed_title']
                 : $item['feed_title'];
-            
-            $contentWithLink = '<p>Leia no <a href="' . htmlspecialchars($item['url']) . '">' . htmlspecialchars($item['feed_title']) . '</a></p>' . $item['content'];
-            
+
+            $safeUrl = htmlspecialchars($item['url']);
+            $safeFeedTitle = htmlspecialchars($item['feed_title']);
+            $safeContent = HtmlSanitizer::sanitize($item['content']);
+
+            $contentWithLink = '<p>Leia no <a href="' . $safeUrl . '">' . $safeFeedTitle . '</a></p>' . $safeContent;
+
             $formattedItems[] = [
                 'id' => $item['id'],
                 'title' => $item['title'],
@@ -363,8 +445,12 @@ class FeedController
                 $enclosure->addAttribute('type', 'image/jpeg');
             }
 
-            $contentWithLink = '<p>Leia no <a href="' . htmlspecialchars($item['url']) . '">' . htmlspecialchars($item['feed_title']) . '</a></p>' . $item['content'];
-            
+            $safeUrl = htmlspecialchars($item['url']);
+            $safeFeedTitle = htmlspecialchars($item['feed_title']);
+            $safeContent = HtmlSanitizer::sanitize($item['content']);
+
+            $contentWithLink = '<p>Leia no <a href="' . $safeUrl . '">' . $safeFeedTitle . '</a></p>' . $safeContent;
+
             $description = $xmlItem->addChild('description');
             $node = dom_import_simplexml($description);
             $owner = $node->ownerDocument;
