@@ -71,9 +71,9 @@ $router->map('GET', '/tag/{tag}/page/{page:number}', [HomeController::class, 'in
 $router->map('GET', '/category/{category}', [HomeController::class, 'index']);
 $router->map('GET', '/category/{category}/page/{page:number}', [HomeController::class, 'index']);
 $router->map('GET', '/feeds', [FeedController::class, 'index']);
-$router->map('GET', '/feeds/{id:number}', [FeedController::class, 'show']);
-$router->map('GET', '/feeds/{id:number}/page/{page:number}', [FeedController::class, 'show']);
 $router->map('GET', '/feeds/page/{page:number}', [FeedController::class, 'index']);
+$router->map('GET', '/feeds/{slug}', [FeedController::class, 'show']);
+$router->map('GET', '/feeds/{slug}/page/{page:number}', [FeedController::class, 'show']);
 $router->map('GET', '/categories', [HomeController::class, 'categories']);
 $router->map('GET', '/tags', [HomeController::class, 'tags']);
 $router->map('GET', '/feed-builder', [FeedController::class, 'feedBuilder']);

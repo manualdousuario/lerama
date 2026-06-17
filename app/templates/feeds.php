@@ -99,7 +99,7 @@
                                                     <?= $this->e($feed['title']) ?>
                                                     <i class="bi bi-box-arrow-up-right ms-1"></i>
                                                 </a>
-                                                <a href="/feeds/<?= (int)$feed['id'] ?>" class="badge bg-secondary text-decoration-none ms-1" title="<?= __('feeds.items') ?>">
+                                                <a href="/feeds/<?= $this->e($feed['slug']) ?>" class="badge bg-secondary text-decoration-none ms-1" title="<?= __('feeds.items') ?>">
                                                     <?= $feed['item_count'] ?? 0 ?> <i class="bi bi-collection"></i>
                                                 </a>
                                             </div>
