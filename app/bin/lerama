@@ -8,6 +8,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use League\CLImate\CLImate;
 use Lerama\Commands\FeedProcessor;
 use Lerama\Commands\FeedImporter;
+use Lerama\Commands\ImageExtractor;
 use Lerama\Services\EmailService;
 use Lerama\Services\CacheService;
 use Lerama\Services\CacheableQuery;
@@ -58,6 +59,12 @@ switch ($command) {
     case 'feed:check-real-content':
         // Check all feed items for real contents
         $processor->checkItemsContent();
+        break;
+
+    case 'image:extract':
+        $limit = isset($argv[2]) && is_numeric($argv[2]) ? (int)$argv[2] : null;
+        $extractor = new ImageExtractor($climate, (int)($_ENV['IMAGE_EXTRACT_BATCH_SIZE'] ?? 50));
+        $extractor->run($limit);
         break;
 
     case 'feed:import':
@@ -183,6 +190,7 @@ function showUsage(CLImate $climate): void
     $climate->out("  php bin/lerama feed:id {ID_DO_FEED}            Process a specific feed by ID");
     $climate->out("  php bin/lerama feed:check-status               Check and update status of paused feeds");
     $climate->out("  php bin/lerama feed:check-real-content         Check all feed items for real contents");
+    $climate->out("  php bin/lerama image:extract [LIMIT]           Extract OpenGraph images for items without image_url");
     $climate->out("  php bin/lerama feed:import <CSV_FILE>          Import feeds from CSV file (columns: url, tags, category)");
     $climate->out("");
     $climate->out("Cache Commands:");
