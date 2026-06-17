@@ -79,70 +79,46 @@ class HomeController
 
         $query = "SELECT fi.*, f.title as feed_title, f.site_url, f.language
                  FROM feed_items fi
-                 JOIN feeds f ON fi.feed_id = f.id
-                 WHERE fi.is_visible = 1";
-
-        // Count only JOINs feeds when a feed-level filter requires it.
-        $needsFeedJoinForCount = $latestPerFeed || !empty($categorySlug) || !empty($tagSlug);
-        if ($needsFeedJoinForCount) {
-            $countQuery = "SELECT COUNT(*) FROM feed_items fi
-                          JOIN feeds f ON fi.feed_id = f.id
-                          WHERE fi.is_visible = 1";
-        } else {
-            $countQuery = "SELECT COUNT(*) FROM feed_items fi WHERE fi.is_visible = 1";
-        }
-
-        if ($latestPerFeed) {
-            $query .= " AND fi.id = f.last_feed_item_id";
-            $countQuery .= " AND fi.id = f.last_feed_item_id";
-        }
-
+                 JOIN feeds f ON fi.feed_id = f.id";
+        $countQuery = "SELECT COUNT(*) FROM feed_items fi
+                       JOIN feeds f ON fi.feed_id = f.id";
         $queryParams = [];
         $countQueryParams = [];
+        $whereConditions = ["fi.is_visible = 1"];
+
+        if ($latestPerFeed) {
+            $whereConditions[] = "fi.id = f.last_feed_item_id";
+        }
 
         if (!empty($search)) {
-            $query .= " AND MATCH(fi.title, fi.content) AGAINST (%s IN BOOLEAN MODE)";
-            $countQuery .= " AND MATCH(fi.title, fi.content) AGAINST (%s IN BOOLEAN MODE)";
+            $whereConditions[] = "MATCH(fi.title, fi.content) AGAINST (%s IN BOOLEAN MODE)";
             $queryParams[] = $search;
             $countQueryParams[] = $search;
         }
 
         if ($feedId) {
-            $query .= " AND fi.feed_id = %i";
-            $countQuery .= " AND fi.feed_id = %i";
+            $whereConditions[] = "fi.feed_id = %i";
             $queryParams[] = $feedId;
             $countQueryParams[] = $feedId;
         }
 
         if ($categorySlug) {
-            $query .= " AND EXISTS (
-                SELECT 1 FROM feed_categories fc
-                JOIN categories c ON fc.category_id = c.id
-                WHERE fc.feed_id = f.id AND c.slug = %s
-            )";
-            $countQuery .= " AND EXISTS (
-                SELECT 1 FROM feed_categories fc
-                JOIN categories c ON fc.category_id = c.id
-                WHERE fc.feed_id = f.id AND c.slug = %s
-            )";
+            $query .= " JOIN feed_categories fc ON fc.feed_id = f.id JOIN categories c ON c.id = fc.category_id AND c.slug = %s";
+            $countQuery .= " JOIN feed_categories fc ON fc.feed_id = f.id JOIN categories c ON c.id = fc.category_id AND c.slug = %s";
             $queryParams[] = $categorySlug;
             $countQueryParams[] = $categorySlug;
         }
 
         if ($tagSlug) {
-            $query .= " AND EXISTS (
-                SELECT 1 FROM feed_tags ft
-                JOIN tags t ON ft.tag_id = t.id
-                WHERE ft.feed_id = f.id AND t.slug = %s
-            )";
-            $countQuery .= " AND EXISTS (
-                SELECT 1 FROM feed_tags ft
-                JOIN tags t ON ft.tag_id = t.id
-                WHERE ft.feed_id = f.id AND t.slug = %s
-            )";
+            $query .= " JOIN feed_tags ft ON ft.feed_id = f.id JOIN tags t ON t.id = ft.tag_id AND t.slug = %s";
+            $countQuery .= " JOIN feed_tags ft ON ft.feed_id = f.id JOIN tags t ON t.id = ft.tag_id AND t.slug = %s";
             $queryParams[] = $tagSlug;
             $countQueryParams[] = $tagSlug;
         }
+
+        $whereClause = " WHERE " . implode(" AND ", $whereConditions);
+        $query .= $whereClause;
+        $countQuery .= $whereClause;
 
         $filterHash = $this->cache->hash([
             'search' => $search,

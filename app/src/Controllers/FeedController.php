@@ -43,35 +43,19 @@ class FeedController
         $categorySlug = $params['category'] ?? null;
         $tagSlug = $params['tag'] ?? null;
 
-        $query = "SELECT f.* FROM feeds f WHERE 1=1";
-        $countQuery = "SELECT COUNT(*) FROM feeds f WHERE 1=1";
+        $query = "SELECT DISTINCT f.* FROM feeds f";
+        $countQuery = "SELECT COUNT(DISTINCT f.id) FROM feeds f";
         $queryParams = [];
 
         if ($categorySlug) {
-            $query .= " AND EXISTS (
-                SELECT 1 FROM feed_categories fc
-                JOIN categories c ON fc.category_id = c.id
-                WHERE fc.feed_id = f.id AND c.slug = %s
-            )";
-            $countQuery .= " AND EXISTS (
-                SELECT 1 FROM feed_categories fc
-                JOIN categories c ON fc.category_id = c.id
-                WHERE fc.feed_id = f.id AND c.slug = %s
-            )";
+            $query .= " JOIN feed_categories fc ON fc.feed_id = f.id JOIN categories c ON c.id = fc.category_id AND c.slug = %s";
+            $countQuery .= " JOIN feed_categories fc ON fc.feed_id = f.id JOIN categories c ON c.id = fc.category_id AND c.slug = %s";
             $queryParams[] = $categorySlug;
         }
 
         if ($tagSlug) {
-            $query .= " AND EXISTS (
-                SELECT 1 FROM feed_tags ft
-                JOIN tags t ON ft.tag_id = t.id
-                WHERE ft.feed_id = f.id AND t.slug = %s
-            )";
-            $countQuery .= " AND EXISTS (
-                SELECT 1 FROM feed_tags ft
-                JOIN tags t ON ft.tag_id = t.id
-                WHERE ft.feed_id = f.id AND t.slug = %s
-            )";
+            $query .= " JOIN feed_tags ft ON ft.feed_id = f.id JOIN tags t ON t.id = ft.tag_id AND t.slug = %s";
+            $countQuery .= " JOIN feed_tags ft ON ft.feed_id = f.id JOIN tags t ON t.id = ft.tag_id AND t.slug = %s";
             $queryParams[] = $tagSlug;
         }
 

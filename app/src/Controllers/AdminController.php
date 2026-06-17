@@ -18,6 +18,7 @@ use Lerama\Services\CacheableQuery;
 use Lerama\Services\ThumbnailService;
 use Lerama\Services\CsrfService;
 use Lerama\Services\UrlValidator;
+use Lerama\Services\BulkInserter;
 use DB;
 
 class AdminController
@@ -414,24 +415,28 @@ class AdminController
                         'shuffle' => $shuffle
                     ]);
 
-                    // Insert categories
+                    // Insert categories in bulk
                     if (!empty($categoryIds)) {
+                        $categoryRows = [];
                         foreach ($categoryIds as $categoryId) {
-                            DB::insert('feed_categories', [
-                                'feed_id' => $feedId,
-                                'category_id' => (int)$categoryId
-                            ]);
+                            $categoryRows[] = [
+                                'feed_id' => (int)$feedId,
+                                'category_id' => (int)$categoryId,
+                            ];
                         }
+                        BulkInserter::insert('feed_categories', $categoryRows, ['ignore' => true]);
                     }
 
-                    // Insert tags
+                    // Insert tags in bulk
                     if (!empty($tagIds)) {
+                        $tagRows = [];
                         foreach ($tagIds as $tagId) {
-                            DB::insert('feed_tags', [
-                                'feed_id' => $feedId,
-                                'tag_id' => (int)$tagId
-                            ]);
+                            $tagRows[] = [
+                                'feed_id' => (int)$feedId,
+                                'tag_id' => (int)$tagId,
+                            ];
                         }
+                        BulkInserter::insert('feed_tags', $tagRows, ['ignore' => true]);
                     }
 
                     $emailService = new EmailService();
@@ -568,26 +573,30 @@ class AdminController
 
                     DB::update('feeds', $updateData, 'id=%i', $id);
 
-                    // Update categories
-                    DB::delete('feed_categories', 'feed_id=%i', $id);
+                    // Update categories in bulk
+                    DB::query("DELETE FROM feed_categories WHERE feed_id = %i", $id);
                     if (!empty($categoryIds)) {
+                        $categoryRows = [];
                         foreach ($categoryIds as $categoryId) {
-                            DB::insert('feed_categories', [
+                            $categoryRows[] = [
                                 'feed_id' => $id,
-                                'category_id' => (int)$categoryId
-                            ]);
+                                'category_id' => (int)$categoryId,
+                            ];
                         }
+                        BulkInserter::insert('feed_categories', $categoryRows, ['ignore' => true]);
                     }
 
-                    // Update tags
-                    DB::delete('feed_tags', 'feed_id=%i', $id);
+                    // Update tags in bulk
+                    DB::query("DELETE FROM feed_tags WHERE feed_id = %i", $id);
                     if (!empty($tagIds)) {
+                        $tagRows = [];
                         foreach ($tagIds as $tagId) {
-                            DB::insert('feed_tags', [
+                            $tagRows[] = [
                                 'feed_id' => $id,
-                                'tag_id' => (int)$tagId
-                            ]);
+                                'tag_id' => (int)$tagId,
+                            ];
                         }
+                        BulkInserter::insert('feed_tags', $tagRows, ['ignore' => true]);
                     }
 
                     CacheableQuery::invalidateFeed($id);
@@ -1561,54 +1570,46 @@ class AdminController
         }
 
         $params = json_decode($request->getBody()->getContents(), true) ?: (array)$request->getParsedBody();
-        
+
         $feedIds = $params['feed_ids'] ?? [];
         $categoryIds = $params['category_ids'] ?? [];
-        
+
         if (empty($feedIds) || !is_array($feedIds)) {
             return new JsonResponse([
                 'success' => false,
                 'message' => __('error.no_feed_selected')
             ], 400);
         }
-        
+
         if (empty($categoryIds) || !is_array($categoryIds)) {
             return new JsonResponse([
                 'success' => false,
                 'message' => __('error.no_category_selected')
             ], 400);
         }
-        
+
         try {
-            $affectedCategoryIds = [];
-            foreach ($feedIds as $feedId) {
-                $oldCategories = DB::query("SELECT category_id FROM feed_categories WHERE feed_id = %i", (int)$feedId);
-                foreach ($oldCategories as $cat) {
-                    $affectedCategoryIds[] = $cat['category_id'];
-                }
-            }
-            $affectedCategoryIds = array_merge($affectedCategoryIds, $categoryIds);
-            $affectedCategoryIds = array_unique($affectedCategoryIds);
-            
-            // Remove existing categories for selected feeds
-            foreach ($feedIds as $feedId) {
-                DB::delete('feed_categories', 'feed_id=%i', (int)$feedId);
-            }
-            
-            // Add new categories
+            $feedIds = array_map('intval', $feedIds);
+            $categoryIds = array_map('intval', $categoryIds);
+
+            // Bulk remove existing category associations for selected feeds.
+            DB::query("DELETE FROM feed_categories WHERE feed_id IN %li", $feedIds);
+
+            // Build and insert all (feed_id, category_id) pairs in batches.
+            $rows = [];
             foreach ($feedIds as $feedId) {
                 foreach ($categoryIds as $categoryId) {
-                    DB::insert('feed_categories', [
-                        'feed_id' => (int)$feedId,
-                        'category_id' => (int)$categoryId
-                    ]);
+                    $rows[] = [
+                        'feed_id' => $feedId,
+                        'category_id' => $categoryId,
+                    ];
                 }
             }
-            
-            $this->recalculateCategoryItemCounts($affectedCategoryIds);
-            
+            BulkInserter::insert('feed_categories', $rows, ['ignore' => true, 'batchSize' => 500]);
+
+            // Triggers automatically recalculate item counts for affected categories.
             CacheableQuery::invalidate(['categories', 'feeds']);
-            
+
             return new JsonResponse([
                 'success' => true,
                 'message' => __('success.categories_updated') . ' ' . count($feedIds) . ' ' . __('success.feeds')
@@ -1629,54 +1630,46 @@ class AdminController
         }
 
         $params = json_decode($request->getBody()->getContents(), true) ?: (array)$request->getParsedBody();
-        
+
         $feedIds = $params['feed_ids'] ?? [];
         $tagIds = $params['tag_ids'] ?? [];
-        
+
         if (empty($feedIds) || !is_array($feedIds)) {
             return new JsonResponse([
                 'success' => false,
                 'message' => __('error.no_feed_selected')
             ], 400);
         }
-        
+
         if (empty($tagIds) || !is_array($tagIds)) {
             return new JsonResponse([
                 'success' => false,
                 'message' => __('error.no_tag_selected')
             ], 400);
         }
-        
+
         try {
-            $affectedTagIds = [];
-            foreach ($feedIds as $feedId) {
-                $oldTags = DB::query("SELECT tag_id FROM feed_tags WHERE feed_id = %i", (int)$feedId);
-                foreach ($oldTags as $tag) {
-                    $affectedTagIds[] = $tag['tag_id'];
-                }
-            }
-            $affectedTagIds = array_merge($affectedTagIds, $tagIds);
-            $affectedTagIds = array_unique($affectedTagIds);
-            
-            // Remove existing tags for selected feeds
-            foreach ($feedIds as $feedId) {
-                DB::delete('feed_tags', 'feed_id=%i', (int)$feedId);
-            }
-            
-            // Add new tags
+            $feedIds = array_map('intval', $feedIds);
+            $tagIds = array_map('intval', $tagIds);
+
+            // Bulk remove existing tag associations for selected feeds.
+            DB::query("DELETE FROM feed_tags WHERE feed_id IN %li", $feedIds);
+
+            // Build and insert all (feed_id, tag_id) pairs in batches.
+            $rows = [];
             foreach ($feedIds as $feedId) {
                 foreach ($tagIds as $tagId) {
-                    DB::insert('feed_tags', [
-                        'feed_id' => (int)$feedId,
-                        'tag_id' => (int)$tagId
-                    ]);
+                    $rows[] = [
+                        'feed_id' => $feedId,
+                        'tag_id' => $tagId,
+                    ];
                 }
             }
-            
-            $this->recalculateTagItemCounts($affectedTagIds);
-            
+            BulkInserter::insert('feed_tags', $rows, ['ignore' => true, 'batchSize' => 500]);
+
+            // Triggers automatically recalculate item counts for affected tags.
             CacheableQuery::invalidate(['tags', 'feeds']);
-            
+
             return new JsonResponse([
                 'success' => true,
                 'message' => __('success.tags_updated') . ' ' . count($feedIds) . ' ' . __('success.feeds')
@@ -1697,17 +1690,17 @@ class AdminController
         }
 
         $params = json_decode($request->getBody()->getContents(), true) ?: (array)$request->getParsedBody();
-        
+
         $feedIds = $params['feed_ids'] ?? [];
         $status = $params['status'] ?? '';
-        
+
         if (empty($feedIds) || !is_array($feedIds)) {
             return new JsonResponse([
                 'success' => false,
                 'message' => __('error.no_feed_selected')
             ], 400);
         }
-        
+
         $validStatuses = ['online', 'offline', 'paused', 'pending', 'rejected'];
         if (!in_array($status, $validStatuses)) {
             return new JsonResponse([
@@ -1715,17 +1708,13 @@ class AdminController
                 'message' => __('validation.status_invalid')
             ], 400);
         }
-        
+
         try {
-            // Update status for all selected feeds
-            foreach ($feedIds as $feedId) {
-                DB::update('feeds', [
-                    'status' => $status
-                ], 'id=%i', (int)$feedId);
-            }
-            
+            // Single UPDATE for all selected feeds.
+            DB::query("UPDATE feeds SET status = %s WHERE id IN %li", $status, array_map('intval', $feedIds));
+
             CacheableQuery::invalidateFeeds();
-            
+
             return new JsonResponse([
                 'success' => true,
                 'message' => __('success.status_updated') . ' ' . count($feedIds) . ' ' . __('success.feeds')
@@ -1774,60 +1763,6 @@ class AdminController
                 'success' => false,
                 'message' => __('error.shuffle_update') . ': ' . $e->getMessage()
             ], 500);
-        }
-    }
-
-    /**
-     * Recalculate item counts for specified categories
-     *
-     * @param array $categoryIds Array of category IDs to recalculate
-     */
-    private function recalculateCategoryItemCounts(array $categoryIds): void
-    {
-        if (empty($categoryIds)) {
-            return;
-        }
-        
-        foreach ($categoryIds as $categoryId) {
-            $count = DB::queryFirstField("
-                SELECT COUNT(DISTINCT fi.id)
-                FROM feed_items fi
-                JOIN feeds f ON fi.feed_id = f.id
-                JOIN feed_categories fc ON f.id = fc.feed_id
-                WHERE fc.category_id = %i
-                AND fi.is_visible = 1
-            ", (int)$categoryId);
-            
-            DB::update('categories', [
-                'item_count' => $count ?: 0
-            ], 'id=%i', (int)$categoryId);
-        }
-    }
-    
-    /**
-     * Recalculate item counts for specified tags
-     *
-     * @param array $tagIds Array of tag IDs to recalculate
-     */
-    private function recalculateTagItemCounts(array $tagIds): void
-    {
-        if (empty($tagIds)) {
-            return;
-        }
-        
-        foreach ($tagIds as $tagId) {
-            $count = DB::queryFirstField("
-                SELECT COUNT(DISTINCT fi.id)
-                FROM feed_items fi
-                JOIN feeds f ON fi.feed_id = f.id
-                JOIN feed_tags ft ON f.id = ft.feed_id
-                WHERE ft.tag_id = %i
-                AND fi.is_visible = 1
-            ", (int)$tagId);
-            
-            DB::update('tags', [
-                'item_count' => $count ?: 0
-            ], 'id=%i', (int)$tagId);
         }
     }
 

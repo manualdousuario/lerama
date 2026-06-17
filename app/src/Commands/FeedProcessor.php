@@ -12,6 +12,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use Lerama\Services\ProxyService;
 use Lerama\Services\EmailService;
+use Lerama\Services\BulkInserter;
 use Lerama\Config\HttpClientConfig;
 
 class FeedProcessor
@@ -25,6 +26,8 @@ class FeedProcessor
     private int $maxFeedsPerRun;
     private int $errorThreshold;
     private bool $usingProxy = false;
+    private array $itemBuffer = [];
+    private int $itemsInBuffer = 0;
 
     private const FETCH_INTERVAL_SUCCESS = 86400;
     private const FETCH_INTERVAL_NOT_MODIFIED = 86400;
@@ -87,6 +90,38 @@ class FeedProcessor
         
         unset($feeds);
         gc_collect_cycles();
+    }
+
+    private function bufferItem(array $item): void
+    {
+        $this->itemBuffer[] = $item;
+        $this->itemsInBuffer++;
+    }
+
+    private function flushItems(int $feedId): int
+    {
+        if (empty($this->itemBuffer)) {
+            return 0;
+        }
+
+        $count = BulkInserter::insert('feed_items', $this->itemBuffer, [
+            'ignore' => true,
+            'batchSize' => 100,
+        ]);
+
+        $this->itemBuffer = [];
+        $this->itemsInBuffer = 0;
+
+        return $count;
+    }
+
+    private function findItemIdByGuid(string $guid): ?int
+    {
+        $row = DB::queryFirstRow(
+            "SELECT id FROM feed_items WHERE guid = %s ORDER BY id DESC LIMIT 1",
+            $guid
+        );
+        return $row ? (int)$row['id'] : null;
     }
 
     private function processSingleFeed(array $feed): void
@@ -421,27 +456,22 @@ class FeedProcessor
                 $dateObj = $entry->getDateCreated() ?? $entry->getDateModified();
                 $date = $dateObj ? $dateObj->format('Y-m-d H:i:s') : date('Y-m-d H:i:s');
 
-                $imageUrl = $this->extractImageFromUrl($url);
                 $contentCheck = $this->checkRealContent($content, $url);
                 $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
 
-                try {
-                    DB::insert('feed_items', [
-                        'feed_id' => $feed['id'],
-                        'title' => $title,
-                        'author' => $author,
-                        'content' => $content,
-                        'url' => $url,
-                        'image_url' => $imageUrl,
-                        'guid' => $guid,
-                        'published_at' => $date,
-                        'is_visible' => $isVisible ? 1 : 0
-                    ]);
-                    $count++;
-                    $updated = true;
-                } catch (\Exception $e) {
-                    continue;
-                }
+                $this->bufferItem([
+                    'feed_id' => $feed['id'],
+                    'title' => $title,
+                    'author' => $author,
+                    'content' => $content,
+                    'url' => $url,
+                    'image_url' => null,
+                    'guid' => $guid,
+                    'published_at' => $date,
+                    'is_visible' => $isVisible ? 1 : 0
+                ]);
+                $count++;
+                $updated = true;
 
                 $processedItems++;
                 if ($processedItems >= $maxItemsToProcess) {
@@ -451,8 +481,10 @@ class FeedProcessor
 
             $this->processPaginatedRssFeed($feed, $feedContent, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
 
+            $flushed = $this->flushItems($feed['id']);
+
             if ($updated && $lastGuid) {
-                $lastFeedItemId = DB::queryFirstField("SELECT id FROM feed_items WHERE guid = %s ORDER BY id DESC LIMIT 1", $lastGuid);
+                $lastFeedItemId = $this->findItemIdByGuid($lastGuid);
                 DB::update('feeds', [
                     'last_feed_item_id' => $lastFeedItemId,
                     'last_post_id' => $lastGuid,
@@ -507,27 +539,22 @@ class FeedProcessor
                     $dateObj = $entry->getDateCreated() ?? $entry->getDateModified();
                     $date = $dateObj ? $dateObj->format('Y-m-d H:i:s') : date('Y-m-d H:i:s');
 
-                    $imageUrl = $this->extractImageFromUrl($url);
                     $contentCheck = $this->checkRealContent($content, $url);
                     $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
 
-                    try {
-                        DB::insert('feed_items', [
-                            'feed_id' => $feed['id'],
-                            'title' => $title,
-                            'author' => $author,
-                            'content' => $content,
-                            'url' => $url,
-                            'image_url' => $imageUrl,
-                            'guid' => $guid,
-                            'published_at' => $date,
-                            'is_visible' => $isVisible ? 1 : 0
-                        ]);
-                        $count++;
-                        $updated = true;
-                    } catch (\Exception $e) {
-                        continue;
-                    }
+                    $this->bufferItem([
+                        'feed_id' => $feed['id'],
+                        'title' => $title,
+                        'author' => $author,
+                        'content' => $content,
+                        'url' => $url,
+                        'image_url' => null,
+                        'guid' => $guid,
+                        'published_at' => $date,
+                        'is_visible' => $isVisible ? 1 : 0
+                    ]);
+                    $count++;
+                    $updated = true;
 
                     $processedItems++;
                     if ($processedItems >= $maxItemsToProcess) {
@@ -757,38 +784,34 @@ class FeedProcessor
 
                 $this->climate->whisper("Processing item: {$title} ({$url})");
 
-                $imageUrl = $this->extractImageFromUrl($url);
                 $itemContent = $contentIndex !== false && isset($data[$contentIndex]) ? $data[$contentIndex] : null;
                 $contentCheck = $this->checkRealContent($itemContent, $url);
                 $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
 
-                try {
-                    DB::insert('feed_items', [
-                        'feed_id' => $feed['id'],
-                        'title' => $title,
-                        'author' => $authorIndex !== false && isset($data[$authorIndex]) ? $data[$authorIndex] : null,
-                        'content' => $itemContent,
-                        'url' => $url,
-                        'image_url' => $imageUrl,
-                        'guid' => $guid,
-                        'published_at' => $dateIndex !== false && isset($data[$dateIndex]) ? $data[$dateIndex] : date('Y-m-d H:i:s'),
-                        'is_visible' => $isVisible ? 1 : 0
-                    ]);
-                    $count++;
-                    $updated = true;
-                    $this->climate->whisper("Item added successfully: {$title}");
-                } catch (\Exception $e) {
-                    $this->climate->whisper("Error adding item {$title}: {$e->getMessage()}");
-                    continue;
-                }
+                $this->bufferItem([
+                    'feed_id' => $feed['id'],
+                    'title' => $title,
+                    'author' => $authorIndex !== false && isset($data[$authorIndex]) ? $data[$authorIndex] : null,
+                    'content' => $itemContent,
+                    'url' => $url,
+                    'image_url' => null,
+                    'guid' => $guid,
+                    'published_at' => $dateIndex !== false && isset($data[$dateIndex]) ? $data[$dateIndex] : date('Y-m-d H:i:s'),
+                    'is_visible' => $isVisible ? 1 : 0
+                ]);
+                $count++;
+                $updated = true;
+                $this->climate->whisper("Item queued successfully: {$title}");
                 
                 unset($data);
             }
 
             $this->processPaginatedCsvFeed($feed, $count, $updated, $lastGuid);
 
+            $flushed = $this->flushItems($feed['id']);
+
             if ($updated && $lastGuid) {
-                $lastFeedItemId = DB::queryFirstField("SELECT id FROM feed_items WHERE guid = %s ORDER BY id DESC LIMIT 1", $lastGuid);
+                $lastFeedItemId = $this->findItemIdByGuid($lastGuid);
                 DB::update('feeds', [
                     'last_feed_item_id' => $lastFeedItemId,
                     'last_post_id' => $lastGuid,
@@ -882,31 +905,25 @@ class FeedProcessor
 
                     $this->climate->whisper("Processing item from page {$currentPage}: {$title} ({$url})");
 
-                    $imageUrl = $this->extractImageFromUrl($url);
                     $content = $contentIndex !== false && isset($data[$contentIndex]) ? $data[$contentIndex] : null;
                     $contentCheck = $this->checkRealContent($content, $url);
                     $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
 
-                    try {
-                        DB::insert('feed_items', [
-                            'feed_id' => $feed['id'],
-                            'title' => $title,
-                            'author' => $authorIndex !== false && isset($data[$authorIndex]) ? $data[$authorIndex] : null,
-                            'content' => $content,
-                            'url' => $url,
-                            'image_url' => $imageUrl,
-                            'guid' => $guid,
-                            'published_at' => $dateIndex !== false && isset($data[$dateIndex]) ? $data[$dateIndex] : date('Y-m-d H:i:s'),
-                            'is_visible' => $isVisible ? 1 : 0
-                        ]);
-                        $count++;
-                        $pageItemCount++;
-                        $updated = true;
-                        $this->climate->whisper("Item added successfully: {$title}");
-                    } catch (\Exception $e) {
-                        $this->climate->whisper("Error adding item {$title}: {$e->getMessage()}");
-                        continue;
-                    }
+                    $this->bufferItem([
+                        'feed_id' => $feed['id'],
+                        'title' => $title,
+                        'author' => $authorIndex !== false && isset($data[$authorIndex]) ? $data[$authorIndex] : null,
+                        'content' => $content,
+                        'url' => $url,
+                        'image_url' => null,
+                        'guid' => $guid,
+                        'published_at' => $dateIndex !== false && isset($data[$dateIndex]) ? $data[$dateIndex] : date('Y-m-d H:i:s'),
+                        'is_visible' => $isVisible ? 1 : 0
+                    ]);
+                    $count++;
+                    $pageItemCount++;
+                    $updated = true;
+                    $this->climate->whisper("Item queued successfully: {$title}");
 
                     $processedItems++;
                     if ($processedItems >= $maxItemsToProcess) {
@@ -987,29 +1004,23 @@ class FeedProcessor
 
                 $this->climate->whisper("Processing JSON item: {$title} ({$url})");
 
-                $imageUrl = $this->extractImageFromUrl($url);
                 $contentCheck = $this->checkRealContent($itemContent, $url);
                 $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
 
-                try {
-                    DB::insert('feed_items', [
-                        'feed_id' => $feed['id'],
-                        'title' => $title,
-                        'author' => $author,
-                        'content' => $itemContent,
-                        'url' => $url,
-                        'image_url' => $imageUrl,
-                        'guid' => $guid,
-                        'published_at' => $date,
-                        'is_visible' => $isVisible ? 1 : 0
-                    ]);
-                    $count++;
-                    $updated = true;
-                    $this->climate->whisper("JSON item added successfully: {$title}");
-                } catch (\Exception $e) {
-                    $this->climate->whisper("Error adding JSON item {$title}: {$e->getMessage()}");
-                    continue;
-                }
+                $this->bufferItem([
+                    'feed_id' => $feed['id'],
+                    'title' => $title,
+                    'author' => $author,
+                    'content' => $itemContent,
+                    'url' => $url,
+                    'image_url' => null,
+                    'guid' => $guid,
+                    'published_at' => $date,
+                    'is_visible' => $isVisible ? 1 : 0
+                ]);
+                $count++;
+                $updated = true;
+                $this->climate->whisper("JSON item queued successfully: {$title}");
 
                 $processedItems++;
                 if ($processedItems >= $maxItemsToProcess) {
@@ -1021,8 +1032,10 @@ class FeedProcessor
                 $this->processPaginatedJsonFeed($feed, $nextPageUrl, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
             }
 
+            $flushed = $this->flushItems($feed['id']);
+
             if ($updated && $lastGuid) {
-                $lastFeedItemId = DB::queryFirstField("SELECT id FROM feed_items WHERE guid = %s ORDER BY id DESC LIMIT 1", $lastGuid);
+                $lastFeedItemId = $this->findItemIdByGuid($lastGuid);
                 DB::update('feeds', [
                     'last_feed_item_id' => $lastFeedItemId,
                     'last_post_id' => $lastGuid,
@@ -1090,30 +1103,24 @@ class FeedProcessor
 
                     $this->climate->whisper("Processing JSON item from page {$currentPage}: {$title} ({$url})");
 
-                    $imageUrl = $this->extractImageFromUrl($url);
                     $contentCheck = $this->checkRealContent($content, $url);
                     $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
 
-                    try {
-                        DB::insert('feed_items', [
-                            'feed_id' => $feed['id'],
-                            'title' => $title,
-                            'author' => $author,
-                            'content' => $content,
-                            'url' => $url,
-                            'image_url' => $imageUrl,
-                            'guid' => $guid,
-                            'published_at' => $date,
-                            'is_visible' => $isVisible ? 1 : 0
-                        ]);
-                        $count++;
-                        $pageItemCount++;
-                        $updated = true;
-                        $this->climate->whisper("JSON item from page {$currentPage} added successfully: {$title}");
-                    } catch (\Exception $e) {
-                        $this->climate->whisper("Error adding JSON item from page {$currentPage} {$title}: {$e->getMessage()}");
-                        continue;
-                    }
+                    $this->bufferItem([
+                        'feed_id' => $feed['id'],
+                        'title' => $title,
+                        'author' => $author,
+                        'content' => $content,
+                        'url' => $url,
+                        'image_url' => null,
+                        'guid' => $guid,
+                        'published_at' => $date,
+                        'is_visible' => $isVisible ? 1 : 0
+                    ]);
+                    $count++;
+                    $pageItemCount++;
+                    $updated = true;
+                    $this->climate->whisper("JSON item from page {$currentPage} queued successfully: {$title}");
 
                     $processedItems++;
                     if ($processedItems >= $maxItemsToProcess) {
@@ -1186,29 +1193,23 @@ class FeedProcessor
 
                 $this->climate->whisper("Processing XML item: {$title} ({$url})");
 
-                $imageUrl = $this->extractImageFromUrl($url);
                 $contentCheck = $this->checkRealContent($itemContent, $url);
                 $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
 
-                try {
-                    DB::insert('feed_items', [
-                        'feed_id' => $feed['id'],
-                        'title' => $title,
-                        'author' => $author,
-                        'content' => $itemContent,
-                        'url' => $url,
-                        'image_url' => $imageUrl,
-                        'guid' => $guid,
-                        'published_at' => $date,
-                        'is_visible' => $isVisible ? 1 : 0
-                    ]);
-                    $count++;
-                    $updated = true;
-                    $this->climate->whisper("XML item added successfully: {$title}");
-                } catch (\Exception $e) {
-                    $this->climate->whisper("Error adding XML item {$title}: {$e->getMessage()}");
-                    continue;
-                }
+                $this->bufferItem([
+                    'feed_id' => $feed['id'],
+                    'title' => $title,
+                    'author' => $author,
+                    'content' => $itemContent,
+                    'url' => $url,
+                    'image_url' => null,
+                    'guid' => $guid,
+                    'published_at' => $date,
+                    'is_visible' => $isVisible ? 1 : 0
+                ]);
+                $count++;
+                $updated = true;
+                $this->climate->whisper("XML item queued successfully: {$title}");
 
                 $processedItems++;
                 if ($processedItems >= $maxItemsToProcess) {
@@ -1218,8 +1219,10 @@ class FeedProcessor
 
             $this->processPaginatedXmlFeed($feed, $xml, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
 
+            $flushed = $this->flushItems($feed['id']);
+
             if ($updated && $lastGuid) {
-                $lastFeedItemId = DB::queryFirstField("SELECT id FROM feed_items WHERE guid = %s ORDER BY id DESC LIMIT 1", $lastGuid);
+                $lastFeedItemId = $this->findItemIdByGuid($lastGuid);
                 DB::update('feeds', [
                     'last_feed_item_id' => $lastFeedItemId,
                     'last_post_id' => $lastGuid,
@@ -1306,30 +1309,24 @@ class FeedProcessor
 
                     $this->climate->whisper("Processing XML item from page {$currentPage}: {$title} ({$url})");
 
-                    $imageUrl = $this->extractImageFromUrl($url);
                     $contentCheck = $this->checkRealContent($content, $url);
                     $isVisible = $this->subscriberTextShow ? true : ($contentCheck['status'] === 'visible');
 
-                    try {
-                        DB::insert('feed_items', [
-                            'feed_id' => $feed['id'],
-                            'title' => $title,
-                            'author' => $author,
-                            'content' => $content,
-                            'url' => $url,
-                            'image_url' => $imageUrl,
-                            'guid' => $guid,
-                            'published_at' => $date,
-                            'is_visible' => $isVisible ? 1 : 0
-                        ]);
-                        $count++;
-                        $pageItemCount++;
-                        $updated = true;
-                        $this->climate->whisper("XML item from page {$currentPage} added successfully: {$title}");
-                    } catch (\Exception $e) {
-                        $this->climate->whisper("Error adding XML item from page {$currentPage} {$title}: {$e->getMessage()}");
-                        continue;
-                    }
+                    $this->bufferItem([
+                        'feed_id' => $feed['id'],
+                        'title' => $title,
+                        'author' => $author,
+                        'content' => $content,
+                        'url' => $url,
+                        'image_url' => null,
+                        'guid' => $guid,
+                        'published_at' => $date,
+                        'is_visible' => $isVisible ? 1 : 0
+                    ]);
+                    $count++;
+                    $pageItemCount++;
+                    $updated = true;
+                    $this->climate->whisper("XML item from page {$currentPage} queued successfully: {$title}");
 
                     $processedItems++;
                     if ($processedItems >= $maxItemsToProcess) {
@@ -1437,46 +1434,51 @@ class FeedProcessor
     {
         $this->climate->info("Checking all feed items for special content...");
 
-        $items = DB::query("SELECT id, url, content FROM feed_items WHERE is_visible = 1");
-
-        if (empty($items)) {
-            $this->climate->info("No visible items found to check");
-            return;
-        }
-
-        $totalItems = count($items);
-        $this->climate->info("Found {$totalItems} visible items to check");
-
+        $batchSize = (int)($_ENV['CONTENT_CHECK_BATCH_SIZE'] ?? 500);
+        $lastId = 0;
         $markedInvisible = 0;
         $processed = 0;
 
-        foreach ($items as $item) {
-            $processed++;
-            
-            if ($processed % 100 === 0) {
-                $this->climate->info("Progress: {$processed}/{$totalItems} items checked...");
-                gc_collect_cycles();
+        do {
+            $items = DB::query(
+                "SELECT id, url, content FROM feed_items WHERE is_visible = 1 AND id > %i ORDER BY id ASC LIMIT %i",
+                $lastId,
+                $batchSize
+            ) ?: [];
+
+            $batchCount = count($items);
+            if ($batchCount === 0) {
+                break;
             }
 
-            $contentCheck = $this->checkRealContent($item['content'], $item['url']);
+            foreach ($items as $item) {
+                $processed++;
+                $lastId = (int)$item['id'];
 
-            if ($contentCheck['status'] === 'invisible') {
-                DB::update('feed_items', [
-                    'is_visible' => 0
-                ], 'id=%i', $item['id']);
+                $contentCheck = $this->checkRealContent($item['content'], $item['url']);
 
-                $markedInvisible++;
-                $this->climate->whisper("Marked as invisible (ID: {$item['id']}, Reason: {$contentCheck['reason']}): {$item['url']}");
+                if ($contentCheck['status'] === 'invisible') {
+                    DB::update('feed_items', [
+                        'is_visible' => 0
+                    ], 'id=%i', $item['id']);
+
+                    $markedInvisible++;
+                    $this->climate->whisper("Marked as invisible (ID: {$item['id']}, Reason: {$contentCheck['reason']}): {$item['url']}");
+                }
+
+                if ($processed % 100 === 0) {
+                    $this->climate->info("Progress: {$processed} items checked...");
+                }
+
+                unset($item);
             }
-            
-            unset($item);
-        }
 
-        unset($items);
-        gc_collect_cycles();
-        
+            unset($items);
+            gc_collect_cycles();
+        } while ($batchCount === $batchSize);
+
         $this->climate->green("✓ Process complete!");
-        $this->climate->info("Total items checked: {$totalItems}");
+        $this->climate->info("Total items checked: {$processed}");
         $this->climate->info("Items marked as invisible: {$markedInvisible}");
     }
 
