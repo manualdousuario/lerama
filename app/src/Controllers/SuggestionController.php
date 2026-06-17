@@ -13,6 +13,7 @@ use League\Plates\Engine;
 use Lerama\Services\FeedTypeDetector;
 use Lerama\Services\EmailService;
 use Lerama\Services\CacheableQuery;
+use Lerama\Services\FeedSlugService;
 use Gregwar\Captcha\CaptchaBuilder;
 use DB;
 
@@ -194,6 +195,7 @@ class SuggestionController
                 'title' => $title,
                 'feed_url' => $feedUrl,
                 'site_url' => $siteUrl,
+                'slug' => FeedSlugService::generateForFeed($siteUrl),
                 'language' => $language,
                 'feed_type' => $feedType,
                 'submitter_email' => !empty($email) ? $email : null,

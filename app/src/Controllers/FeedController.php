@@ -163,7 +163,7 @@ class FeedController
 
     public function show(ServerRequestInterface $request, array $args = []): ResponseInterface
     {
-        $feedId = (int)($args['id'] ?? 0);
+        $feedSlug = $args['slug'] ?? '';
         $page = isset($args['page']) ? (int)$args['page'] : 1;
         if ($page < 1) {
             $page = 1;
@@ -172,10 +172,12 @@ class FeedController
         $perPage = (int)($_ENV['ITEMS_PER_PAGE'] ?? 21);
         $offset = ($page - 1) * $perPage;
 
-        $feed = DB::queryFirstRow("SELECT * FROM feeds WHERE id = %i", $feedId);
+        $feed = DB::queryFirstRow("SELECT * FROM feeds WHERE slug = %s", $feedSlug);
         if (!$feed) {
             return new RedirectResponse('/feeds');
         }
+
+        $feedId = (int)$feed['id'];
 
         $filterHash = $this->cache->hash([
             'feed' => $feedId,
@@ -193,7 +195,7 @@ class FeedController
 
         $totalPages = (int)ceil($totalCount / $perPage);
         if ($page > $totalPages && $totalPages > 0) {
-            return new RedirectResponse('/feeds/' . $feedId . '/page/' . $totalPages);
+            return new RedirectResponse('/feeds/' . urlencode($feedSlug) . '/page/' . $totalPages);
         }
 
         $itemsCacheKey = $this->cache->key('items', 'feed', $filterHash);
@@ -226,7 +228,7 @@ class FeedController
             'pagination' => [
                 'current' => $page,
                 'total' => $totalPages,
-                'baseUrl' => '/feeds/' . $feedId . '/page/'
+                'baseUrl' => '/feeds/' . urlencode($feedSlug) . '/page/'
             ],
             'title' => $feed['title'],
             'thumbnailService' => $this->thumbnailService

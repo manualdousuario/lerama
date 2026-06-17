@@ -7,6 +7,7 @@ namespace Lerama\Commands;
 use League\CLImate\CLImate;
 use DB;
 use Lerama\Services\FeedTypeDetector;
+use Lerama\Services\FeedSlugService;
 use Lerama\Config\HttpClientConfig;
 use GuzzleHttp\Client;
 
@@ -178,6 +179,7 @@ class FeedImporter
                 'title' => $feedTitle,
                 'feed_url' => $feedUrl,
                 'site_url' => $url,
+                'slug' => FeedSlugService::generateForFeed($url),
                 'feed_type' => $feedType,
                 'status' => 'online',
                 'created_at' => DB::sqleval('NOW()'),

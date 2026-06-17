@@ -16,6 +16,7 @@ use Lerama\Services\EmailService;
 use Lerama\Services\CacheService;
 use Lerama\Services\CacheableQuery;
 use Lerama\Services\ThumbnailService;
+use Lerama\Services\FeedSlugService;
 use DB;
 
 class AdminController
@@ -307,6 +308,7 @@ class AdminController
                         'title' => $title,
                         'feed_url' => $feedUrl,
                         'site_url' => $siteUrl,
+                        'slug' => FeedSlugService::generateForFeed($siteUrl),
                         'feed_type' => $feedType,
                         'language' => $language,
                         'status' => 'online',
@@ -447,6 +449,10 @@ class AdminController
                         'shuffle' => $shuffle
                     ];
 
+                    if ($siteUrl !== $feed['site_url']) {
+                        $updateData['slug'] = FeedSlugService::generateForFeed($siteUrl, $id);
+                    }
+
                     if (!empty($feedType)) {
                         $updateData['feed_type'] = $feedType;
                     }
@@ -565,6 +571,7 @@ class AdminController
                 'title' => $title,
                 'feed_url' => $feedUrl,
                 'site_url' => $siteUrl,
+                'slug' => FeedSlugService::generateForFeed($siteUrl),
                 'feed_type' => $feedType,
                 'status' => 'online'
             ]);
@@ -645,6 +652,10 @@ class AdminController
 
         if (isset($params['feed_type'])) {
             $updateData['feed_type'] = $params['feed_type'];
+        }
+
+        if (isset($updateData['site_url']) && $updateData['site_url'] !== $feed['site_url']) {
+            $updateData['slug'] = FeedSlugService::generateForFeed($updateData['site_url'], $id);
         }
 
         if (isset($params['status'])) {
