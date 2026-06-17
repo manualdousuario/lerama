@@ -11,3 +11,6 @@ $_ENV['SMTP_HOST']                  = '';
 $_ENV['SMTP_PORT']                  = '';
 $_ENV['ADMIN_EMAIL']                = '';
 $_ENV['PROXY_URL']                  = '';
+$_ENV['CACHE_ADMIN_TTL']            = '60';
+$_ENV['CACHE_WARM_FEEDS_LIMIT']     = '10';
+$_ENV['CACHE_AUTO_INVALIDATE']      = 'true';

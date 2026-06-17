@@ -9,6 +9,8 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Lerama\Config\HttpClientConfig;
 use Lerama\Services\ProxyService;
+use Lerama\Services\CacheInvalidator;
+use Lerama\Services\CacheWarmer;
 use DB;
 
 /**
@@ -70,6 +72,12 @@ class ImageExtractor
             unset($items);
             gc_collect_cycles();
         } while ($batchCount === $this->batchSize);
+
+        if ($success > 0) {
+            $this->climate->info("Invalidating item cache due to image updates...");
+            $deleted = CacheInvalidator::invalidateItems();
+            $this->climate->green("✓ Invalidated {$deleted} cache tag reference(s)");
+        }
 
         $this->climate->green("✓ Image extraction complete");
         $this->climate->info("Processed: {$processed}");

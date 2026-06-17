@@ -15,6 +15,7 @@ use Lerama\Services\FeedTypeDetector;
 use Lerama\Services\EmailService;
 use Lerama\Services\CacheService;
 use Lerama\Services\CacheableQuery;
+use Lerama\Services\CacheInvalidator;
 use Lerama\Services\ThumbnailService;
 use Lerama\Services\CsrfService;
 use Lerama\Services\UrlValidator;
@@ -200,9 +201,24 @@ class AdminController
         $query .= " ORDER BY fi.published_at DESC LIMIT %i, %i";
         $finalQueryParams = [...$queryParams, $offset, $perPage];
 
-        $items = DB::query($query, ...$finalQueryParams);
-        $totalCount = DB::queryFirstField($countQuery, ...$queryParams);
+        $adminTtl = (int)($_ENV['CACHE_ADMIN_TTL'] ?? 60);
+        $searchHash = $this->cache->hash([
+            'search' => $search,
+            'feed' => $feedId,
+            'page' => $page,
+            'perPage' => $perPage
+        ]);
+
+        $countCacheKey = $this->cache->key('admin', 'items', 'count', $searchHash);
+        $totalCount = $this->cache->remember($countCacheKey, $adminTtl, ['admin:items'], function () use ($countQuery, $queryParams) {
+            return DB::queryFirstField($countQuery, ...$queryParams);
+        });
         $totalPages = ceil($totalCount / $perPage);
+
+        $itemsCacheKey = $this->cache->key('admin', 'items', $searchHash);
+        $items = $this->cache->remember($itemsCacheKey, $adminTtl, ['admin:items'], function () use ($query, $finalQueryParams) {
+            return DB::query($query, ...$finalQueryParams);
+        });
 
         $feeds = CacheableQuery::query(
             'feeds', 'dropdown', ['feeds'], 300,
@@ -270,9 +286,25 @@ class AdminController
         $query .= " ORDER BY f.title ASC LIMIT %i, %i";
         $finalQueryParams = [...$queryParams, $offset, $perPage];
 
-        $feeds = DB::query($query, ...$finalQueryParams) ?: [];
-        $totalCount = DB::queryFirstField($countQuery, ...$queryParams);
+        $adminTtl = (int)($_ENV['CACHE_ADMIN_TTL'] ?? 60);
+        $filterHash = $this->cache->hash([
+            'status' => $status,
+            'shuffle' => $shuffle,
+            'search' => $search,
+            'page' => $page,
+            'perPage' => $perPage
+        ]);
+
+        $countCacheKey = $this->cache->key('admin', 'feeds', 'count', $filterHash);
+        $totalCount = $this->cache->remember($countCacheKey, $adminTtl, ['admin:feeds'], function () use ($countQuery, $queryParams) {
+            return DB::queryFirstField($countQuery, ...$queryParams);
+        });
         $totalPages = ceil($totalCount / $perPage);
+
+        $feedsCacheKey = $this->cache->key('admin', 'feeds', $filterHash);
+        $feeds = $this->cache->remember($feedsCacheKey, $adminTtl, ['admin:feeds'], function () use ($query, $finalQueryParams) {
+            return DB::query($query, ...$finalQueryParams) ?: [];
+        });
 
         if (!empty($feeds)) {
             $feedIds = array_column($feeds, 'id');
@@ -451,7 +483,8 @@ class AdminController
                         'status' => 'online'
                     ]);
 
-                    CacheableQuery::invalidateFeeds();
+                    CacheInvalidator::invalidateFeeds();
+                    CacheInvalidator::invalidate('admin:feeds');
 
                     return new RedirectResponse('/admin/feeds');
                 } catch (\Exception $e) {
@@ -605,7 +638,8 @@ class AdminController
                         BulkInserter::insert('feed_tags', $tagRows, ['ignore' => true]);
                     }
 
-                    CacheableQuery::invalidateFeed($id);
+                    CacheInvalidator::invalidateFeed($id);
+                    CacheInvalidator::invalidate('admin:feeds');
 
                     return new RedirectResponse('/admin/feeds');
                 } catch (\Exception $e) {
@@ -725,7 +759,8 @@ class AdminController
                 'status' => 'online'
             ]);
 
-            CacheableQuery::invalidateFeeds();
+            CacheInvalidator::invalidateFeeds();
+            CacheInvalidator::invalidate('admin:feeds');
 
             return new JsonResponse([
                 'success' => true,
@@ -838,7 +873,8 @@ class AdminController
         try {
             DB::update('feeds', $updateData, 'id=%i', $id);
 
-            CacheableQuery::invalidateFeed($id);
+            CacheInvalidator::invalidateFeed($id);
+            CacheInvalidator::invalidate('admin:feeds');
 
             return new JsonResponse([
                 'success' => true,
@@ -872,7 +908,8 @@ class AdminController
         try {
             DB::delete('feeds', 'id=%i', $id);
 
-            CacheableQuery::invalidate(['feeds', 'items']);
+            CacheInvalidator::invalidate(['feeds', 'items']);
+            CacheInvalidator::invalidate('admin:feeds');
 
             return new JsonResponse([
                 'success' => true,
@@ -918,7 +955,8 @@ class AdminController
                     'is_visible' => $isVisible ? 1 : 0
                 ], 'id=%i', $id);
 
-                CacheableQuery::invalidateItems();
+                CacheInvalidator::invalidateItems();
+                CacheInvalidator::invalidate('admin:items');
 
                 return new JsonResponse([
                     'success' => true,
@@ -975,12 +1013,15 @@ class AdminController
     // Categories Management
     public function categories(ServerRequestInterface $request): ResponseInterface
     {
-        $categories = DB::query("
-            SELECT c.*,
+        $adminTtl = (int)($_ENV['CACHE_ADMIN_TTL'] ?? 60);
+
+        $categories = CacheableQuery::query(
+            'admin', 'categories', ['admin:categories'], $adminTtl,
+            "SELECT c.*,
                    (SELECT COUNT(*) FROM feed_categories WHERE category_id = c.id) as feed_count
             FROM categories c
-            ORDER BY c.name
-        ");
+            ORDER BY c.name"
+        );
 
         $html = $this->templates->render('admin/categories', [
             'categories' => $categories,
@@ -1024,7 +1065,8 @@ class AdminController
                         'slug' => $slug
                     ]);
 
-                    CacheableQuery::invalidateCategories();
+                    CacheInvalidator::invalidateCategories();
+                    CacheInvalidator::invalidate('admin:categories');
 
                     return new RedirectResponse('/admin/categories');
                 } catch (\Exception $e) {
@@ -1096,7 +1138,8 @@ class AdminController
                         'slug' => $slug
                     ], 'id=%i', $id);
 
-                    CacheableQuery::invalidateCategories();
+                    CacheInvalidator::invalidateCategories();
+                    CacheInvalidator::invalidate('admin:categories');
 
                     return new RedirectResponse('/admin/categories');
                 } catch (\Exception $e) {
@@ -1167,7 +1210,8 @@ class AdminController
                 'slug' => $slug
             ]);
 
-            CacheableQuery::invalidateCategories();
+            CacheInvalidator::invalidateCategories();
+            CacheInvalidator::invalidate('admin:categories');
 
             return new JsonResponse([
                 'success' => true,
@@ -1225,7 +1269,8 @@ class AdminController
 
         try {
             DB::update('categories', $updateData, 'id=%i', $id);
-            CacheableQuery::invalidateCategories();
+            CacheInvalidator::invalidateCategories();
+            CacheInvalidator::invalidate('admin:categories');
 
             return new JsonResponse([
                 'success' => true,
@@ -1258,7 +1303,8 @@ class AdminController
 
         try {
             DB::delete('categories', 'id=%i', $id);
-            CacheableQuery::invalidateCategories();
+            CacheInvalidator::invalidateCategories();
+            CacheInvalidator::invalidate('admin:categories');
 
             return new JsonResponse([
                 'success' => true,
@@ -1275,12 +1321,15 @@ class AdminController
     // Tags Management
     public function tags(ServerRequestInterface $request): ResponseInterface
     {
-        $tags = DB::query("
-            SELECT t.*,
+        $adminTtl = (int)($_ENV['CACHE_ADMIN_TTL'] ?? 60);
+
+        $tags = CacheableQuery::query(
+            'admin', 'tags', ['admin:tags'], $adminTtl,
+            "SELECT t.*,
                    (SELECT COUNT(*) FROM feed_tags WHERE tag_id = t.id) as feed_count
             FROM tags t
-            ORDER BY t.name
-        ");
+            ORDER BY t.name"
+        );
 
         $html = $this->templates->render('admin/tags', [
             'tags' => $tags,
@@ -1324,7 +1373,8 @@ class AdminController
                         'slug' => $slug
                     ]);
 
-                    CacheableQuery::invalidateTags();
+                    CacheInvalidator::invalidateTags();
+                    CacheInvalidator::invalidate('admin:tags');
 
                     return new RedirectResponse('/admin/tags');
                 } catch (\Exception $e) {
@@ -1396,7 +1446,8 @@ class AdminController
                         'slug' => $slug
                     ], 'id=%i', $id);
 
-                    CacheableQuery::invalidateTags();
+                    CacheInvalidator::invalidateTags();
+                    CacheInvalidator::invalidate('admin:tags');
 
                     return new RedirectResponse('/admin/tags');
                 } catch (\Exception $e) {
@@ -1467,7 +1518,8 @@ class AdminController
                 'slug' => $slug
             ]);
 
-            CacheableQuery::invalidateTags();
+            CacheInvalidator::invalidateTags();
+                    CacheInvalidator::invalidate('admin:tags');
 
             return new JsonResponse([
                 'success' => true,
@@ -1525,7 +1577,8 @@ class AdminController
 
         try {
             DB::update('tags', $updateData, 'id=%i', $id);
-            CacheableQuery::invalidateTags();
+            CacheInvalidator::invalidateTags();
+                    CacheInvalidator::invalidate('admin:tags');
 
             return new JsonResponse([
                 'success' => true,
@@ -1559,7 +1612,8 @@ class AdminController
         try {
             DB::delete('tags', 'id=%i', $id);
 
-            CacheableQuery::invalidateTags();
+            CacheInvalidator::invalidateTags();
+                    CacheInvalidator::invalidate('admin:tags');
 
             return new JsonResponse([
                 'success' => true,
@@ -1619,7 +1673,8 @@ class AdminController
             BulkInserter::insert('feed_categories', $rows, ['ignore' => true, 'batchSize' => 500]);
 
             // Triggers automatically recalculate item counts for affected categories.
-            CacheableQuery::invalidate(['categories', 'feeds']);
+            CacheInvalidator::invalidate(['categories', 'feeds']);
+            CacheInvalidator::invalidate(['admin:categories', 'admin:feeds']);
 
             return new JsonResponse([
                 'success' => true,
@@ -1679,7 +1734,8 @@ class AdminController
             BulkInserter::insert('feed_tags', $rows, ['ignore' => true, 'batchSize' => 500]);
 
             // Triggers automatically recalculate item counts for affected tags.
-            CacheableQuery::invalidate(['tags', 'feeds']);
+            CacheInvalidator::invalidate(['tags', 'feeds']);
+            CacheInvalidator::invalidate(['admin:tags', 'admin:feeds']);
 
             return new JsonResponse([
                 'success' => true,
@@ -1724,7 +1780,8 @@ class AdminController
             // Single UPDATE for all selected feeds.
             DB::query("UPDATE feeds SET status = %s WHERE id IN %li", $status, array_map('intval', $feedIds));
 
-            CacheableQuery::invalidateFeeds();
+            CacheInvalidator::invalidateFeeds();
+            CacheInvalidator::invalidate('admin:feeds');
 
             return new JsonResponse([
                 'success' => true,
@@ -1762,8 +1819,9 @@ class AdminController
                 'shuffle' => $newShuffle
             ], 'id=%i', $id);
             
-            CacheableQuery::invalidateFeed($id);
-            
+            CacheInvalidator::invalidateFeed($id);
+            CacheInvalidator::invalidate('admin:feeds');
+
             return new JsonResponse([
                 'success' => true,
                 'message' => __('success.shuffle_updated'),

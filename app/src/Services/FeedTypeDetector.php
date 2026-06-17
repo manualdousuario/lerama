@@ -8,6 +8,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use Lerama\Config\HttpClientConfig;
+use Lerama\Services\CacheInvalidator;
 use DB;
 
 class FeedTypeDetector
@@ -57,6 +58,8 @@ class FeedTypeDetector
                 'last_error' => $errorMessage,
                 'last_checked' => DB::sqleval("NOW()")
             ], 'id=%i', $feedId);
+
+            CacheInvalidator::invalidateFeed($feedId);
         } catch (\Exception $e) {
             // Log error if needed
         }

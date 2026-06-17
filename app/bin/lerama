@@ -12,6 +12,8 @@ use Lerama\Commands\ImageExtractor;
 use Lerama\Services\EmailService;
 use Lerama\Services\CacheService;
 use Lerama\Services\CacheableQuery;
+use Lerama\Services\CacheInvalidator;
+use Lerama\Services\CacheWarmer;
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
@@ -22,6 +24,25 @@ DB::$password = $_ENV['LERAMA_DB_PASS'];
 DB::$dbName = $_ENV['LERAMA_DB_NAME'];
 DB::$port = (int)$_ENV['LERAMA_DB_PORT'];
 DB::$encoding = 'utf8mb4';
+
+// Register automatic cache invalidation hook for write operations
+if (filter_var($_ENV['CACHE_AUTO_INVALIDATE'] ?? 'true', FILTER_VALIDATE_BOOLEAN)) {
+    DB::addHook('run_success', function (array $hash) {
+        if (!in_array($hash['func_name'], ['insert', 'update', 'delete', 'query'], true)) {
+            return;
+        }
+
+        if ($hash['func_name'] === 'query') {
+            $sql = ltrim($hash['query']);
+            $firstWord = strtoupper(strtok($sql, " \t\n\r"));
+            if (!in_array($firstWord, ['INSERT', 'UPDATE', 'DELETE', 'REPLACE', 'TRUNCATE'], true)) {
+                return;
+            }
+        }
+
+        CacheInvalidator::invalidateFromQuery($hash['query'], $hash['affected'] ?? null);
+    });
+}
 
 $climate = new CLImate();
 
@@ -96,33 +117,29 @@ switch ($command) {
         // Warm cache
         $climate->info("Warming cache...");
         $cache = CacheService::getInstance();
-        
+
         if (!$cache->isAvailable()) {
             $climate->red("✗ Redis is not available");
             exit(1);
         }
-        
+
+        $summary = CacheWarmer::warmImportant();
+
         $climate->out("  Caching categories...");
-        $categories = CacheableQuery::query(
-            'categories', 'all', ['categories'], 300,
-            "SELECT * FROM categories ORDER BY name"
-        );
-        $climate->green("  ✓ Cached " . count($categories) . " categories");
-        
+        $climate->green("  ✓ Cached " . $summary['categories'] . " categories");
+
         $climate->out("  Caching tags...");
-        $tags = CacheableQuery::query(
-            'tags', 'all', ['tags'], 300,
-            "SELECT * FROM tags ORDER BY name"
-        );
-        $climate->green("  ✓ Cached " . count($tags) . " tags");
-        
+        $climate->green("  ✓ Cached " . $summary['tags'] . " tags");
+
         $climate->out("  Caching feeds dropdown...");
-        $feeds = CacheableQuery::query(
-            'feeds', 'dropdown', ['feeds'], 300,
-            "SELECT id, title FROM feeds ORDER BY title"
-        );
-        $climate->green("  ✓ Cached " . count($feeds) . " feeds");
-        
+        $climate->green("  ✓ Cached " . $summary['feeds_dropdown'] . " feeds");
+
+        $climate->out("  Caching home page...");
+        $climate->green("  ✓ Cached " . $summary['home']['items_count'] . " home items (total: " . $summary['home']['total_count'] . ")");
+
+        $climate->out("  Caching top feeds...");
+        $climate->green("  ✓ Cached " . $summary['top_feeds'] . " feeds");
+
         $climate->green("✓ Cache warming completed");
         break;
 

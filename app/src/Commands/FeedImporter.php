@@ -8,6 +8,8 @@ use League\CLImate\CLImate;
 use DB;
 use Lerama\Services\FeedTypeDetector;
 use Lerama\Services\FeedSlugService;
+use Lerama\Services\CacheInvalidator;
+use Lerama\Services\CacheWarmer;
 use Lerama\Config\HttpClientConfig;
 use GuzzleHttp\Client;
 
@@ -120,7 +122,17 @@ class FeedImporter
         $this->climate->info("Import completed!");
         $this->climate->green("Successful: {$successCount}");
         $this->climate->red("Errors: {$errorCount}");
-        
+
+        if ($successCount > 0) {
+            $this->climate->info("Invalidating affected cache tags...");
+            $deleted = CacheInvalidator::invalidate(['feeds', 'categories', 'tags']);
+            $this->climate->green("✓ Invalidated {$deleted} cache tag reference(s)");
+
+            $this->climate->info("Warming important caches...");
+            $summary = CacheWarmer::warmImportant();
+            $this->climate->green("✓ Warmed categories ({$summary['categories']}), tags ({$summary['tags']}), feeds ({$summary['feeds_dropdown']}), home items ({$summary['home']['items_count']})");
+        }
+
         unset($results);
         gc_collect_cycles();
     }

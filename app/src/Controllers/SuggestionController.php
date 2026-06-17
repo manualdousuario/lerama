@@ -13,6 +13,7 @@ use League\Plates\Engine;
 use Lerama\Services\FeedTypeDetector;
 use Lerama\Services\EmailService;
 use Lerama\Services\CacheableQuery;
+use Lerama\Services\CacheInvalidator;
 use Lerama\Services\UrlValidator;
 use Lerama\Services\FeedSlugService;
 use Gregwar\Captcha\CaptchaBuilder;
@@ -236,6 +237,8 @@ class SuggestionController
                 'language' => $language,
                 'status' => 'pending'
             ]);
+
+            CacheInvalidator::invalidateFeeds();
 
             if ($request->getHeaderLine('Accept') === 'application/json' ||
                 $request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {

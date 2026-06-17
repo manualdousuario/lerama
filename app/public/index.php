@@ -13,6 +13,7 @@ use Lerama\Controllers\AdminController;
 use Lerama\Controllers\SuggestionController;
 use Lerama\Middleware\AuthMiddleware;
 use Lerama\Middleware\SecurityHeadersMiddleware;
+use Lerama\Services\CacheInvalidator;
 
 ini_set('display_errors', '0');
 ini_set('display_startup_errors', '0');
@@ -57,6 +58,24 @@ DB::$password = $_ENV['LERAMA_DB_PASS'];
 DB::$dbName = $_ENV['LERAMA_DB_NAME'];
 DB::$port = (int)$_ENV['LERAMA_DB_PORT'];
 DB::$encoding = 'utf8mb4';
+
+if (filter_var($_ENV['CACHE_AUTO_INVALIDATE'] ?? 'true', FILTER_VALIDATE_BOOLEAN)) {
+    DB::addHook('run_success', function (array $hash) {
+        if (!in_array($hash['func_name'], ['insert', 'update', 'delete', 'query'], true)) {
+            return;
+        }
+
+        if ($hash['func_name'] === 'query') {
+            $sql = ltrim($hash['query']);
+            $firstWord = strtoupper(strtok($sql, " \t\n\r"));
+            if (!in_array($firstWord, ['INSERT', 'UPDATE', 'DELETE', 'REPLACE', 'TRUNCATE'], true)) {
+                return;
+            }
+        }
+
+        CacheInvalidator::invalidateFromQuery($hash['query'], $hash['affected'] ?? null);
+    });
+}
 
 // Create the router
 $router = new Router();

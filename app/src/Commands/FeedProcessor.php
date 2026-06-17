@@ -13,6 +13,8 @@ use GuzzleHttp\Exception\RequestException;
 use Lerama\Services\ProxyService;
 use Lerama\Services\EmailService;
 use Lerama\Services\BulkInserter;
+use Lerama\Services\CacheInvalidator;
+use Lerama\Services\CacheWarmer;
 use Lerama\Config\HttpClientConfig;
 
 class FeedProcessor
@@ -87,7 +89,15 @@ class FeedProcessor
             $this->processSingleFeed($feed);
             unset($feed);
         }
-        
+
+        $this->climate->info("Invalidating affected cache tags...");
+        $deleted = CacheInvalidator::invalidate(['items', 'feeds']);
+        $this->climate->green("✓ Invalidated {$deleted} cache tag reference(s)");
+
+        $this->climate->info("Warming important caches...");
+        $summary = CacheWarmer::warmImportant();
+        $this->climate->green("✓ Warmed categories ({$summary['categories']}), tags ({$summary['tags']}), feeds ({$summary['feeds_dropdown']}), home items ({$summary['home']['items_count']})");
+
         unset($feeds);
         gc_collect_cycles();
     }
@@ -315,6 +325,14 @@ class FeedProcessor
         
         unset($pausedFeeds);
         gc_collect_cycles();
+
+        $this->climate->info("Invalidating feed cache after status check...");
+        $deleted = CacheInvalidator::invalidateFeeds();
+        $this->climate->green("✓ Invalidated {$deleted} cache tag reference(s)");
+
+        $this->climate->info("Warming important caches...");
+        $summary = CacheWarmer::warmImportant();
+        $this->climate->green("✓ Warmed categories ({$summary['categories']}), tags ({$summary['tags']}), feeds ({$summary['feeds_dropdown']}), home items ({$summary['home']['items_count']})");
     }
 
     private function setupProxyClient(): bool
@@ -1476,6 +1494,12 @@ class FeedProcessor
             unset($items);
             gc_collect_cycles();
         } while ($batchCount === $batchSize);
+
+        if ($markedInvisible > 0) {
+            $this->climate->info("Invalidating item cache due to visibility changes...");
+            $deleted = CacheInvalidator::invalidateItems();
+            $this->climate->green("✓ Invalidated {$deleted} cache tag reference(s)");
+        }
 
         $this->climate->green("✓ Process complete!");
         $this->climate->info("Total items checked: {$processed}");
