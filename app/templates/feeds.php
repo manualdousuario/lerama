@@ -86,12 +86,6 @@
                                     <?= __('feeds.verification') ?>/<?= __('feeds.update') ?>
                                 </div>
                             </th>
-                            <th scope="col" class="small text-uppercase">
-                                <div class="d-flex align-items-center">
-                                    <i class="bi bi-collection me-1"></i>
-                                    <?= __('feeds.articles') ?>
-                                </div>
-                            </th>
                         </tr>
                     </thead>
                     <tbody>
@@ -104,6 +98,9 @@
                                                 <a href="<?= $this->e($feed['site_url']) . (parse_url($feed['site_url'], PHP_URL_QUERY) ? '&' : '?') ?>utm_source=lerama" target="_blank" class="text-decoration-none">
                                                     <?= $this->e($feed['title']) ?>
                                                     <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                                </a>
+                                                <a href="/feeds/<?= (int)$feed['id'] ?>" class="badge bg-secondary text-decoration-none ms-1" title="<?= __('feeds.items') ?>">
+                                                    <?= $feed['item_count'] ?? 0 ?> <i class="bi bi-collection"></i>
                                                 </a>
                                             </div>
                                             <div class="small text-secondary text-truncate" style="max-width: 250px;">
@@ -166,9 +163,6 @@
                                     <div>
                                         <strong><?= __('feeds.updated') ?>:</strong> <?= $feed['last_updated'] ? date('d/m/Y H:i', strtotime($feed['last_updated'])) : __('feeds.never') ?>
                                     </div>
-                                </td>
-                                <td class="align-middle small text-secondary">
-                                    <?= $feed['item_count'] ?? 0 ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
