@@ -13,6 +13,7 @@ use League\Plates\Engine;
 use Lerama\Services\FeedTypeDetector;
 use Lerama\Services\EmailService;
 use Lerama\Services\CacheableQuery;
+use Lerama\Services\UrlValidator;
 use Gregwar\Captcha\CaptchaBuilder;
 use DB;
 
@@ -106,9 +107,14 @@ class SuggestionController
         } elseif (!filter_var($feedUrl, FILTER_VALIDATE_URL)) {
             $errors['feed_url'] = __('validation.feed_url_valid');
         } else {
-            $feedValidation = $this->validateFeed($feedUrl);
-            if (!$feedValidation['valid']) {
-                $errors['feed_url'] = $feedValidation['error'];
+            $urlCheck = UrlValidator::validate($feedUrl);
+            if (!$urlCheck['valid']) {
+                $errors['feed_url'] = $urlCheck['error'];
+            } else {
+                $feedValidation = $this->validateFeed($feedUrl);
+                if (!$feedValidation['valid']) {
+                    $errors['feed_url'] = $feedValidation['error'];
+                }
             }
         }
 
@@ -116,6 +122,11 @@ class SuggestionController
             $errors['site_url'] = __('validation.site_url_required');
         } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
             $errors['site_url'] = __('validation.site_url_valid');
+        } else {
+            $urlCheck = UrlValidator::validate($siteUrl);
+            if (!$urlCheck['valid']) {
+                $errors['site_url'] = $urlCheck['error'];
+            }
         }
 
         $validLanguages = ['en', 'pt-BR', 'es'];

@@ -16,7 +16,9 @@
     </div>
 
     <div class="card-body">
+        <?php use Lerama\Services\CsrfService; ?>
         <form id="feed-form" method="POST">
+            <input type="hidden" name="csrf_token" value="<?= $this->e(CsrfService::getToken() ?? '') ?>">
             <?php if ($isEdit): ?>
                 <input type="hidden" id="feed-id" name="feed-id" value="<?= $feed['id'] ?>">
             <?php endif; ?>

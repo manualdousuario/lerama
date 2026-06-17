@@ -81,7 +81,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 fetch(`/admin/tags/${id}`, {
                     method: 'DELETE',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': window.LERAMA.csrfToken,
                     }
                 })
                 .then(response => response.json())

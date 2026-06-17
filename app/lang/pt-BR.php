@@ -310,6 +310,7 @@ return [
     'error.feed_validate' => 'Não foi possível validar o feed. Verifique se a URL está correta e se o feed está acessível.',
     'error.feed_invalid' => 'Feed inválido ou inacessível',
     'error.login_invalid' => 'Nome de usuário ou senha inválidos',
+    'error.csrf_invalid' => 'Token de segurança inválido. Por favor, recarregue a página e tente novamente.',
     
     // Feed Status Messages
     'feed.already_pending' => 'Este feed já foi sugerido e está aguardando aprovação',

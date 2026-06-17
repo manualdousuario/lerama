@@ -190,9 +190,11 @@
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
+                            'X-CSRF-Token': window.LERAMA.csrfToken,
                         },
                         body: JSON.stringify({
-                            is_visible: newVisible
+                            is_visible: newVisible,
+                            csrf_token: window.LERAMA.csrfToken
                         }),
                     })
                     .then(response => response.json())
@@ -240,9 +242,11 @@
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
+                            'X-CSRF-Token': window.LERAMA.csrfToken,
                         },
                         body: JSON.stringify({
-                            refresh_thumbnail: true
+                            refresh_thumbnail: true,
+                            csrf_token: window.LERAMA.csrfToken
                         }),
                     })
                     .then(response => {
@@ -258,18 +262,18 @@
                         
                         if (data.success) {
                             // Show success message with simple alert
-                            alert('<?= __('admin.items.thumbnail_updated') ?>');
+                            alert(<?= json_encode(__('admin.items.thumbnail_updated')) ?>);
                         } else {
-                            alert('<?= __('admin.items.thumbnail_error') ?>: ' + data.message);
+                            alert(<?= json_encode(__('admin.items.thumbnail_error')) ?> + ': ' + data.message);
                         }
                     })
                     .catch(error => {
                         this.innerHTML = originalText;
                         this.classList.remove('disabled');
                         this.removeAttribute('disabled');
-                        
+
                         console.error('Error:', error);
-                        alert('<?= __('admin.items.thumbnail_error') ?>: ' + error.message);
+                        alert(<?= json_encode(__('admin.items.thumbnail_error')) ?> + ': ' + error.message);
                     });
             });
         });

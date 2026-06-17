@@ -11,7 +11,9 @@
     </div>
     
     <div class="card-body">
+        <?php use Lerama\Services\CsrfService; ?>
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?= $this->e(CsrfService::getToken() ?? '') ?>">
             <?php if (!empty($errors['general'])): ?>
                 <div class="alert alert-danger" role="alert">
                     <i class="bi bi-exclamation-triangle me-2"></i>

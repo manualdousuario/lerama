@@ -16,6 +16,8 @@ use Lerama\Services\EmailService;
 use Lerama\Services\CacheService;
 use Lerama\Services\CacheableQuery;
 use Lerama\Services\ThumbnailService;
+use Lerama\Services\CsrfService;
+use Lerama\Services\UrlValidator;
 use DB;
 
 class AdminController
@@ -31,9 +33,7 @@ class AdminController
 
     public function loginForm(ServerRequestInterface $request): ResponseInterface
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        $this->ensureSession();
         if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
             return new RedirectResponse('/admin');
         }
@@ -47,15 +47,19 @@ class AdminController
 
     public function login(ServerRequestInterface $request): ResponseInterface
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+        $this->ensureSession();
+
+        $csrfError = $this->validateCsrf($request);
+        if ($csrfError !== null) {
+            return $this->csrfErrorResponse($csrfError, true);
         }
 
         $params = (array)$request->getParsedBody();
         $username = $params['username'] ?? '';
         $password = $params['password'] ?? '';
 
-        if ($username === $_ENV['ADMIN_USERNAME'] && $password === $_ENV['ADMIN_PASSWORD']) {
+        if ($username === $_ENV['ADMIN_USERNAME'] && $this->verifyPassword($password)) {
+            session_regenerate_id(true);
             $_SESSION['admin_logged_in'] = true;
             return new RedirectResponse('/admin');
         }
@@ -70,9 +74,90 @@ class AdminController
 
     public function logout(ServerRequestInterface $request): ResponseInterface
     {
+        $this->ensureSession();
+        $_SESSION = [];
+        if (isset($_COOKIE[session_name()])) {
+            $params = session_get_cookie_params();
+            setcookie(
+                session_name(),
+                '',
+                [
+                    'expires' => time() - 42000,
+                    'path' => $params['path'],
+                    'domain' => $params['domain'],
+                    'secure' => $params['secure'],
+                    'httponly' => $params['httponly'],
+                    'samesite' => $params['samesite'] ?? 'Strict',
+                ]
+            );
+        }
         session_destroy();
 
         return new RedirectResponse('/admin/login');
+    }
+
+    private function ensureSession(): void
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+    }
+
+    private function verifyPassword(string $password): bool
+    {
+        $plainPassword = $_ENV['ADMIN_PASSWORD'] ?? '';
+        return !empty($plainPassword) && hash_equals($plainPassword, $password);
+    }
+
+    private function validateCsrf(ServerRequestInterface $request): ?string
+    {
+        CsrfService::ensureSession();
+
+        $token = $request->getHeaderLine('X-CSRF-Token');
+        if (empty($token)) {
+            $params = (array)$request->getParsedBody();
+            $token = $params['csrf_token'] ?? '';
+        }
+
+        if (empty($token)) {
+            $rawBody = $request->getBody()->getContents();
+            if (!empty($rawBody)) {
+                $jsonData = json_decode($rawBody, true);
+                if (is_array($jsonData)) {
+                    $token = $jsonData['csrf_token'] ?? '';
+                }
+            }
+            // Rewind body so later code can read it again
+            $request->getBody()->rewind();
+        }
+
+        if (!CsrfService::validateToken($token)) {
+            return __('error.csrf_invalid');
+        }
+
+        return null;
+    }
+
+    private function csrfErrorResponse(?string $error, bool $isHtml = false): ResponseInterface
+    {
+        if ($error === null) {
+            return new EmptyResponse(200);
+        }
+
+        if ($isHtml) {
+            return new HtmlResponse(
+                $this->templates->render('admin/login', [
+                    'title' => __('admin.login.title'),
+                    'error' => $error
+                ]),
+                403
+            );
+        }
+
+        return new JsonResponse([
+            'success' => false,
+            'message' => $error
+        ], 403);
     }
 
     public function index(ServerRequestInterface $request): ResponseInterface
@@ -260,6 +345,11 @@ class AdminController
         $allTags = DB::query("SELECT * FROM tags ORDER BY name");
 
         if ($request->getMethod() === 'POST') {
+            $csrfError = $this->validateCsrf($request);
+            if ($csrfError !== null) {
+                return $this->csrfErrorResponse($csrfError, true);
+            }
+
             $params = (array)$request->getParsedBody();
             $title = $params['title'] ?? '';
             $feedUrl = $params['feed_url'] ?? '';
@@ -279,11 +369,21 @@ class AdminController
                 $errors['feed_url'] = __('validation.feed_url_required');
             } elseif (!filter_var($feedUrl, FILTER_VALIDATE_URL)) {
                 $errors['feed_url'] = __('validation.feed_url_valid');
+            } else {
+                $urlCheck = UrlValidator::validate($feedUrl);
+                if (!$urlCheck['valid']) {
+                    $errors['feed_url'] = $urlCheck['error'];
+                }
             }
             if (empty($siteUrl)) {
                 $errors['site_url'] = __('validation.site_url_required');
             } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
                 $errors['site_url'] = __('validation.site_url_valid');
+            } else {
+                $urlCheck = UrlValidator::validate($siteUrl);
+                if (!$urlCheck['valid']) {
+                    $errors['site_url'] = $urlCheck['error'];
+                }
             }
 
             if (!in_array($language, ['en', 'pt-BR', 'es'])) {
@@ -404,6 +504,11 @@ class AdminController
         $selectedTagIds = array_column($selectedTags, 'tag_id');
 
         if ($request->getMethod() === 'POST') {
+            $csrfError = $this->validateCsrf($request);
+            if ($csrfError !== null) {
+                return $this->csrfErrorResponse($csrfError, true);
+            }
+
             $params = (array)$request->getParsedBody();
             $title = $params['title'] ?? '';
             $feedUrl = $params['feed_url'] ?? '';
@@ -424,11 +529,21 @@ class AdminController
                 $errors['feed_url'] = __('validation.feed_url_required');
             } elseif (!filter_var($feedUrl, FILTER_VALIDATE_URL)) {
                 $errors['feed_url'] = __('validation.feed_url_valid');
+            } else {
+                $urlCheck = UrlValidator::validate($feedUrl);
+                if (!$urlCheck['valid']) {
+                    $errors['feed_url'] = $urlCheck['error'];
+                }
             }
             if (empty($siteUrl)) {
                 $errors['site_url'] = __('validation.site_url_required');
             } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
                 $errors['site_url'] = __('validation.site_url_valid');
+            } else {
+                $urlCheck = UrlValidator::validate($siteUrl);
+                if (!$urlCheck['valid']) {
+                    $errors['site_url'] = $urlCheck['error'];
+                }
             }
 
             if (!in_array($language, ['en', 'pt-BR', 'es'])) {
@@ -521,6 +636,11 @@ class AdminController
 
     public function createFeed(ServerRequestInterface $request): ResponseInterface
     {
+        $csrfError = $this->validateCsrf($request);
+        if ($csrfError !== null) {
+            return $this->csrfErrorResponse($csrfError);
+        }
+
         $params = (array)$request->getParsedBody();
         $title = $params['title'] ?? '';
         $feedUrl = $params['feed_url'] ?? '';
@@ -535,11 +655,21 @@ class AdminController
             $errors['feed_url'] = __('validation.feed_url_required');
         } elseif (!filter_var($feedUrl, FILTER_VALIDATE_URL)) {
             $errors['feed_url'] = __('validation.feed_url_valid');
+        } else {
+            $urlCheck = UrlValidator::validate($feedUrl);
+            if (!$urlCheck['valid']) {
+                $errors['feed_url'] = $urlCheck['error'];
+            }
         }
         if (empty($siteUrl)) {
             $errors['site_url'] = __('validation.site_url_required');
         } elseif (!filter_var($siteUrl, FILTER_VALIDATE_URL)) {
             $errors['site_url'] = __('validation.site_url_valid');
+        } else {
+            $urlCheck = UrlValidator::validate($siteUrl);
+            if (!$urlCheck['valid']) {
+                $errors['site_url'] = $urlCheck['error'];
+            }
         }
 
         if (!empty($errors)) {
@@ -596,6 +726,11 @@ class AdminController
     public function updateFeed(ServerRequestInterface $request, array $args): ResponseInterface
     {
         $id = (int)$args['id'];
+
+        $csrfError = $this->validateCsrf($request);
+        if ($csrfError !== null) {
+            return $this->csrfErrorResponse($csrfError);
+        }
         
         $body = $request->getBody()->getContents();
         $params = !empty($body) ? json_decode($body, true) : [];
@@ -629,7 +764,12 @@ class AdminController
             } elseif (!filter_var($params['feed_url'], FILTER_VALIDATE_URL)) {
                 $errors['feed_url'] = __('validation.feed_url_valid');
             } else {
-                $updateData['feed_url'] = $params['feed_url'];
+                $urlCheck = UrlValidator::validate($params['feed_url']);
+                if (!$urlCheck['valid']) {
+                    $errors['feed_url'] = $urlCheck['error'];
+                } else {
+                    $updateData['feed_url'] = $params['feed_url'];
+                }
             }
         }
 
@@ -639,7 +779,12 @@ class AdminController
             } elseif (!filter_var($params['site_url'], FILTER_VALIDATE_URL)) {
                 $errors['site_url'] = __('validation.site_url_valid');
             } else {
-                $updateData['site_url'] = $params['site_url'];
+                $urlCheck = UrlValidator::validate($params['site_url']);
+                if (!$urlCheck['valid']) {
+                    $errors['site_url'] = $urlCheck['error'];
+                } else {
+                    $updateData['site_url'] = $params['site_url'];
+                }
             }
         }
 
@@ -691,6 +836,11 @@ class AdminController
     {
         $id = (int)$args['id'];
 
+        $csrfError = $this->validateCsrf($request);
+        if ($csrfError !== null) {
+            return $this->csrfErrorResponse($csrfError);
+        }
+
         $feed = DB::queryFirstRow("SELECT * FROM feeds WHERE id = %i", $id);
         if (!$feed) {
             return new JsonResponse([
@@ -719,6 +869,11 @@ class AdminController
     public function updateItem(ServerRequestInterface $request, array $args): ResponseInterface
     {
         $id = (int)$args['id'];
+
+        $csrfError = $this->validateCsrf($request);
+        if ($csrfError !== null) {
+            return $this->csrfErrorResponse($csrfError);
+        }
         
         $body = $request->getBody()->getContents();
         $params = !empty($body) ? json_decode($body, true) : [];
@@ -818,6 +973,11 @@ class AdminController
     public function newCategoryForm(ServerRequestInterface $request): ResponseInterface
     {
         if ($request->getMethod() === 'POST') {
+            $csrfError = $this->validateCsrf($request);
+            if ($csrfError !== null) {
+                return $this->csrfErrorResponse($csrfError, true);
+            }
+
             $params = (array)$request->getParsedBody();
             $name = trim($params['name'] ?? '');
             $slug = trim($params['slug'] ?? '');
@@ -885,6 +1045,11 @@ class AdminController
         }
 
         if ($request->getMethod() === 'POST') {
+            $csrfError = $this->validateCsrf($request);
+            if ($csrfError !== null) {
+                return $this->csrfErrorResponse($csrfError, true);
+            }
+
             $params = (array)$request->getParsedBody();
             $name = trim($params['name'] ?? '');
             $slug = trim($params['slug'] ?? '');
@@ -945,6 +1110,11 @@ class AdminController
 
     public function createCategory(ServerRequestInterface $request): ResponseInterface
     {
+        $csrfError = $this->validateCsrf($request);
+        if ($csrfError !== null) {
+            return $this->csrfErrorResponse($csrfError);
+        }
+
         $params = (array)$request->getParsedBody();
         $name = trim($params['name'] ?? '');
         $slug = trim($params['slug'] ?? '');
@@ -994,6 +1164,12 @@ class AdminController
     public function updateCategory(ServerRequestInterface $request, array $args): ResponseInterface
     {
         $id = (int)$args['id'];
+
+        $csrfError = $this->validateCsrf($request);
+        if ($csrfError !== null) {
+            return $this->csrfErrorResponse($csrfError);
+        }
+
         $params = json_decode($request->getBody()->getContents(), true) ?: (array)$request->getParsedBody();
 
         $category = DB::queryFirstRow("SELECT * FROM categories WHERE id = %i", $id);
@@ -1047,6 +1223,11 @@ class AdminController
     {
         $id = (int)$args['id'];
 
+        $csrfError = $this->validateCsrf($request);
+        if ($csrfError !== null) {
+            return $this->csrfErrorResponse($csrfError);
+        }
+
         $category = DB::queryFirstRow("SELECT * FROM categories WHERE id = %i", $id);
         if (!$category) {
             return new JsonResponse([
@@ -1092,6 +1273,11 @@ class AdminController
     public function newTagForm(ServerRequestInterface $request): ResponseInterface
     {
         if ($request->getMethod() === 'POST') {
+            $csrfError = $this->validateCsrf($request);
+            if ($csrfError !== null) {
+                return $this->csrfErrorResponse($csrfError, true);
+            }
+
             $params = (array)$request->getParsedBody();
             $name = trim($params['name'] ?? '');
             $slug = trim($params['slug'] ?? '');
@@ -1159,6 +1345,11 @@ class AdminController
         }
 
         if ($request->getMethod() === 'POST') {
+            $csrfError = $this->validateCsrf($request);
+            if ($csrfError !== null) {
+                return $this->csrfErrorResponse($csrfError, true);
+            }
+
             $params = (array)$request->getParsedBody();
             $name = trim($params['name'] ?? '');
             $slug = trim($params['slug'] ?? '');
@@ -1219,6 +1410,11 @@ class AdminController
 
     public function createTag(ServerRequestInterface $request): ResponseInterface
     {
+        $csrfError = $this->validateCsrf($request);
+        if ($csrfError !== null) {
+            return $this->csrfErrorResponse($csrfError);
+        }
+
         $params = (array)$request->getParsedBody();
         $name = trim($params['name'] ?? '');
         $slug = trim($params['slug'] ?? '');
@@ -1268,6 +1464,12 @@ class AdminController
     public function updateTag(ServerRequestInterface $request, array $args): ResponseInterface
     {
         $id = (int)$args['id'];
+
+        $csrfError = $this->validateCsrf($request);
+        if ($csrfError !== null) {
+            return $this->csrfErrorResponse($csrfError);
+        }
+
         $params = json_decode($request->getBody()->getContents(), true) ?: (array)$request->getParsedBody();
 
         $tag = DB::queryFirstRow("SELECT * FROM tags WHERE id = %i", $id);
@@ -1321,6 +1523,11 @@ class AdminController
     {
         $id = (int)$args['id'];
 
+        $csrfError = $this->validateCsrf($request);
+        if ($csrfError !== null) {
+            return $this->csrfErrorResponse($csrfError);
+        }
+
         $tag = DB::queryFirstRow("SELECT * FROM tags WHERE id = %i", $id);
         if (!$tag) {
             return new JsonResponse([
@@ -1348,6 +1555,11 @@ class AdminController
 
     public function bulkUpdateFeedCategories(ServerRequestInterface $request): ResponseInterface
     {
+        $csrfError = $this->validateCsrf($request);
+        if ($csrfError !== null) {
+            return $this->csrfErrorResponse($csrfError);
+        }
+
         $params = json_decode($request->getBody()->getContents(), true) ?: (array)$request->getParsedBody();
         
         $feedIds = $params['feed_ids'] ?? [];
@@ -1411,6 +1623,11 @@ class AdminController
     
     public function bulkUpdateFeedTags(ServerRequestInterface $request): ResponseInterface
     {
+        $csrfError = $this->validateCsrf($request);
+        if ($csrfError !== null) {
+            return $this->csrfErrorResponse($csrfError);
+        }
+
         $params = json_decode($request->getBody()->getContents(), true) ?: (array)$request->getParsedBody();
         
         $feedIds = $params['feed_ids'] ?? [];
@@ -1474,6 +1691,11 @@ class AdminController
 
     public function bulkUpdateFeedStatus(ServerRequestInterface $request): ResponseInterface
     {
+        $csrfError = $this->validateCsrf($request);
+        if ($csrfError !== null) {
+            return $this->csrfErrorResponse($csrfError);
+        }
+
         $params = json_decode($request->getBody()->getContents(), true) ?: (array)$request->getParsedBody();
         
         $feedIds = $params['feed_ids'] ?? [];
@@ -1519,6 +1741,11 @@ class AdminController
     public function toggleShuffle(ServerRequestInterface $request, array $args): ResponseInterface
     {
         $id = (int)$args['id'];
+
+        $csrfError = $this->validateCsrf($request);
+        if ($csrfError !== null) {
+            return $this->csrfErrorResponse($csrfError);
+        }
         
         $feed = DB::queryFirstRow("SELECT * FROM feeds WHERE id = %i", $id);
         if (!$feed) {

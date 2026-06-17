@@ -122,11 +122,16 @@
             </p>
         </div>
     </footer>
+    <?php
+        use Lerama\Services\CsrfService;
+        $csrfToken = CsrfService::generateToken();
+    ?>
     <script>window.LERAMA = {
-        appUrl: '<?= $_ENV['APP_URL'] ?>',
+        appUrl: '<?= $this->e($_ENV['APP_URL']) ?>',
+        csrfToken: <?= json_encode($csrfToken) ?>,
         i18n: {
-            footerCopied:    '<?= __('footer.copied') ?>',
-            footerCopyError: '<?= __('footer.copy_error') ?>'
+            footerCopied:    <?= json_encode(__('footer.copied')) ?>,
+            footerCopyError: <?= json_encode(__('footer.copy_error')) ?>
         }
     };</script>
     <script src="/assets/js/layout.min.js"></script>

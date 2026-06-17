@@ -12,10 +12,39 @@ use Lerama\Controllers\FeedController;
 use Lerama\Controllers\AdminController;
 use Lerama\Controllers\SuggestionController;
 use Lerama\Middleware\AuthMiddleware;
+use Lerama\Middleware\SecurityHeadersMiddleware;
+
+ini_set('display_errors', '0');
+ini_set('display_startup_errors', '0');
+error_reporting(E_ALL);
 
 // Load environment variables
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
+
+if (($_ENV['APP_ENV'] ?? 'production') !== 'production') {
+    ini_set('display_errors', '1');
+    ini_set('display_startup_errors', '1');
+}
+
+$cookieSecure = filter_var($_ENV['SESSION_COOKIE_SECURE'] ?? true, FILTER_VALIDATE_BOOLEAN);
+$cookieHttpOnly = filter_var($_ENV['SESSION_COOKIE_HTTPONLY'] ?? true, FILTER_VALIDATE_BOOLEAN);
+$cookieSameSite = $_ENV['SESSION_COOKIE_SAMESITE'] ?? 'Strict';
+
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => '',
+    'secure' => $cookieSecure,
+    'httponly' => $cookieHttpOnly,
+    'samesite' => $cookieSameSite,
+]);
+
+ini_set('session.use_strict_mode', '1');
+ini_set('session.use_only_cookies', '1');
+ini_set('session.cookie_httponly', $cookieHttpOnly ? '1' : '0');
+ini_set('session.cookie_secure', $cookieSecure ? '1' : '0');
+ini_set('session.cookie_samesite', $cookieSameSite);
 
 // Initialize translator
 require_once __DIR__ . '/../src/Services/Translator.php';
@@ -31,6 +60,7 @@ DB::$encoding = 'utf8mb4';
 
 // Create the router
 $router = new Router();
+$router->middleware(new SecurityHeadersMiddleware());
 
 // Define routes
 // Public routes
@@ -41,6 +71,8 @@ $router->map('GET', '/tag/{tag}/page/{page:number}', [HomeController::class, 'in
 $router->map('GET', '/category/{category}', [HomeController::class, 'index']);
 $router->map('GET', '/category/{category}/page/{page:number}', [HomeController::class, 'index']);
 $router->map('GET', '/feeds', [FeedController::class, 'index']);
+$router->map('GET', '/feeds/{id:number}', [FeedController::class, 'show']);
+$router->map('GET', '/feeds/{id:number}/page/{page:number}', [FeedController::class, 'show']);
 $router->map('GET', '/feeds/page/{page:number}', [FeedController::class, 'index']);
 $router->map('GET', '/categories', [HomeController::class, 'categories']);
 $router->map('GET', '/tags', [HomeController::class, 'tags']);

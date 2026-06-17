@@ -618,10 +618,12 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-CSRF-Token': window.LERAMA.csrfToken,
                 },
                 body: JSON.stringify({
                     feed_ids: selectedFeeds,
-                    status: newStatus
+                    status: newStatus,
+                    csrf_token: window.LERAMA.csrfToken
                 })
             })
             .then(response => response.json())
@@ -664,10 +666,12 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-CSRF-Token': window.LERAMA.csrfToken,
                 },
                 body: JSON.stringify({
                     feed_ids: selectedFeeds,
-                    category_ids: selectedCategories
+                    category_ids: selectedCategories,
+                    csrf_token: window.LERAMA.csrfToken
                 })
             })
             .then(response => response.json())
@@ -710,10 +714,12 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-CSRF-Token': window.LERAMA.csrfToken,
                 },
                 body: JSON.stringify({
                     feed_ids: selectedFeeds,
-                    tag_ids: selectedTags
+                    tag_ids: selectedTags,
+                    csrf_token: window.LERAMA.csrfToken
                 })
             })
             .then(response => response.json())
@@ -746,6 +752,9 @@
 
             fetch(`/admin/feeds/${feedId}`, {
                     method: 'DELETE',
+                    headers: {
+                        'X-CSRF-Token': window.LERAMA.csrfToken,
+                    }
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -781,16 +790,18 @@
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
+                            'X-CSRF-Token': window.LERAMA.csrfToken,
                         },
                         body: JSON.stringify({
-                            status: newStatus
+                            status: newStatus,
+                            csrf_token: window.LERAMA.csrfToken
                         }),
                     })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
                             this.dataset.originalValue = newStatus;
-                            alert('<?= __('admin.feeds.status_updated') ?> ' + newStatus);
+                            alert(<?= json_encode(__('admin.feeds.status_updated')) ?> + ' ' + newStatus);
                         } else {
                             this.value = originalValue;
                             alert('Erro ao atualizar status do feed: ' + data.message);
@@ -815,7 +826,11 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                    }
+                        'X-CSRF-Token': window.LERAMA.csrfToken,
+                    },
+                    body: JSON.stringify({
+                        csrf_token: window.LERAMA.csrfToken
+                    })
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -827,13 +842,13 @@
                             btnElement.classList.add('btn-success');
                             iconElement.classList.remove('bi-x-lg');
                             iconElement.classList.add('bi-shuffle');
-                            btnElement.title = '<?= __('admin.feeds.shuffle_disable') ?>';
+                            btnElement.title = <?= json_encode(__('admin.feeds.shuffle_disable')) ?>;
                         } else {
                             btnElement.classList.remove('btn-success');
                             btnElement.classList.add('btn-outline-secondary');
                             iconElement.classList.remove('bi-shuffle');
                             iconElement.classList.add('bi-x-lg');
-                            btnElement.title = '<?= __('admin.feeds.shuffle_enable') ?>';
+                            btnElement.title = <?= json_encode(__('admin.feeds.shuffle_enable')) ?>;
                         }
                     } else {
                         alert('Erro ao atualizar shuffle: ' + data.message);

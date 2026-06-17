@@ -47,17 +47,23 @@ class EmailService
             $this->mailer->clearAllRecipients();
             $this->mailer->clearCustomHeaders();
             $this->mailer->addAddress($this->adminEmail);
-            $this->mailer->Subject = "[Lerama] Feed offline: {$feed['title']}";
+            $this->mailer->Subject = "[Lerama] Feed offline: " . $this->e($feed['title'] ?? '');
+
+            $title = $this->e($feed['title'] ?? '');
+            $feedUrl = $this->e($feed['feed_url'] ?? '');
+            $feedType = $this->e($feed['feed_type'] ?? '');
+            $lastChecked = $this->e($feed['last_checked'] ?? '');
+            $pausedAt = $this->e($feed['paused_at'] ?? '');
 
             $body = "<h1>Feed marcado como offline</h1>";
             $body .= "<h2>Detalhes do feed</h2>";
             $body .= "<ul>";
-            $body .= "<li><strong>Título:</strong> {$feed['title']}</li>";
-            $body .= "<li><strong>URL:</strong> {$feed['feed_url']}</li>";
-            $body .= "<li><strong>Tipo:</strong> {$feed['feed_type']}</li>";
-            $body .= "<li><strong>Última verificação:</strong> {$feed['last_checked']}</li>";
+            $body .= "<li><strong>Título:</strong> {$title}</li>";
+            $body .= "<li><strong>URL:</strong> {$feedUrl}</li>";
+            $body .= "<li><strong>Tipo:</strong> {$feedType}</li>";
+            $body .= "<li><strong>Última verificação:</strong> {$lastChecked}</li>";
             $body .= "</ul>";
-            $body .= "<p>O feed foi pausado inicialmente em {$feed['paused_at']} e está inacessível há mais de 72 horas.</p>";
+            $body .= "<p>O feed foi pausado inicialmente em {$pausedAt} e está inacessível há mais de 72 horas.</p>";
             
             $this->mailer->isHTML(true);
             $this->mailer->Body = $body;
@@ -81,17 +87,24 @@ class EmailService
             $this->mailer->clearAllRecipients();
             $this->mailer->clearCustomHeaders();
             $this->mailer->addAddress($this->adminEmail);
-            $this->mailer->Subject = "[Lerama] Novo feed registrado: {$feed['title']}";
+            $this->mailer->Subject = "[Lerama] Novo feed registrado: " . $this->e($feed['title'] ?? '');
+
+            $title = $this->e($feed['title'] ?? '');
+            $feedUrl = $this->e($feed['feed_url'] ?? '');
+            $siteUrl = $this->e($feed['site_url'] ?? '');
+            $feedType = $this->e($feed['feed_type'] ?? '');
+            $language = $this->e($feed['language'] ?? '');
+            $status = $this->e($feed['status'] ?? '');
 
             $body = "<h1>Novo feed registrado</h1>";
             $body .= "<h2>Detalhes do feed</h2>";
             $body .= "<ul>";
-            $body .= "<li><strong>Título:</strong> {$feed['title']}</li>";
-            $body .= "<li><strong>URL do Feed:</strong> <a href=\"{$feed['feed_url']}\">{$feed['feed_url']}</a></li>";
-            $body .= "<li><strong>URL do Site:</strong> <a href=\"{$feed['site_url']}\">{$feed['site_url']}</a></li>";
-            $body .= "<li><strong>Tipo:</strong> {$feed['feed_type']}</li>";
-            $body .= "<li><strong>Idioma:</strong> {$feed['language']}</li>";
-            $body .= "<li><strong>Status:</strong> {$feed['status']}</li>";
+            $body .= "<li><strong>Título:</strong> {$title}</li>";
+            $body .= "<li><strong>URL do Feed:</strong> <a href=\"{$feedUrl}\">{$feedUrl}</a></li>";
+            $body .= "<li><strong>URL do Site:</strong> <a href=\"{$siteUrl}\">{$siteUrl}</a></li>";
+            $body .= "<li><strong>Tipo:</strong> {$feedType}</li>";
+            $body .= "<li><strong>Idioma:</strong> {$language}</li>";
+            $body .= "<li><strong>Status:</strong> {$status}</li>";
             $body .= "<li><strong>Data de registro:</strong> " . date('d/m/Y H:i:s') . "</li>";
             $body .= "</ul>";
             
@@ -104,5 +117,10 @@ class EmailService
             error_log("Error sending feed registration notification: " . $e->getMessage());
             return false;
         }
+    }
+
+    private function e(string $text): string
+    {
+        return htmlspecialchars($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 }

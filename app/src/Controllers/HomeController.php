@@ -13,6 +13,7 @@ use DB;
 use Lerama\Services\ThumbnailService;
 use Lerama\Services\CacheService;
 use Lerama\Services\CacheableQuery;
+use Lerama\Services\UrlValidator;
 
 class HomeController
 {
@@ -274,7 +275,7 @@ class HomeController
 
         if (!empty($pool)) {
             $url = $pool[array_rand($pool)];
-            if (!empty($url)) {
+            if (!empty($url) && UrlValidator::validateRedirectUrl($url)) {
                 return new RedirectResponse($url);
             }
         }
@@ -296,7 +297,11 @@ class HomeController
         });
 
         $url = !empty($pool) ? ($pool[array_rand($pool)] ?? '') : '';
-        
+
+        if (!empty($url) && !UrlValidator::validateRedirectUrl($url)) {
+            $url = '';
+        }
+
         if ($isAjax) {
             $response = new \Laminas\Diactoros\Response\JsonResponse([
                 'url' => $url

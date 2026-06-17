@@ -20,7 +20,9 @@
                 </div>
             <?php endif; ?>
 
+            <?php use Lerama\Services\CsrfService; ?>
             <form action="/admin/login" method="POST">
+                <input type="hidden" name="csrf_token" value="<?= $this->e(CsrfService::getToken() ?? '') ?>">
                 <div class="mb-3">
                     <div class="input-group">
                         <span class="input-group-text">
