@@ -204,8 +204,8 @@
 <script>
 window.LERAMA = window.LERAMA || {};
 window.LERAMA.i18n = window.LERAMA.i18n || {};
-window.LERAMA.i18n.suggestFeedUrlSameAsSite = '<?= __('suggest.form.feed_url_same_as_site') ?? "O URL do feed não pode ser o mesmo que o URL do site" ?>';
-window.LERAMA.i18n.suggestValidating = '<?= __('suggest.form.validating') ?>';
+window.LERAMA.i18n.suggestFeedUrlSameAsSite = <?= json_encode(__('suggest.form.feed_url_same_as_site') ?? 'O URL do feed não pode ser o mesmo que o URL do site') ?>;
+window.LERAMA.i18n.suggestValidating = <?= json_encode(__('suggest.form.validating')) ?>;
 </script>
 <script src="/assets/js/suggest-feed.min.js"></script>
 <?php $this->stop() ?>
