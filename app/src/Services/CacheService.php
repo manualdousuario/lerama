@@ -261,8 +261,67 @@ class CacheService
     }
 
     /**
-     * Remember - get from cache or execute callback and cache result
-     * 
+     * Acquire a distributed lock using Redis SET NX EX.
+     *
+     * @param string $key Lock key
+     * @param int $ttlSeconds Lock TTL in seconds
+     * @return string|null Lock token on success, null on failure
+     */
+    public function lock(string $key, int $ttlSeconds): ?string
+    {
+        if (!$this->connect()) {
+            return null;
+        }
+
+        $token = bin2hex(random_bytes(16));
+        $lockKey = $this->key('lock', $key);
+
+        try {
+            $result = $this->redis->set($lockKey, $token, 'EX', max(1, $ttlSeconds), 'NX');
+            if ($result === true || (is_string($result) && strtoupper($result) === 'OK')) {
+                return $token;
+            }
+            return null;
+        } catch (\Exception $e) {
+            error_log("Cache lock error for key {$key}: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Release a distributed lock. Only the owner (matching token) can unlock.
+     *
+     * @param string $key Lock key
+     * @param string $token Lock token returned by lock()
+     * @return bool Success status
+     */
+    public function unlock(string $key, string $token): bool
+    {
+        if (!$this->connect()) {
+            return false;
+        }
+
+        $lockKey = $this->key('lock', $key);
+
+        try {
+            $script = <<<'LUA'
+if redis.call("get", KEYS[1]) == ARGV[1] then
+    return redis.call("del", KEYS[1])
+else
+    return 0
+end
+LUA;
+            $result = $this->redis->eval($script, 1, $lockKey, $token);
+            return (int)$result === 1;
+        } catch (\Exception $e) {
+            error_log("Cache unlock error for key {$key}: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Remember
+     *
      * @param string $key Cache key
      * @param int|null $ttl Time-to-live in seconds
      * @param array $tags Tags for group invalidation
@@ -272,14 +331,48 @@ class CacheService
     public function remember(string $key, ?int $ttl, array $tags, callable $callback): mixed
     {
         $cached = $this->get($key);
-        
         if ($cached !== null) {
             return $cached;
         }
-        
+
+        $lockTtl = max(1, (int)($_ENV['CACHE_LOCK_TTL_SECONDS'] ?? 30));
+        $waitTimeout = max(0, (int)($_ENV['CACHE_LOCK_WAIT_MS'] ?? 5000));
+        $pollInterval = max(10, (int)($_ENV['CACHE_LOCK_POLL_MS'] ?? 100));
+
+        $token = $this->lock($key, $lockTtl);
+
+        if ($token !== null) {
+            try {
+                $cached = $this->get($key);
+                if ($cached !== null) {
+                    return $cached;
+                }
+
+                $value = $callback();
+                $this->set($key, $value, $ttl, $tags);
+                return $value;
+            } catch (\Exception $e) {
+                error_log("Cache remember callback error for key {$key}: " . $e->getMessage());
+                throw $e;
+            } finally {
+                $this->unlock($key, $token);
+            }
+        }
+
+        $elapsed = 0;
+        while ($elapsed < $waitTimeout) {
+            usleep($pollInterval * 1000);
+            $elapsed += $pollInterval;
+
+            $cached = $this->get($key);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+
+        error_log("Cache lock wait timeout for key {$key}; executing callback as fallback");
         $value = $callback();
         $this->set($key, $value, $ttl, $tags);
-        
         return $value;
     }
 
