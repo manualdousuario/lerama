@@ -21,13 +21,17 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
         $response = $response->withHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response = $response->withHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
+        $frameSrc = $request->getUri()->getPath() === '/shuffle'
+            ? "frame-src 'self' https: http:; "
+            : "frame-src 'self'; ";
+
         $csp = "default-src 'self'; "
              . "script-src 'self' 'unsafe-inline'; "
              . "style-src 'self' 'unsafe-inline'; "
              . "img-src 'self' data: https: http:; "
              . "font-src 'self'; "
              . "connect-src 'self'; "
-             . "frame-src 'self'; "
+             . $frameSrc
              . "frame-ancestors 'none'; "
              . "base-uri 'self'; "
              . "form-action 'self';";
