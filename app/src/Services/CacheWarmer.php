@@ -8,14 +8,27 @@ use DB;
 
 class CacheWarmer
 {
-    public static function warmImportant(?int $topFeedsLimit = null): array
+    public static function warmImportant(?int $topFeedsLimit = null, ?callable $log = null): array
     {
+        $step = static function (string $label, callable $fn) use ($log) {
+            if ($log) {
+                $log("  → warming {$label}...");
+            }
+            $start = microtime(true);
+            $result = $fn();
+            if ($log) {
+                $elapsed = round((microtime(true) - $start) * 1000);
+                $log("  ✓ {$label} done ({$elapsed}ms)");
+            }
+            return $result;
+        };
+
         $summary = [
-            'categories' => self::warmCategories(),
-            'tags' => self::warmTags(),
-            'feeds_dropdown' => self::warmFeedsDropdown(),
-            'home' => self::warmHome(),
-            'top_feeds' => self::warmTopFeeds($topFeedsLimit),
+            'categories' => $step('categories', static fn () => self::warmCategories()),
+            'tags' => $step('tags', static fn () => self::warmTags()),
+            'feeds_dropdown' => $step('feeds_dropdown', static fn () => self::warmFeedsDropdown()),
+            'home' => $step('home', static fn () => self::warmHome()),
+            'top_feeds' => $step('top_feeds', static fn () => self::warmTopFeeds($topFeedsLimit)),
         ];
 
         return $summary;

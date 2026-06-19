@@ -129,7 +129,7 @@ class FeedImporter
             $this->climate->green("✓ Invalidated {$deleted} cache tag reference(s)");
 
             $this->climate->info("Warming important caches...");
-            $summary = CacheWarmer::warmImportant();
+            $summary = CacheWarmer::warmImportant(null, fn (string $msg) => $this->climate->whisper($msg));
             $this->climate->green("✓ Warmed categories ({$summary['categories']}), tags ({$summary['tags']}), feeds ({$summary['feeds_dropdown']}), home items ({$summary['home']['items_count']})");
         }
 

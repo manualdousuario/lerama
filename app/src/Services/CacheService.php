@@ -278,7 +278,8 @@ class CacheService
 
         try {
             $result = $this->redis->set($lockKey, $token, 'EX', max(1, $ttlSeconds), 'NX');
-            if ($result === true || (is_string($result) && strtoupper($result) === 'OK')) {
+            $status = $result === true ? 'OK' : (string) $result;
+            if (strtoupper($status) === 'OK') {
                 return $token;
             }
             return null;
