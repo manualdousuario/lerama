@@ -43,12 +43,7 @@ class BulkInserter
             foreach ($batch as $row) {
                 $placeholders[] = $placeholderTpl;
                 foreach ($columns as $column) {
-                    $value = $row[$column] ?? null;
-                    if ($value === null) {
-                        $params[] = DB::sqleval('NULL');
-                    } else {
-                        $params[] = $value;
-                    }
+                    $params[] = $row[$column] ?? null;
                 }
             }
 

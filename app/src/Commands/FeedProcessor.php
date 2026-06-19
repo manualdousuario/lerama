@@ -464,7 +464,7 @@ class FeedProcessor
 
                 $title = $this->resolveTitle($entry->getTitle(), $feed);
                 $content = $entry->getContent();
-                $authors = $entry->getAuthors();
+                $authors = $entry->getAuthors() ?? [];
                 $author = null;
                 foreach ($authors as $authorData) {
                     $author = $authorData['name'] ?? null;
@@ -499,7 +499,7 @@ class FeedProcessor
 
             $this->processPaginatedRssFeed($feed, $feedContent, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
 
-            $flushed = $this->flushItems($feed['id']);
+            $flushed = $this->flushItems((int) $feed['id']);
 
             if ($updated && $lastGuid) {
                 $lastFeedItemId = $this->findItemIdByGuid($lastGuid);
@@ -826,7 +826,7 @@ class FeedProcessor
 
             $this->processPaginatedCsvFeed($feed, $count, $updated, $lastGuid);
 
-            $flushed = $this->flushItems($feed['id']);
+            $flushed = $this->flushItems((int) $feed['id']);
 
             if ($updated && $lastGuid) {
                 $lastFeedItemId = $this->findItemIdByGuid($lastGuid);
@@ -1050,7 +1050,7 @@ class FeedProcessor
                 $this->processPaginatedJsonFeed($feed, $nextPageUrl, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
             }
 
-            $flushed = $this->flushItems($feed['id']);
+            $flushed = $this->flushItems((int) $feed['id']);
 
             if ($updated && $lastGuid) {
                 $lastFeedItemId = $this->findItemIdByGuid($lastGuid);
@@ -1237,7 +1237,7 @@ class FeedProcessor
 
             $this->processPaginatedXmlFeed($feed, $xml, $count, $updated, $lastGuid, $processedItems, $maxItemsToProcess);
 
-            $flushed = $this->flushItems($feed['id']);
+            $flushed = $this->flushItems((int) $feed['id']);
 
             if ($updated && $lastGuid) {
                 $lastFeedItemId = $this->findItemIdByGuid($lastGuid);
