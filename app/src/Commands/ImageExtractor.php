@@ -19,18 +19,14 @@ use DB;
 class ImageExtractor
 {
     private CLImate $climate;
-    private Client $httpClient;
-    private ?Client $proxyClient = null;
     private ProxyService $proxyService;
     private int $batchSize;
-    private bool $usingProxy = false;
 
     public function __construct(CLImate $climate, int $batchSize = 50)
     {
         $this->climate = $climate;
         $this->batchSize = max(1, $batchSize);
         $this->proxyService = new ProxyService();
-        $this->httpClient = new Client(HttpClientConfig::getExtractedImageConfig());
     }
 
     public function run(?int $limit = null): void
@@ -119,54 +115,25 @@ class ImageExtractor
             return null;
         }
 
-        $useProxy = $proxyOnly || $retryProxy;
+        $attempts = $this->proxyService->buildAttemptConfigs(HttpClientConfig::getExtractedImageConfig());
 
-        if ($useProxy) {
-            $this->setupProxyClient();
-            if ($proxyOnly) {
-                $this->climate->whisper("Using proxy (proxy_only) for image extraction: {$url}");
-            } else {
-                $this->climate->whisper("Using proxy (retry) for image extraction: {$url}");
+        foreach ($attempts as $attempt) {
+            try {
+                $client = new Client($attempt['config']);
+                return $this->fetchImageUrl($client, $url);
+            } catch (\Exception $e) {
+                $this->climate->whisper("Image extraction via {$attempt['label']} failed for {$url}: " . $e->getMessage());
             }
-        } else {
-            $this->httpClient = new Client(HttpClientConfig::getExtractedImageConfig());
-            $this->usingProxy = false;
         }
 
-        try {
-            return $this->fetchImageUrl($url);
-        } catch (GuzzleException $e) {
-            $this->climate->whisper("Direct image extraction failed for {$url}: " . $e->getMessage());
-
-            // Retry once via proxy if not already using one and proxies are available.
-            if (!$this->usingProxy && $this->proxyService->getRandomProxy() !== null) {
-                $this->climate->yellow("Retrying image extraction via proxy: {$url}");
-                $this->setupProxyClient();
-
-                try {
-                    return $this->fetchImageUrl($url);
-                } catch (\Exception $retryException) {
-                    $this->climate->whisper("Proxy retry failed for {$url}: " . $retryException->getMessage());
-                }
-            }
-
-            return null;
-        } catch (\Exception $e) {
-            $this->climate->whisper("Error extracting image from {$url}: " . $e->getMessage());
-            return null;
-        }
+        return null;
     }
 
-    private function fetchImageUrl(string $url): ?string
+    private function fetchImageUrl(Client $client, string $url): ?string
     {
-        $client = $this->usingProxy ? $this->proxyClient : $this->httpClient;
-        if ($client === null) {
-            $client = $this->httpClient;
-        }
-
         $response = $client->get($url);
         if ($response->getStatusCode() !== 200) {
-            return null;
+            throw new \RuntimeException("HTTP Status {$response->getStatusCode()}");
         }
 
         $html = (string) $response->getBody();
@@ -183,34 +150,6 @@ class ImageExtractor
         }
 
         return $imageUrl;
-    }
-
-    private function setupProxyClient(): bool
-    {
-        $proxy = $this->proxyService->getRandomProxy();
-
-        if (!$proxy) {
-            $this->climate->warning("No proxy available, using direct connection for image extraction");
-            $this->proxyClient = null;
-            $this->usingProxy = false;
-            return false;
-        }
-
-        $config = HttpClientConfig::getExtractedImageConfig();
-
-        $proxyUrl = '';
-        if ($proxy['username'] && $proxy['password']) {
-            $proxyUrl = "http://{$proxy['username']}:{$proxy['password']}@{$proxy['host']}:{$proxy['port']}";
-        } else {
-            $proxyUrl = "http://{$proxy['host']}:{$proxy['port']}";
-        }
-
-        $config['proxy'] = $proxyUrl;
-        $this->proxyClient = new Client($config);
-        $this->usingProxy = true;
-
-        $this->climate->info("Using proxy for image extraction: {$proxy['host']}:{$proxy['port']}");
-        return true;
     }
 
     private function matchOgImage(string $html): ?string

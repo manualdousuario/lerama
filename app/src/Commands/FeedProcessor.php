@@ -27,7 +27,6 @@ class FeedProcessor
     private bool $subscriberTextShow;
     private int $maxFeedsPerRun;
     private int $errorThreshold;
-    private bool $usingProxy = false;
     private array $itemBuffer = [];
     private int $itemsInBuffer = 0;
 
@@ -141,19 +140,8 @@ class FeedProcessor
         $this->climate->whisper("Feed URL: {$feed['feed_url']}");
 
         $proxyOnly = ($feed['proxy_only'] ?? 0) == 1;
-        $useProxy = $proxyOnly || ($feed['retry_proxy'] ?? 0) == 1;
 
-        if ($useProxy) {
-            $this->setupProxyClient();
-            if ($proxyOnly) {
-                $this->climate->info("Using proxy (proxy_only) for feed: {$feed['title']}");
-            } else {
-                $this->climate->info("Using proxy (retry) for feed: {$feed['title']}");
-            }
-        } else {
-            $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
-            $this->usingProxy = false;
-        }
+        $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
 
         DB::update('feeds', [
             'last_checked' => DB::sqleval("NOW()"),
@@ -240,14 +228,7 @@ class FeedProcessor
                 $this->climate->info("Trying to process feed {$feed['title']} after 72 hours paused");
 
                 try {
-                    // Use proxy if proxy_only is set, otherwise use direct connection
-                    if ($proxyOnly) {
-                        $this->setupProxyClient();
-                        $this->climate->info("Using proxy (proxy_only) for feed: {$feed['title']}");
-                    } else {
-                        $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
-                        $this->usingProxy = false;
-                    }
+                    $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
 
                     $this->processFeed($feed);
 
@@ -285,10 +266,7 @@ class FeedProcessor
                 $this->climate->info("Trying to process feed {$feed['title']} after 24 hours paused");
 
                 try {
-                    $this->setupProxyClient();
-                    if ($proxyOnly) {
-                        $this->climate->info("Using proxy (proxy_only) for feed: {$feed['title']}");
-                    }
+                    $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
 
                     $this->processFeed($feed);
 
@@ -333,34 +311,6 @@ class FeedProcessor
         $this->climate->info("Warming important caches...");
         $summary = CacheWarmer::warmImportant(null, fn (string $msg) => $this->climate->whisper($msg));
         $this->climate->green("✓ Warmed categories ({$summary['categories']}), tags ({$summary['tags']}), feeds ({$summary['feeds_dropdown']}), home items ({$summary['home']['items_count']})");
-    }
-
-    private function setupProxyClient(): bool
-    {
-        $proxy = $this->proxyService->getRandomProxy();
-
-        if (!$proxy) {
-            $this->climate->warning("No proxy available, using direct connection");
-            $this->httpClient = new \GuzzleHttp\Client($this->defaultClientConfig);
-            $this->usingProxy = false;
-            return false;
-        }
-
-        $config = $this->defaultClientConfig;
-
-        $proxyUrl = '';
-        if ($proxy['username'] && $proxy['password']) {
-            $proxyUrl = "http://{$proxy['username']}:{$proxy['password']}@{$proxy['host']}:{$proxy['port']}";
-        } else {
-            $proxyUrl = "http://{$proxy['host']}:{$proxy['port']}";
-        }
-
-        $config['proxy'] = $proxyUrl;
-        $this->httpClient = new \GuzzleHttp\Client($config);
-        $this->usingProxy = true;
-
-        $this->climate->info("Using proxy: {$proxy['host']}:{$proxy['port']}");
-        return true;
     }
 
     private function isNotModified(array $feed): bool
@@ -600,36 +550,31 @@ class FeedProcessor
 
     private function fetchFeedContent(string $url): string
     {
-        $response = $this->httpClient->get($url);
-        $statusCode = $response->getStatusCode();
-        $body = (string) $response->getBody();
+        $attempts = $this->proxyService->buildAttemptConfigs($this->defaultClientConfig);
+        $lastMessage = '';
 
-        if ($statusCode === 200 && !$this->isCdnBlocked($statusCode, $body, $response)) {
-            return $body;
-        }
+        foreach ($attempts as $attempt) {
+            try {
+                $client = new \GuzzleHttp\Client($attempt['config']);
+                $response = $client->get($url);
+                $statusCode = $response->getStatusCode();
+                $body = (string) $response->getBody();
 
-        $blocked = $this->isCdnBlocked($statusCode, $body, $response);
+                if ($statusCode === 200 && !$this->isCdnBlocked($statusCode, $body, $response)) {
+                    return $body;
+                }
 
-        if ($blocked && !$this->usingProxy && $this->proxyService->getRandomProxy() !== null) {
-            $this->climate->yellow("CDN block detected for {$url}, retrying via proxy...");
-            $this->setupProxyClient();
-
-            $response = $this->httpClient->get($url);
-            $statusCode = $response->getStatusCode();
-            $body = (string) $response->getBody();
-
-            if ($statusCode === 200 && !$this->isCdnBlocked($statusCode, $body, $response)) {
-                return $body;
+                $lastMessage = $this->isCdnBlocked($statusCode, $body, $response)
+                    ? "CDN block (Cloudflare) (HTTP {$statusCode})"
+                    : "HTTP Status {$statusCode}";
+            } catch (\Exception $e) {
+                $lastMessage = $e->getMessage();
             }
 
-            throw new \Exception("CDN block (Cloudflare) persists after proxy retry on {$url} (HTTP {$statusCode})");
+            $this->climate->yellow("Feed fetch via {$attempt['label']} failed for {$url}: {$lastMessage}");
         }
 
-        if ($blocked) {
-            throw new \Exception("CDN block (Cloudflare) on {$url} (HTTP {$statusCode})");
-        }
-
-        throw new \Exception("Failed to fetch feed: HTTP Status {$statusCode}");
+        throw new \Exception("Failed to fetch feed {$url} after all attempts: {$lastMessage}");
     }
 
     /**

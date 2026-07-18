@@ -5,18 +5,19 @@ namespace Lerama\Services;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Lerama\Services\ProxyService;
 use GdImage;
 
 class ThumbnailService
 {
     private string $thumbnailDir;
-    private Client $client;
+    private ProxyService $proxyService;
 
     public function __construct()
     {
         $this->thumbnailDir = __DIR__ . '/../../public/storage/thumbnails/';
-        $this->client = new Client();
-        
+        $this->proxyService = new ProxyService();
+
         if (!is_dir($this->thumbnailDir)) {
             @mkdir($this->thumbnailDir, 0755, true);
         }
@@ -59,31 +60,31 @@ class ThumbnailService
     
     private function downloadImage(string $url): ?string
     {
-        try {
+        $attempts = $this->proxyService->buildAttemptConfigs([
+            'timeout' => 10,
+            'connect_timeout' => 5,
+        ]);
+
+        foreach ($attempts as $attempt) {
             $tempFile = tempnam(sys_get_temp_dir(), 'img_');
-            
-            $response = $this->client->get($url, [
-                'sink' => $tempFile,
-                'timeout' => 10,
-                'connect_timeout' => 5
-            ]);
-            
-            if ($response->getStatusCode() === 200) {
-                return $tempFile;
+
+            try {
+                $client = new Client($attempt['config']);
+                $response = $client->get($url, ['sink' => $tempFile]);
+
+                if ($response->getStatusCode() === 200) {
+                    return $tempFile;
+                }
+            } catch (GuzzleException $e) {
+                // Fall through to the next attempt.
             }
-            
+
             if (file_exists($tempFile)) {
-                unlink($tempFile);
+                @unlink($tempFile);
             }
-            
-            return null;
-        } catch (GuzzleException $e) {
-            if (isset($tempFile) && file_exists($tempFile)) {
-                unlink($tempFile);
-            }
-            
-            return null;
         }
+
+        return null;
     }
     
     private function createThumbnail(string $sourcePath, string $destPath, int $maxWidth, int $maxHeight): bool
