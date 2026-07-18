@@ -45,14 +45,15 @@ class ImageExtractor
 
             foreach ($items as $item) {
                 $processed++;
-                $this->markTried($item['id']);
+                $itemId = (int) $item['id'];
+                $this->markTried($itemId);
 
                 $proxyOnly = (int)($item['proxy_only'] ?? 0) === 1;
                 $retryProxy = (int)($item['retry_proxy'] ?? 0) === 1;
 
                 $imageUrl = $this->extractImageFromUrl($item['url'], $proxyOnly, $retryProxy);
                 if ($imageUrl) {
-                    $this->storeImage($item['id'], $imageUrl);
+                    $this->storeImage($itemId, $imageUrl);
                     $success++;
                     $this->climate->whisper("Extracted image for item {$item['id']}: {$imageUrl}");
                 } else {
