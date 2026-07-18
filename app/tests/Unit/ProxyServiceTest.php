@@ -68,6 +68,7 @@ class ProxyServiceTest extends TestCase
         $service = new ProxyService();
 
         $withAuth = $service->buildProxyUrl([
+            'scheme' => 'http',
             'host' => 'proxy.example.com',
             'port' => 8080,
             'username' => 'user',
@@ -76,11 +77,38 @@ class ProxyServiceTest extends TestCase
         $this->assertSame('http://user:pass@proxy.example.com:8080', $withAuth);
 
         $noAuth = $service->buildProxyUrl([
+            'scheme' => 'http',
             'host' => 'proxy.example.com',
             'port' => 3128,
             'username' => null,
             'password' => null,
         ]);
         $this->assertSame('http://proxy.example.com:3128', $noAuth);
+    }
+
+    public function testBuildProxyUrlPreservesHttpsScheme(): void
+    {
+        $service = new ProxyService();
+
+        $https = $service->buildProxyUrl([
+            'scheme' => 'https',
+            'host' => 'proxywi.example.com',
+            'port' => 8443,
+            'username' => 'lerama',
+            'password' => 'secret',
+        ]);
+        $this->assertSame('https://lerama:secret@proxywi.example.com:8443', $https);
+    }
+
+    public function testParseProxyUrlCapturesScheme(): void
+    {
+        $service = new ProxyService();
+
+        $parsed = $service->parseProxyUrl('https://lerama:secret@proxywi.example.com:8443');
+        $this->assertNotNull($parsed);
+        $this->assertSame('https', $parsed['scheme']);
+        $this->assertSame('proxywi.example.com', $parsed['host']);
+        $this->assertSame(8443, $parsed['port']);
+        $this->assertStringStartsWith('https://', $service->buildProxyUrl($parsed));
     }
 }

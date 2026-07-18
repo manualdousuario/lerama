@@ -56,11 +56,15 @@ class ProxyService
 
     public function buildProxyUrl(array $proxy): string
     {
+        $scheme = $proxy['scheme'] ?? 'http';
+
         if ($proxy['username'] && $proxy['password']) {
-            return "http://{$proxy['username']}:{$proxy['password']}@{$proxy['host']}:{$proxy['port']}";
+            $user = rawurlencode($proxy['username']);
+            $pass = rawurlencode($proxy['password']);
+            return "{$scheme}://{$user}:{$pass}@{$proxy['host']}:{$proxy['port']}";
         }
 
-        return "http://{$proxy['host']}:{$proxy['port']}";
+        return "{$scheme}://{$proxy['host']}:{$proxy['port']}";
     }
 
     public function loadProxyUrlEnv(): void
@@ -95,6 +99,7 @@ class ProxyService
         }
 
         return [
+            'scheme' => $parts['scheme'] ?? 'http',
             'host' => $parts['host'],
             'port' => (int) $parts['port'],
             'username' => $parts['user'] ?? null,
