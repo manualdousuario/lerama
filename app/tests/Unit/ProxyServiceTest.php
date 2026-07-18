@@ -63,6 +63,34 @@ class ProxyServiceTest extends TestCase
         $this->assertArrayNotHasKey('proxy', $direct['config']);
     }
 
+    public function testHttpsProxyDisablesProxyCertVerificationByDefault(): void
+    {
+        $_ENV['PROXY_URL'] = 'https://lerama:secret@proxywi.example.com:8443';
+        unset($_ENV['PROXY_SSL_VERIFY']);
+        $service = new ProxyService();
+
+        $attempts = $service->buildAttemptConfigs(['timeout' => 15]);
+
+        $this->assertFalse($attempts[0]['config']['curl'][CURLOPT_PROXY_SSL_VERIFYPEER]);
+        $this->assertSame(0, $attempts[0]['config']['curl'][CURLOPT_PROXY_SSL_VERIFYHOST]);
+
+        $direct = $attempts[ProxyService::PROXY_ATTEMPTS];
+        $this->assertArrayNotHasKey('curl', $direct['config']);
+    }
+
+    public function testHttpsProxyCertVerificationCanBeReEnabled(): void
+    {
+        $_ENV['PROXY_URL'] = 'https://lerama:secret@proxywi.example.com:8443';
+        $_ENV['PROXY_SSL_VERIFY'] = 'true';
+        $service = new ProxyService();
+
+        $attempts = $service->buildAttemptConfigs(['timeout' => 15]);
+
+        $this->assertArrayNotHasKey('curl', $attempts[0]['config']);
+
+        unset($_ENV['PROXY_SSL_VERIFY']);
+    }
+
     public function testBuildProxyUrlWithCredentials(): void
     {
         $service = new ProxyService();
