@@ -8,6 +8,7 @@ use App\Models\FeedItem;
 use App\Models\Tag;
 use App\Observers\FeedItemObserver;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +20,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if (str_starts_with((string) config('app.url'), 'https://')) {
+            URL::forceScheme('https');
+        }
+
         FeedItem::observe(FeedItemObserver::class);
 
         // Flush the whole cache on any content write: the `file` driver has no
