@@ -1,7 +1,7 @@
 @props(['baseUrl', 'current', 'total', 'queryString' => ''])
 
 @if ($total > 1)
-    <nav aria-label="Pagination" class="pagination">
+    <nav aria-label="Pagination" class="pagination" class="mt-0">
         @if ($current > 1)
             <a href="{{ $baseUrl . ($current - 1) . $queryString }}" class="page-link" aria-label="{{ __('a11y.previous_page') }}" rel="prev">
                 <span aria-hidden="true">&laquo;</span>
