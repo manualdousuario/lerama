@@ -76,6 +76,7 @@ php artisan feed:import arquivo.csv   # Importa feeds de CSV (colunas: url;name;
 php artisan cache:warm                # Aquece o cache
 php artisan lerama:recount            # Recalcula contadores item_count
 php artisan lerama:setup-admin        # Cria/atualiza o usuário admin
+php artisan lerama:prepare-migrations # Aposenta a tabela `migrations` legada (roda antes do migrate)
 ```
 
 ---
