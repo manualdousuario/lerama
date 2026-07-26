@@ -1,0 +1,335 @@
+@import "tailwindcss";
+@import "@tabler/icons-webfont/dist/tabler-icons.min.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Design tokens. "Paper" look: warm cream backgrounds, dark brown ink,
+   Lora serif for titles/content and system-ui for the interface. */
+@theme {
+    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-serif: "Lora", "Source Serif Pro", Georgia, "Times New Roman", serif;
+
+    /* Light — paper */
+    --color-paper: #faf7f2;
+    --color-paper-2: #f1ece2;
+    --color-paper-3: #f5f0e6;
+    --color-ink: #2b2a28;
+    --color-ink-strong: #1c1b19;
+    --color-ink-soft: #6b665e;
+    --color-ink-faint: #8a847a;
+    --color-line: #e3dccc;
+    --color-brand: #0b5394;
+    --color-brand-hover: #073563;
+    --color-moss: #5a7a3e;
+    --color-clay: #a63a2a;
+    --color-honey: #c08a2e;
+    --color-lagoon: #3d7a7e;
+    --color-stone-warm: #6e6960;
+
+    /* Dark — ink */
+    --color-night: #1c1b19;
+    --color-night-2: #2a2825;
+    --color-night-3: #252320;
+    --color-night-hover: #2d2a26;
+    --color-night-ink: #d8d4cc;
+    --color-night-strong: #f0ece3;
+    --color-night-soft: #9a9387;
+    --color-night-faint: #7a7468;
+    --color-night-line: #3a3631;
+    --color-night-brand: #8fc1e6;
+    --color-night-moss: #a3c47e;
+    --color-night-clay: #e08a78;
+    --color-night-honey: #e0b56a;
+    --color-night-lagoon: #7ab8bc;
+
+    /* Topbar */
+    --color-topbar: #2a2620;
+    --color-topbar-text: #f5f0e6;
+    --color-topbar-muted: #c4bdb0;
+    --color-topbar-line: #3a3631;
+    --color-topbar-btn: #4a443c;
+    --color-topbar-btn-hover: #5a5247;
+}
+
+@font-face {
+    font-family: "Lora";
+    src: url("/assets/fonts/lora-regular.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Lora";
+    src: url("/assets/fonts/lora-italic.woff2") format("woff2");
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Lora";
+    src: url("/assets/fonts/lora-500.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Lora";
+    src: url("/assets/fonts/lora-500-italic.woff2") format("woff2");
+    font-weight: 500;
+    font-style: italic;
+    font-display: swap;
+}
+
+@layer base {
+    body {
+        @apply bg-paper font-sans text-ink antialiased dark:bg-night dark:text-night-ink;
+        line-height: 1.55;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        @apply font-serif font-medium tracking-[-0.005em] text-ink-strong dark:text-night-strong;
+    }
+
+    a {
+        @apply text-brand transition-colors hover:text-brand-hover dark:text-night-brand dark:hover:text-night-brand;
+    }
+}
+
+@layer utilities {
+    .font-content {
+        font-family: var(--font-serif);
+        font-size: 1.0625rem;
+        line-height: 1.65;
+        max-width: 68ch;
+    }
+
+    .ti {
+        font-size: 1.05em;
+        line-height: 1;
+        vertical-align: -0.125em;
+    }
+}
+
+/* Composed bases, registered as utilities so they work with @apply */
+@utility btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 text-sm font-medium transition-colors select-none
+        focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand
+        disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+@utility badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
+}
+
+@utility card {
+    @apply rounded-lg border border-line bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]
+        dark:border-night-line dark:bg-night-3 dark:shadow-[0_1px_2px_rgba(0,0,0,0.3)];
+}
+
+@utility page-base {
+    @apply inline-flex min-w-9 items-center justify-center rounded-md border px-2.5 py-1.5 text-sm transition-colors;
+}
+
+@layer components {
+    /* --- Buttons --- */
+    .btn {
+        @apply inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 text-sm font-medium transition-colors select-none
+            focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand
+            disabled:cursor-not-allowed disabled:opacity-60;
+    }
+
+    .btn-sm {
+        @apply px-2 py-1 text-xs;
+    }
+
+    .btn-primary {
+        @apply btn bg-brand text-white hover:bg-[#094378] active:bg-[#083e6f] disabled:bg-[#6b89a3] dark:focus-visible:outline-night-brand;
+    }
+
+    .btn-success {
+        @apply btn bg-moss text-white hover:bg-[#4a6533] active:bg-[#455e30] disabled:bg-[#8ba275];
+    }
+
+    .btn-danger {
+        @apply btn bg-clay text-white hover:bg-[#8d3023] active:bg-[#842d21] disabled:bg-[#bd8779];
+    }
+
+    .btn-warning {
+        @apply btn bg-honey text-ink hover:bg-[#a47527] active:bg-[#9a6d24];
+    }
+
+    .btn-secondary {
+        @apply btn bg-stone-warm text-white hover:bg-[#5d5851] active:bg-[#565047] disabled:bg-[#8e887d];
+    }
+
+    .btn-outline {
+        @apply btn border-line bg-transparent text-ink-soft hover:border-ink-faint hover:bg-paper-3 hover:text-ink
+            dark:border-night-line dark:text-night-soft dark:hover:border-night-faint dark:hover:bg-night-2 dark:hover:text-night-ink;
+    }
+
+    .btn-outline-primary {
+        @apply btn border-brand text-brand hover:bg-brand hover:text-white dark:border-night-brand dark:text-night-brand dark:hover:bg-night-brand dark:hover:text-night;
+    }
+
+    .btn-outline-danger {
+        @apply btn border-clay text-clay hover:bg-clay hover:text-white dark:border-night-clay dark:text-night-clay dark:hover:bg-night-clay dark:hover:text-night;
+    }
+
+    .btn-topbar {
+        @apply btn border-topbar-btn text-topbar-muted hover:bg-topbar-btn hover:text-topbar-text;
+    }
+
+    /* --- Cards --- */
+    .card-hover {
+        @apply card overflow-hidden transition-[transform,box-shadow] duration-200
+            hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(40,32,20,0.10)]
+            dark:hover:shadow-[0_6px_16px_rgba(0,0,0,0.45)];
+    }
+
+    .card-title {
+        @apply font-serif text-lg leading-[1.3] font-medium tracking-[-0.005em];
+    }
+
+    /* --- Item list (home) --- */
+    .item-row {
+        @apply block border-b border-line px-3 py-5 transition-colors first:pt-0 last:border-b-0
+            hover:bg-paper-3 dark:border-night-line dark:hover:bg-night-2;
+    }
+
+    .item-thumb {
+        @apply block h-[60px] w-[120px] shrink-0 overflow-hidden rounded-md bg-paper-2 dark:bg-night-3;
+    }
+
+    .item-thumb img {
+        @apply h-full w-full object-cover transition-transform duration-300 will-change-transform;
+    }
+
+    .item-row:hover .item-thumb img,
+    .card-hover:hover .item-thumb-zoom img {
+        @apply scale-105;
+    }
+
+    .item-content {
+        @apply max-w-[68ch] font-serif text-[0.95rem] leading-[1.55] text-ink-soft dark:text-night-soft;
+    }
+
+    /* --- Forms --- */
+    .label {
+        @apply mb-1 block text-sm font-medium text-ink-strong dark:text-night-strong;
+    }
+
+    .input, .select, .textarea {
+        @apply w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink shadow-xs transition-colors
+            placeholder:text-ink-faint
+            focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none
+            dark:border-night-line dark:bg-night-3 dark:text-night-ink dark:placeholder:text-night-faint dark:focus:border-night-brand dark:focus:ring-night-brand/20;
+    }
+
+    .input-error {
+        @apply border-clay focus:border-clay focus:ring-clay/20 dark:border-night-clay;
+    }
+
+    .form-help {
+        @apply mt-1 text-xs text-ink-soft dark:text-night-soft;
+    }
+
+    .form-error {
+        @apply mt-1 text-xs text-clay dark:text-night-clay;
+    }
+
+    /* --- Status badges --- */
+    .badge-online {
+        @apply badge bg-moss/15 text-moss dark:bg-night-moss/15 dark:text-night-moss;
+    }
+
+    .badge-offline {
+        @apply badge bg-clay/15 text-clay dark:bg-night-clay/15 dark:text-night-clay;
+    }
+
+    .badge-paused {
+        @apply badge bg-honey/20 text-[#8a6520] dark:bg-night-honey/15 dark:text-night-honey;
+    }
+
+    .badge-pending {
+        @apply badge bg-lagoon/15 text-lagoon dark:bg-night-lagoon/15 dark:text-night-lagoon;
+    }
+
+    .badge-rejected {
+        @apply badge bg-stone-warm/15 text-stone-warm dark:bg-night-soft/15 dark:text-night-soft;
+    }
+
+    /* --- Pagination (/page/{n} URLs) --- */
+    .pagination {
+        @apply mt-6 flex items-center justify-center gap-1;
+    }
+
+    .page-link {
+        @apply page-base border-line text-brand
+            hover:bg-paper-3 hover:text-brand-hover
+            focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand
+            dark:border-night-line dark:text-night-brand dark:hover:bg-night-2;
+    }
+
+    .page-current {
+        @apply page-base border-brand bg-brand text-white
+            dark:border-night-brand dark:bg-night-brand dark:text-night;
+    }
+
+    .page-disabled {
+        @apply page-base border-line text-ink-faint opacity-60
+            dark:border-night-line dark:text-night-faint;
+    }
+
+    /* --- Admin tables --- */
+    .table {
+        @apply w-full text-sm;
+    }
+
+    .table thead th {
+        @apply border-b border-line px-3 py-2 text-left text-xs font-semibold tracking-wide text-ink-soft uppercase
+            dark:border-night-line dark:text-night-soft;
+    }
+
+    .table tbody td {
+        @apply border-b border-line px-3 py-2 align-middle dark:border-night-line;
+    }
+
+    .table tbody tr:hover {
+        @apply bg-paper-3 dark:bg-night-hover;
+    }
+
+    /* --- Accessibility --- */
+    .skip-link {
+        @apply absolute -top-24 left-2 z-[100] rounded-b-md bg-topbar px-4 py-2.5 font-medium text-topbar-text no-underline transition-[top]
+            focus:top-0 focus:outline-2 focus:outline-offset-[-2px] focus:outline-topbar-text;
+    }
+}
+
+@layer utilities {
+    .font-content {
+        font-family: var(--font-serif);
+        font-size: 1.0625rem;
+        line-height: 1.65;
+        max-width: 68ch;
+    }
+
+    .ti {
+        font-size: 1.05em;
+        line-height: 1;
+        vertical-align: -0.125em;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

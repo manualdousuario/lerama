@@ -1,6 +1,7 @@
 # 📰 Lerama
 
-[![PHP 8.3+](https://img.shields.io/badge/PHP-8.3%2B-purple.svg)](https://www.php.net/)
+[![Laravel 13](https://img.shields.io/badge/Laravel-13-red.svg)](https://laravel.com/)
+[![PHP 8.4](https://img.shields.io/badge/PHP-8.4-purple.svg)](https://www.php.net/)
 [![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](https://www.docker.com/)
 [![GPL v3](https://img.shields.io/badge/license-GPL%20v3-blue.svg)](LICENSE.md)
 [![en](https://img.shields.io/badge/lang-en-red.svg)](https://github.com/manualdousuario/lerama/blob/master/README.en.md)
@@ -32,21 +33,19 @@ Agregador de feeds leve e eficiente, desenvolvido como alternativa ao [OpenOrb](
 
 1. **Baixe o arquivo de configuração:**
    ```bash
-   curl -o docker-compose.yml https://raw.githubusercontent.com/manualdousuario/lerama/main/docker-compose.yml
+   curl -o docker-compose.yml https://raw.githubusercontent.com/manualdousuario/lerama/main/compose.yml
    ```
 
 2. **Configure as variáveis de ambiente:**
    ```bash
-   nano docker-compose.yml
+   nano compose.yml
    ```
 
    **Variáveis obrigatórias:**
    ```yaml
-   ADMIN_USERNAME: seu_usuario    # Usuário admin
-   ADMIN_PASSWORD: senha_forte    # Senha do admin (min. 8 caracteres)
+   ADMIN_USERNAME: seu_usuario
+   ADMIN_PASSWORD: senha_forte
    APP_URL: https://seu-dominio.com
-   
-   # Banco de dados
    LERAMA_DB_HOST: db
    LERAMA_DB_NAME: lerama
    LERAMA_DB_USER: root
@@ -59,8 +58,25 @@ Agregador de feeds leve e eficiente, desenvolvido como alternativa ao [OpenOrb](
    ```
 
 4. **Acesse o sistema:**
-   - Frontend: `http://localhost:80`
-   - Admin: `http://localhost:80/admin`
+   - Frontend: `http://localhost:8080`
+   - Admin: `http://localhost:8080/admin`
+
+
+---
+
+## 🛠️ Comandos
+
+```bash
+php artisan feed:process              # Processa feeds agendados (roda a cada minuto)
+php artisan feed:id {ID}              # Processa um feed específico
+php artisan feed:check-status         # Verifica feeds pausados (roda 1x/dia)
+php artisan feed:check-real-content   # Reclassifica visibilidade dos itens
+php artisan image:extract [LIMITE]    # Extrai imagens OpenGraph
+php artisan feed:import arquivo.csv   # Importa feeds de CSV (colunas: url;name;tags;category)
+php artisan cache:warm                # Aquece o cache
+php artisan lerama:recount            # Recalcula contadores item_count
+php artisan lerama:setup-admin        # Cria/atualiza o usuário admin
+```
 
 ---
 

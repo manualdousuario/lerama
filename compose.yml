@@ -1,0 +1,51 @@
+services:
+  lerama:
+    image: ghcr.io/manualdousuario/lerama:3
+    container_name: lerama
+    environment:
+      TZ: ${TZ:-UTC}
+      APP_URL: https://lerama.lab
+      APP_LANGUAGE: pt-BR
+      # Optional. Generated and persisted automatically when unset; set it
+      # explicitly to keep sessions valid across container recreation.
+      APP_KEY:
+      LERAMA_DB_HOST: db
+      LERAMA_DB_PORT: 3306
+      LERAMA_DB_NAME: lerama
+      LERAMA_DB_USER: root
+      LERAMA_DB_PASS: root
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin
+      ADMIN_EMAIL:
+      # Optional. Comma-separated proxy URLs (http://user:pass@host:port)
+      PROXY_URL:
+      SMTP_HOST: smtp.resend.com
+      SMTP_PORT: 587
+      SMTP_USERNAME: resend
+      SMTP_PASSWORD: re_
+      SMTP_SECURE: tls
+      SMTP_FROM_EMAIL: lerama@lerama.lab
+      SMTP_FROM_NAME: Lerama
+      CACHE_DEFAULT_TTL: 300
+    ports:
+      - 80:8080
+    volumes:
+      - ./lerama/storage:/var/www/html/storage/app/public
+    restart: unless-stopped
+    networks:
+      - lerama
+    depends_on:
+      - db
+  db:
+    image: mariadb:10.11
+    container_name: db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: lerama
+    volumes:
+      - ./mariadb/data:/var/lib/mysql
+    networks:
+      - lerama
+networks:
+  lerama:
+    driver: bridge

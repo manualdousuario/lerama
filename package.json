@@ -1,0 +1,16 @@
+{
+    "$schema": "https://www.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "npm run build:css && npm run build:icons",
+        "build:css": "tailwindcss -i resources/css/app.css -o public/assets/css/app.min.css --minify && node resources/build/fix-icon-paths.js",
+        "build:icons": "node resources/build/copy-icons.js",
+        "watch": "tailwindcss -i resources/css/app.css -o public/assets/css/app.min.css --watch"
+    },
+    "devDependencies": {
+        "@tailwindcss/cli": "^4.0.0",
+        "@tabler/icons-webfont": "^3.31.0",
+        "tailwindcss": "^4.0.0"
+    }
+}
