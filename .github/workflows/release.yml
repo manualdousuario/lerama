@@ -50,7 +50,7 @@ jobs:
       mariadb:
         image: mariadb:10.11
         env:
-          MYSQL_ROOT_PASSWORD: root
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
           MYSQL_DATABASE: lerama_test
         ports:
           - 3306:3306
@@ -78,9 +78,6 @@ jobs:
         run: |
           cp .env.example .env
           php artisan key:generate
-          sed -i 's/LERAMA_DB_HOST=db/LERAMA_DB_HOST=127.0.0.1/' .env
-          sed -i 's/LERAMA_DB_NAME=lerama/LERAMA_DB_NAME=lerama_test/' .env
-          sed -i 's/LERAMA_DB_PASS=secret/LERAMA_DB_PASS=root/' .env
 
       - name: 🧪 Run tests
         run: php artisan test
