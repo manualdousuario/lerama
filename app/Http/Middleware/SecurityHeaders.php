@@ -23,10 +23,9 @@ class SecurityHeaders
 
         $response->headers->set(
             'Content-Security-Policy',
-            // 'unsafe-eval' is required by Alpine.js (bundled with Livewire) to
-            // evaluate expressions like x-on:click through `new Function()`.
-            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; "
-            ."img-src 'self' data: https: http:; font-src 'self'; connect-src 'self'; "
+            "default-src 'self'; script-src 'self' https: 'unsafe-inline' 'unsafe-eval'; "
+            ."style-src 'self' https: 'unsafe-inline'; img-src 'self' data: https: http:; "
+            ."font-src 'self' https: data:; connect-src 'self' https:; "
             ."frame-src {$frameSrc}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
         );
 
