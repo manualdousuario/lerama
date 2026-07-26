@@ -23,7 +23,7 @@ new class extends Component
 
     public string $site_url = '';
 
-    public string $language = 'pt-BR';
+    public string $language = 'pt_BR';
 
     public ?int $category = null;
 
@@ -81,7 +81,7 @@ new class extends Component
             'title' => ['required', 'min:3'],
             'feed_url' => ['required', 'url', 'different:site_url'],
             'site_url' => ['required', 'url'],
-            'language' => ['required', 'in:en,pt-BR,es'],
+            'language' => ['required', 'in:'.implode(',', array_keys(config('lerama.languages', [])))],
             'category' => empty($this->categories) ? ['nullable'] : ['required', 'integer', 'exists:categories,id'],
             'selectedTags' => empty($this->tags) ? ['nullable'] : ['required'],
         ], $messages);
@@ -144,7 +144,7 @@ new class extends Component
             $this->notifyAdmin($feed);
 
             $this->reset(['title', 'feed_url', 'site_url', 'selectedTags']);
-            $this->language = 'pt-BR';
+            $this->language = 'pt_BR';
             $this->successMessage = __('success.suggestion_sent');
         } catch (\Throwable $e) {
             report($e);
@@ -233,9 +233,9 @@ new class extends Component
                 <div>
                     <label for="language" class="label">{{ __('common.language') }}</label>
                     <select wire:model="language" id="language" class="select" required>
-                        <option value="pt-BR">{{ __('lang.pt-BR') }}</option>
-                        <option value="en">{{ __('lang.en') }}</option>
-                        <option value="es">{{ __('lang.es') }}</option>
+                        @foreach (array_keys(config('lerama.languages', [])) as $code)
+                            <option value="{{ $code }}">{{ __('lang.'.$code) }}</option>
+                        @endforeach
                     </select>
                     @error('language') <div class="form-error">{{ $message }}</div> @enderror
                 </div>

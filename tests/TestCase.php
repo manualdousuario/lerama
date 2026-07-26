@@ -24,7 +24,7 @@ abstract class TestCase extends BaseTestCase
             'site_url' => 'https://example.com',
             'slug' => 'example-com',
             'feed_type' => 'rss2',
-            'language' => 'pt-BR',
+            'language' => 'pt_BR',
             'status' => 'online',
         ]);
 

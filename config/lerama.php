@@ -1,15 +1,16 @@
 <?php
 
 return [
-    'language' => env('APP_LANGUAGE', 'pt-BR'),
-
     'languages' => [
-        'pt-BR' => 'Português (Brasil)',
+        'pt_BR' => 'Português (Brasil)',
         'en' => 'English',
         'es' => 'Español',
     ],
 
     'admin' => [
+        // Also the login for the Filament panel at /admin.
+        'username' => env('ADMIN_USERNAME', 'admin'),
+        'password' => env('ADMIN_PASSWORD', ''),
         'email' => env('ADMIN_EMAIL', ''),
     ],
 
@@ -37,7 +38,6 @@ return [
 
     'cache' => [
         'default_ttl' => (int) env('CACHE_DEFAULT_TTL', 300),
-        'admin_ttl' => (int) env('CACHE_ADMIN_TTL', 60),
         'items_ttl' => 60,
         'warm_feeds_limit' => (int) env('CACHE_WARM_FEEDS_LIMIT', 10),
     ],

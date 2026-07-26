@@ -17,3 +17,6 @@ storage/framework/sessions/*
 storage/framework/views/*
 storage/logs/*
 public/storage
+public/css/filament
+public/fonts/filament
+public/js/filament

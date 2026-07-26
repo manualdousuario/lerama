@@ -51,7 +51,7 @@ class SuggestFeedTest extends TestCase
             ->set('title', 'Blog Novo')
             ->set('feed_url', 'https://novo.example.com/feed')
             ->set('site_url', 'https://novo.example.com')
-            ->set('language', 'pt-BR')
+            ->set('language', 'pt_BR')
             ->set('category', $category->id)
             ->set('selectedTags', (string) $tag->id)
             ->call('submit')

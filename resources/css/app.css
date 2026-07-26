@@ -283,7 +283,7 @@
             dark:border-night-line dark:text-night-faint;
     }
 
-    /* --- Admin tables --- */
+    /* --- Tables --- */
     .table {
         @apply w-full text-sm;
     }

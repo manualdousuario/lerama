@@ -5,7 +5,7 @@ services:
     environment:
       TZ: ${TZ:-UTC}
       APP_URL: https://lerama.lab
-      APP_LANGUAGE: pt-BR
+      APP_LOCALE: pt_BR
       # Optional. Generated and persisted automatically when unset; set it
       # explicitly to keep sessions valid across container recreation.
       APP_KEY:
@@ -14,6 +14,8 @@ services:
       LERAMA_DB_NAME: lerama
       LERAMA_DB_USER: root
       LERAMA_DB_PASS: root
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD:
       ADMIN_EMAIL:
       # Optional. Comma-separated proxy URLs (http://user:pass@host:port)
       PROXY_URL:

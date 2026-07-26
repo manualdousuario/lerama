@@ -52,6 +52,7 @@ RUN mkdir -p /etc/s6-overlay/s6-rc.d/laravel-scheduler \
     touch /etc/s6-overlay/s6-rc.d/user/contents.d/laravel-scheduler
 
 RUN composer dump-autoload --no-dev --optimize --classmap-authoritative && \
+    php artisan filament:assets && \
     chown -R www-data:www-data /var/www/html
 
 USER www-data

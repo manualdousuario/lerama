@@ -25,7 +25,7 @@ Agregador de feeds leve e eficiente, desenvolvido como alternativa ao [OpenOrb](
 - Cache de imagens
 - Gerenciamento de feeds, categorias e tags
 - Sugestões da comunidade
-- Multi-idioma: Português (pt-BR), Inglês (en), Espanhol (es)
+- Multi-idioma: Português (`pt_BR`), Inglês (`en`), Espanhol (`es`)
 
 ---
 
@@ -48,6 +48,8 @@ Agregador de feeds leve e eficiente, desenvolvido como alternativa ao [OpenOrb](
    LERAMA_DB_NAME: lerama
    LERAMA_DB_USER: root
    LERAMA_DB_PASS: senha_segura
+   ADMIN_EMAIL: voce@seu-dominio.com
+   ADMIN_PASSWORD: senha_com_8_ou_mais_caracteres
    ```
 
 3. **Inicie os containers:**
@@ -59,6 +61,11 @@ Agregador de feeds leve e eficiente, desenvolvido como alternativa ao [OpenOrb](
    - Frontend: `http://localhost:8080`
    - Admin: `http://localhost:8080/admin`
 
+   O painel administrativo usa [Filament](https://filamentphp.com/). O operador é
+   criado no primeiro boot a partir de `ADMIN_EMAIL` e `ADMIN_PASSWORD` — o login
+   é feito com o **e-mail**. Alterar `ADMIN_PASSWORD` e reiniciar o container
+   redefine a senha.
+
 
 ---
 
@@ -69,6 +76,8 @@ php artisan feed:process              # Processa feeds agendados (roda a cada mi
 php artisan feed:id {ID}              # Processa um feed específico
 php artisan feed:check-status         # Verifica feeds pausados (roda 1x/dia)
 php artisan feed:check-real-content   # Reclassifica visibilidade dos itens
+php artisan lerama:setup-admin        # Cria/atualiza o operador a partir das ADMIN_*
+php artisan filament:assets           # Republica os assets do painel
 ```
 
 ---

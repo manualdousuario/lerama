@@ -7,6 +7,7 @@ use App\Models\Feed;
 use App\Models\FeedItem;
 use App\Models\Tag;
 use App\Observers\FeedItemObserver;
+use App\Observers\FeedObserver;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -25,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         FeedItem::observe(FeedItemObserver::class);
+        Feed::observe(FeedObserver::class);
 
         // Flush the whole cache on any content write: the `file` driver has no
         // tag support, and the feed processor warms it again after each run.

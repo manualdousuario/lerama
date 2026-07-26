@@ -2,11 +2,17 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "lerama/lerama",
     "type": "project",
-    "description": "Lerama — feed aggregator (RSS 1.0/2.0, Atom, RDF, JSON Feed, CSV) built with Laravel and Livewire.",
-    "keywords": ["laravel", "feeds", "rss", "aggregator"],
+    "description": "Lerama \u2014 feed aggregator (RSS 1.0/2.0, Atom, RDF, JSON Feed, CSV) built with Laravel and Livewire.",
+    "keywords": [
+        "laravel",
+        "feeds",
+        "rss",
+        "aggregator"
+    ],
     "license": "GPL-3.0-only",
     "require": {
         "php": "^8.4",
+        "filament/filament": "^5.7",
         "laminas/laminas-feed": "^2.26",
         "laravel/framework": "^13.0",
         "laravel/tinker": "^3.0",
@@ -51,7 +57,8 @@
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi"
+            "@php artisan package:discover --ansi",
+            "@php artisan filament:upgrade"
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
