@@ -13,8 +13,12 @@ use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
-    public function index(Request $request, ?string $category = null, ?string $tag = null, ?int $page = null)
+    public function index(Request $request)
     {
+        $category = $request->route('category');
+        $tag = $request->route('tag');
+        $page = $request->route('page');
+
         $params = $request->query();
 
         // Redirect 301: ?category=X / ?tag=X -> /category/X / /tag/X

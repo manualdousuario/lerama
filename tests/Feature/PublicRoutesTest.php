@@ -32,6 +32,36 @@ class PublicRoutesTest extends TestCase
         $this->get('/category/blogs/page/1')->assertOk();
     }
 
+    /**
+     * Route parameters are bound positionally, so every {category}/{tag}/{page}
+     * combination has to resolve to the same listing.
+     */
+    public function test_paginated_and_filtered_routes_list_items(): void
+    {
+        $this->seedBasicData();
+
+        $urls = [
+            '/',
+            '/page/1',
+            '/tag/tecnologia',
+            '/tag/tecnologia/page/1',
+            '/category/blogs',
+            '/category/blogs/page/1',
+        ];
+
+        foreach ($urls as $url) {
+            $this->get($url)->assertOk()->assertSee('Artigo de Teste', false);
+        }
+    }
+
+    public function test_unknown_filters_return_no_items(): void
+    {
+        $this->seedBasicData();
+
+        $this->get('/tag/inexistente')->assertOk()->assertDontSee('Artigo de Teste', false);
+        $this->get('/category/inexistente')->assertOk()->assertDontSee('Artigo de Teste', false);
+    }
+
     public function test_feed_listing_and_detail(): void
     {
         $this->seedBasicData();
