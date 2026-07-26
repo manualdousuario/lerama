@@ -27,7 +27,7 @@ class AppServiceProvider extends ServiceProvider
         FeedItem::observe(FeedItemObserver::class);
 
         // Flush the whole cache on any content write: the `file` driver has no
-        // tag support, and cache:warm repopulates it after each run.
+        // tag support, and the feed processor warms it again after each run.
         $flush = fn () => Cache::flush();
 
         FeedItem::created($flush);

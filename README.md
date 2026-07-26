@@ -14,18 +14,18 @@ Agregador de feeds leve e eficiente, desenvolvido como alternativa ao [OpenOrb](
 
 ## ✨ Recursos
 
-  - RSS 1.0, RSS 2.0, ATOM, RDF, JSON Feed
-  - Importação via CSV
-  - Filtro por feed individual, categorias e tópicos/tags
-  - Busca textual em títulos e conteúdo
-  - Processamento em lote
-  - Atualização incremental
-  - Suporte a proxy para feeds bloqueados
-  - Download automático de thumbnails
-  - Cache de imagens
-  - Gerenciamento de feeds, categorias e tags
-  - Sugestões da comunidade
-  - Multi-idioma: Português (pt-BR), Inglês (en), Espanhol (es)
+- RSS 1.0, RSS 2.0, ATOM, RDF, JSON Feed
+- Importação via CSV
+- Filtro por feed individual, categorias e tópicos/tags
+- Busca textual em títulos e conteúdo
+- Processamento em lote
+- Atualização incremental
+- Suporte a proxy para feeds bloqueados
+- Download automático de thumbnails
+- Cache de imagens
+- Gerenciamento de feeds, categorias e tags
+- Sugestões da comunidade
+- Multi-idioma: Português (pt-BR), Inglês (en), Espanhol (es)
 
 ---
 
@@ -43,8 +43,6 @@ Agregador de feeds leve e eficiente, desenvolvido como alternativa ao [OpenOrb](
 
    **Variáveis obrigatórias:**
    ```yaml
-   ADMIN_USERNAME: seu_usuario
-   ADMIN_PASSWORD: senha_forte
    APP_URL: https://seu-dominio.com
    LERAMA_DB_HOST: db
    LERAMA_DB_NAME: lerama
@@ -71,12 +69,6 @@ php artisan feed:process              # Processa feeds agendados (roda a cada mi
 php artisan feed:id {ID}              # Processa um feed específico
 php artisan feed:check-status         # Verifica feeds pausados (roda 1x/dia)
 php artisan feed:check-real-content   # Reclassifica visibilidade dos itens
-php artisan image:extract [LIMITE]    # Extrai imagens OpenGraph
-php artisan feed:import arquivo.csv   # Importa feeds de CSV (colunas: url;name;tags;category)
-php artisan cache:warm                # Aquece o cache
-php artisan lerama:recount            # Recalcula contadores item_count
-php artisan lerama:setup-admin        # Cria/atualiza o usuário admin
-php artisan lerama:prepare-migrations # Aposenta a tabela `migrations` legada (roda antes do migrate)
 ```
 
 ---

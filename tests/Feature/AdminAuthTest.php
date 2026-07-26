@@ -69,23 +69,4 @@ class AdminAuthTest extends TestCase
         $this->get('/admin/logout')->assertRedirect('/admin/login');
         $this->assertGuest();
     }
-
-    public function test_setup_admin_command_creates_user(): void
-    {
-        config(['lerama.admin.username' => 'admin']);
-        config(['lerama.admin.password' => 'strong-password-123']);
-        config(['lerama.admin.email' => 'admin@example.com']);
-
-        $this->artisan('lerama:setup-admin')->assertSuccessful();
-
-        $this->assertDatabaseHas('users', ['email' => 'admin@example.com', 'name' => 'admin']);
-    }
-
-    public function test_setup_admin_command_rejects_weak_password(): void
-    {
-        config(['lerama.admin.password' => 'curta']);
-
-        $this->artisan('lerama:setup-admin')->assertFailed();
-        $this->assertSame(0, User::count());
-    }
 }

@@ -10,8 +10,6 @@ return [
     ],
 
     'admin' => [
-        'username' => env('ADMIN_USERNAME', 'admin'),
-        'password' => env('ADMIN_PASSWORD', ''),
         'email' => env('ADMIN_EMAIL', ''),
     ],
 
@@ -34,8 +32,6 @@ return [
     'random_post_days' => (int) env('RANDOM_POST_DAYS', 30),
 
     'items_per_page' => (int) env('ITEMS_PER_PAGE', 21),
-
-    'image_extract_batch_size' => (int) env('IMAGE_EXTRACT_BATCH_SIZE', 50),
 
     'content_check_batch_size' => (int) env('CONTENT_CHECK_BATCH_SIZE', 500),
 

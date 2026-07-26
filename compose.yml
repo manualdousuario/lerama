@@ -14,8 +14,6 @@ services:
       LERAMA_DB_NAME: lerama
       LERAMA_DB_USER: root
       LERAMA_DB_PASS: root
-      ADMIN_USERNAME: admin
-      ADMIN_PASSWORD: admin
       ADMIN_EMAIL:
       # Optional. Comma-separated proxy URLs (http://user:pass@host:port)
       PROXY_URL:

@@ -93,30 +93,6 @@ class ItemCountService
         }
     }
 
-    // Full recount, behind the lerama:recount command.
-    public function recountAll(): void
-    {
-        DB::statement('UPDATE feeds f SET f.item_count = (SELECT COUNT(*) FROM feed_items WHERE feed_id = f.id)');
-
-        DB::statement(
-            'UPDATE categories c SET c.item_count = (
-                SELECT COUNT(DISTINCT fi.id) FROM feed_items fi
-                JOIN feeds f ON fi.feed_id = f.id
-                JOIN feed_categories fc ON f.id = fc.feed_id
-                WHERE fc.category_id = c.id AND fi.is_visible = 1
-            )'
-        );
-
-        DB::statement(
-            'UPDATE tags t SET t.item_count = (
-                SELECT COUNT(DISTINCT fi.id) FROM feed_items fi
-                JOIN feeds f ON fi.feed_id = f.id
-                JOIN feed_tags ft ON f.id = ft.feed_id
-                WHERE ft.tag_id = t.id AND fi.is_visible = 1
-            )'
-        );
-    }
-
     // Recount a single feed and its taxonomy, after a processor bulk insert.
     public function recountFeedAndTaxonomy(int $feedId): void
     {

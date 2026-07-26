@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\FeedItem;
 use App\Services\ItemCountService;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ItemCountObserverTest extends TestCase
@@ -38,19 +37,6 @@ class ItemCountObserverTest extends TestCase
 
         // Delete the visible item
         $item->delete();
-        $this->assertSame(1, $feed->fresh()->item_count);
-        $this->assertSame(1, $category->fresh()->item_count);
-    }
-
-    public function test_recount_all_rebuilds_counters(): void
-    {
-        [$feed, $category, $tag] = $this->seedBasicData();
-
-        DB::table('categories')->update(['item_count' => 999]);
-        DB::table('feeds')->update(['item_count' => 999]);
-
-        $this->artisan('lerama:recount')->assertSuccessful();
-
         $this->assertSame(1, $feed->fresh()->item_count);
         $this->assertSame(1, $category->fresh()->item_count);
     }
