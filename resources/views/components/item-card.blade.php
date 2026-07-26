@@ -21,7 +21,7 @@
         </h5>
         @if (! empty($item['content']) && strlen($item['content']) >= 30)
             <p class="content item-content mt-2 mb-0">
-                {{ mb_substr(strip_tags($item['content']), 0, 150) }}...
+                {{ \App\Support\Excerpt::make($item['content'], 150) }}...
             </p>
         @endif
     </div>

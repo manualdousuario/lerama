@@ -2,12 +2,52 @@
 
 namespace Tests\Unit;
 
+use App\Support\Excerpt;
 use App\Support\HtmlSanitizer;
+use App\Support\Text;
 use App\Support\UrlValidator;
 use PHPUnit\Framework\TestCase;
 
 class SupportTest extends TestCase
 {
+    public function test_excerpt_decodes_entities_and_strips_tags(): void
+    {
+        $html = '<p>Dia Sim, Dia N&#227;o? Custa s&#243; R$ 2,50, tamb&#233;m &amp; mais.</p>';
+
+        $this->assertSame(
+            'Dia Sim, Dia Não? Custa só R$ 2,50, também & mais.',
+            Excerpt::make($html, 300)
+        );
+    }
+
+    public function test_excerpt_truncates_by_characters(): void
+    {
+        $this->assertSame('Não', Excerpt::make('<b>N&#227;o</b>ta', 3));
+        $this->assertSame('', Excerpt::make(null, 10));
+    }
+
+    /** A fair number of feeds double-encode, so one decode pass is not enough. */
+    public function test_decode_entities_handles_double_encoding(): void
+    {
+        $this->assertSame('Sobre Flow e a crise climática', Text::decodeEntities('Sobre Flow e a crise clim&amp;aacute;tica'));
+        $this->assertSame('D&D: Honra entre ladrões', Text::decodeEntities('D&amp;D: Honra entre ladr&#245;es'));
+        $this->assertSame('climática', Excerpt::make('<p>clim&amp;aacute;tica</p>', 50));
+    }
+
+    public function test_decode_entities_leaves_plain_text_untouched(): void
+    {
+        $this->assertSame('AT&T & Cia', Text::decodeEntities('AT&T & Cia'));
+        $this->assertSame('', Text::decodeEntities(null));
+    }
+
+    public function test_plain_trims_and_nulls_empty_fields(): void
+    {
+        $this->assertSame('Edney "InterNey" Souza', Text::plain('  Edney &quot;InterNey&quot; Souza '));
+        $this->assertNull(Text::plain('   '));
+        $this->assertNull(Text::plain('&#32;'));
+        $this->assertNull(Text::plain(null));
+    }
+
     public function test_sanitizer_removes_scripts_and_handlers(): void
     {
         $dirty = '<p onclick="x()">Hi</p><script>alert(1)</script><a href="javascript:alert(1)">x</a>';

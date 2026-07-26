@@ -42,7 +42,7 @@
 
             @if (! empty($item['content']) && strlen($item['content']) >= 30)
                 <div class="content item-content mt-2">
-                    {{ mb_substr(strip_tags($item['content']), 0, 300) }}...
+                    {{ \App\Support\Excerpt::make($item['content'], 300) }}...
                 </div>
             @endif
         </div>

@@ -10,6 +10,7 @@ use App\Services\CacheWarmer;
 use App\Services\ItemCountService;
 use App\Services\ProxyService;
 use App\Support\HttpClient;
+use App\Support\Text;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -372,7 +373,7 @@ class FeedProcessor
         return [
             'feed_id' => $feed['id'],
             'title' => $this->resolveTitle($entry->getTitle(), $feed),
-            'author' => $author,
+            'author' => Text::plain($author),
             'content' => $content,
             'url' => $url,
             'image_url' => null,
@@ -583,7 +584,7 @@ class FeedProcessor
             $this->bufferItem([
                 'feed_id' => $feed['id'],
                 'title' => $this->resolveTitle($data[$titleIndex] ?? null, $feed),
-                'author' => $authorIndex !== false && isset($data[$authorIndex]) ? $data[$authorIndex] : null,
+                'author' => Text::plain($authorIndex !== false && isset($data[$authorIndex]) ? $data[$authorIndex] : null),
                 'content' => $itemContent,
                 'url' => $data[$urlIndex],
                 'image_url' => null,
@@ -691,7 +692,7 @@ class FeedProcessor
                     $this->bufferItem([
                         'feed_id' => $feed['id'],
                         'title' => $this->resolveTitle($data[$titleIndex] ?? null, $feed),
-                        'author' => $authorIndex !== false && isset($data[$authorIndex]) ? $data[$authorIndex] : null,
+                        'author' => Text::plain($authorIndex !== false && isset($data[$authorIndex]) ? $data[$authorIndex] : null),
                         'content' => $itemContent,
                         'url' => $data[$urlIndex],
                         'image_url' => null,
@@ -801,7 +802,7 @@ class FeedProcessor
         return [
             'feed_id' => $feed['id'],
             'title' => $this->resolveTitle($item['title'] ?? null, $feed),
-            'author' => $item['author']['name'] ?? $item['author'] ?? null,
+            'author' => Text::plain($item['author']['name'] ?? $item['author'] ?? null),
             'content' => $content,
             'url' => $url,
             'image_url' => null,
@@ -932,7 +933,7 @@ class FeedProcessor
         return [
             'feed_id' => $feed['id'],
             'title' => $this->resolveTitle((string) ($item->title ?? ''), $feed),
-            'author' => (string) ($item->author ?? $item->creator ?? ''),
+            'author' => Text::plain((string) ($item->author ?? $item->creator ?? '')),
             'content' => $content,
             'url' => $url,
             'image_url' => null,
@@ -1069,12 +1070,7 @@ class FeedProcessor
 
     private function resolveTitle(?string $title, array $feed): string
     {
-        $title = trim((string) $title);
-        if ($title !== '') {
-            return $title;
-        }
-
-        return __('feed_item.no_title', [], $feed['language'] ?? 'en');
+        return Text::plain($title) ?? __('feed_item.no_title', [], $feed['language'] ?? 'en');
     }
 
     /**
