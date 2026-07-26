@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Drops the 12 legacy MySQL triggers that maintained item_count. From here on
  * the application owns those counters, via FeedItemObserver plus aggregate
- * updates in the feed processor. See also the `lerama:recount` command.
+ * updates in the feed processor.
  */
 return new class extends Migration
 {
@@ -35,6 +35,5 @@ return new class extends Migration
     public function down(): void
     {
         // Deliberately not recreated: the observers own the counters now.
-        // Run `lerama:recount` if they need reconciling.
     }
 };
