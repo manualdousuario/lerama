@@ -44,11 +44,11 @@
                 <table class="table mb-0">
                     <thead>
                         <tr>
-                            <th scope="col"><i class="ti ti-rss me-1" aria-hidden="true"></i> {{ __('feeds.feed') }}</th>
-                            <th scope="col"><i class="ti ti-folder me-1" aria-hidden="true"></i> {{ __('feeds.categories') }}</th>
-                            <th scope="col"><i class="ti ti-tags me-1" aria-hidden="true"></i> {{ __('feeds.topics') }}</th>
-                            <th scope="col"><i class="ti ti-clock me-1" aria-hidden="true"></i> {{ __('common.status') }}</th>
-                            <th scope="col"><i class="ti ti-clock-history me-1" aria-hidden="true"></i> {{ __('feeds.verification') }}/{{ __('feeds.update') }}</th>
+                            <th scope="col">{{ __('feeds.feed') }}</th>
+                            <th scope="col">{{ __('feeds.categories') }}</th>
+                            <th scope="col">{{ __('feeds.topics') }}</th>
+                            <th scope="col">{{ __('common.status') }}</th>
+                            <th scope="col">{{ __('feeds.verification') }}/{{ __('feeds.update') }}</th>
                         </tr>
                     </thead>
                     <tbody>

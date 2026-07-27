@@ -17,8 +17,8 @@
                             </div>
                         </div>
                         <div class="md:flex">
-                            <div class="mb-3 md:mb-0 md:me-2 md:flex">
-                                <select name="category" id="category-select" class="select mb-2 md:me-2 md:mb-0">
+                            <div class="mb-3 grid grid-cols-2 gap-2 md:mb-0 md:me-2 md:flex md:gap-0">
+                                <select name="category" id="category-select" class="select md:me-2">
                                     <option value="">{{ __('common.all_categories') }}</option>
                                     @foreach ($categories as $category)
                                         <option value="{{ $category['slug'] }}" @selected(($selectedCategory ?? '') === $category['slug'])>
@@ -27,7 +27,7 @@
                                     @endforeach
                                 </select>
 
-                                <select name="tag" id="tag-select" class="select mb-2 md:me-2 md:mb-0">
+                                <select name="tag" id="tag-select" class="select md:me-2">
                                     <option value="">{{ __('common.all_topics') }}</option>
                                     @foreach ($tags as $tag)
                                         <option value="{{ $tag['slug'] }}" @selected(($selectedTag ?? '') === $tag['slug'])>
@@ -36,7 +36,7 @@
                                     @endforeach
                                 </select>
 
-                                <div class="flex">
+                                <div class="col-span-2 flex md:col-span-1">
                                     <button type="button" id="save-filter-btn" class="btn-outline flex-1 whitespace-nowrap" title="{{ __('common.save_filter') }}">
                                         <i class="ti ti-bookmark" aria-hidden="true"></i>
                                         {{ __('common.save_filter') }}

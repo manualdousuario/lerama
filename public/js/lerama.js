@@ -26,6 +26,24 @@
         });
     }
 
+    /* --- Mobile nav menu ------------------------------------------------ */
+    function initMobileMenu() {
+        var toggle = document.getElementById('mobileMenuToggle');
+        var menu = document.getElementById('mobileMenu');
+        if (!toggle || !menu) return;
+
+        var openIcon = document.getElementById('menuOpenIcon');
+        var closeIcon = document.getElementById('menuCloseIcon');
+
+        toggle.addEventListener('click', function () {
+            var isOpen = menu.classList.toggle('flex');
+            menu.classList.toggle('hidden', !isOpen);
+            toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            if (openIcon) openIcon.classList.toggle('hidden', isOpen);
+            if (closeIcon) closeIcon.classList.toggle('hidden', !isOpen);
+        });
+    }
+
     /* --- Copy badge --------------------------------------------------- */
     function initBadgeCopy() {
         var btn = document.getElementById('copySeloLerama');
@@ -148,6 +166,7 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         initTheme();
+        initMobileMenu();
         initBadgeCopy();
         initHomeView();
     });

@@ -263,7 +263,7 @@
 
     /* --- Pagination (/page/{n} URLs) --- */
     .pagination {
-        @apply mt-6 flex items-center justify-center gap-1;
+        @apply flex items-center justify-center gap-1;
     }
 
     .page-link {
@@ -305,21 +305,6 @@
     .skip-link {
         @apply absolute -top-24 left-2 z-[100] rounded-b-md bg-topbar px-4 py-2.5 font-medium text-topbar-text no-underline transition-[top]
             focus:top-0 focus:outline-2 focus:outline-offset-[-2px] focus:outline-topbar-text;
-    }
-}
-
-@layer utilities {
-    .font-content {
-        font-family: var(--font-serif);
-        font-size: 1.0625rem;
-        line-height: 1.65;
-        max-width: 68ch;
-    }
-
-    .ti {
-        font-size: 1.05em;
-        line-height: 1;
-        vertical-align: -0.125em;
     }
 }
 
