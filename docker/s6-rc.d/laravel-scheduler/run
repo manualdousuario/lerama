@@ -1,0 +1,10 @@
+#!/command/with-contenv sh
+
+if [ "${LERAMA_SCHEDULER:-true}" != "true" ]; then
+    echo "[lerama] scheduler desabilitado por LERAMA_SCHEDULER"
+    exit 0
+fi
+
+cd /var/www/html || exit 1
+
+exec php artisan schedule:work

@@ -42,14 +42,7 @@ COPY --chown=www-data:www-data . .
 COPY --from=vendor --chown=www-data:www-data /var/www/html/vendor ./vendor
 COPY --from=assets --chown=www-data:www-data /build/public/assets ./public/assets
 COPY --chmod=755 docker/entrypoint.d/ /etc/entrypoint.d/
-
-RUN mkdir -p /etc/s6-overlay/s6-rc.d/laravel-scheduler \
-        /etc/s6-overlay/s6-rc.d/user/contents.d && \
-    echo 'longrun' > /etc/s6-overlay/s6-rc.d/laravel-scheduler/type && \
-    printf '#!/command/with-contenv sh\nexec php /var/www/html/artisan schedule:work\n' \
-        > /etc/s6-overlay/s6-rc.d/laravel-scheduler/run && \
-    chmod 755 /etc/s6-overlay/s6-rc.d/laravel-scheduler/run && \
-    touch /etc/s6-overlay/s6-rc.d/user/contents.d/laravel-scheduler
+COPY --chmod=755 docker/s6-rc.d/ /etc/s6-overlay/s6-rc.d/
 
 RUN composer dump-autoload --no-dev --optimize --classmap-authoritative && \
     php artisan filament:assets && \
