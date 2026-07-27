@@ -13,7 +13,7 @@ services:
       LERAMA_DB_PORT: 3306
       LERAMA_DB_NAME: lerama
       LERAMA_DB_USER: root
-      LERAMA_DB_PASS: root
+      LERAMA_DB_PASS: ${LERAMA_DB_PASS:?defina LERAMA_DB_PASS}
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD:
       ADMIN_EMAIL:
@@ -40,7 +40,7 @@ services:
     image: mariadb:10.11
     container_name: db
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${LERAMA_DB_PASS:?defina LERAMA_DB_PASS}
       MYSQL_DATABASE: lerama
     volumes:
       - ./mariadb/data:/var/lib/mysql

@@ -47,7 +47,6 @@ Agregador de feeds leve e eficiente, desenvolvido como alternativa ao [OpenOrb](
    LERAMA_DB_HOST: db
    LERAMA_DB_NAME: lerama
    LERAMA_DB_USER: root
-   LERAMA_DB_PASS: senha_segura
    ADMIN_EMAIL: voce@seu-dominio.com
    ADMIN_PASSWORD: senha_com_8_ou_mais_caracteres
    ```
