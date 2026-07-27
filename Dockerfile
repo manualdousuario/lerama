@@ -9,7 +9,7 @@ RUN npm ci --no-audit --no-fund
 COPY resources ./resources
 RUN npm run build
 
-FROM serversideup/php:8.4-fpm-nginx-alpine AS base
+FROM serversideup/php:8.4-fpm-nginx AS base
 USER root
 RUN install-php-extensions gd intl
 
