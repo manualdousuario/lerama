@@ -1,6 +1,4 @@
 #!/bin/sh
-# Recreate the writable storage tree. Needed because storage/app/public is a
-# bind mount, which hides whatever the image baked in.
 set -e
 
 base="${APP_BASE_DIR:-/var/www/html}"

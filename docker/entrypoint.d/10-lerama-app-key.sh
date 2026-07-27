@@ -1,7 +1,4 @@
 #!/bin/sh
-# Persist a generated APP_KEY when the operator did not supply one, so sessions
-# and encrypted values survive container restarts. Written to .env because
-# Laravel loads it immutably: real container env vars still take precedence.
 set -e
 
 if [ -n "$APP_KEY" ]; then
