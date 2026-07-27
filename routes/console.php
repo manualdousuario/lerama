@@ -12,3 +12,10 @@ Schedule::command('feed:process')
 Schedule::command('feed:check-status')
     ->daily()
     ->withoutOverlapping();
+
+// Re-warms the hot keys (home, feeds list, taxonomies) so a flush — from the
+// processor or an admin write — never leaves the next visitor with a cold
+// cache for long. Cheap when the cache is already warm.
+Schedule::command('cache:warm')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();

@@ -14,6 +14,7 @@ class FeedItem extends Model
         'title',
         'author',
         'content',
+        'excerpt',
         'url',
         'image_url',
         'image_fetched_at',

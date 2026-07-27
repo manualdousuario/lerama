@@ -20,14 +20,11 @@ class ThumbnailService
             return '';
         }
 
-        $filename = md5($imageUrl.$width.$height).'.jpg';
-        $relative = 'thumbnails/'.$filename;
-        $thumbnailUrl = '/storage/thumbnails/'.$filename;
-
         $disk = Storage::disk('public');
+        $relative = 'thumbnails/'.md5($imageUrl.$width.$height).'.jpg';
 
         if ($disk->exists($relative)) {
-            return $thumbnailUrl;
+            return $this->thumbnailUrl($imageUrl, $width, $height);
         }
 
         $tempFile = null;
@@ -49,7 +46,7 @@ class ThumbnailService
                 return $imageUrl;
             }
 
-            return $thumbnailUrl;
+            return $this->thumbnailUrl($imageUrl, $width, $height);
         } catch (\Throwable) {
             return $imageUrl;
         } finally {
@@ -57,6 +54,31 @@ class ThumbnailService
                 @unlink($tempFile);
             }
         }
+    }
+
+    public function hasThumbnail(string $imageUrl, int $width, int $height): bool
+    {
+        return Storage::disk('public')->exists('thumbnails/'.md5($imageUrl.$width.$height).'.jpg');
+    }
+
+    public function thumbnailUrl(string $imageUrl, int $width, int $height): string
+    {
+        return '/storage/thumbnails/'.md5($imageUrl.$width.$height).'.jpg';
+    }
+
+    public function getThumbnailDeferred(string $imageUrl, int $width = 120, int $height = 60): string
+    {
+        if ($imageUrl === '') {
+            return '';
+        }
+
+        if ($this->hasThumbnail($imageUrl, $width, $height)) {
+            return $this->thumbnailUrl($imageUrl, $width, $height);
+        }
+
+        defer(fn () => $this->getThumbnail($imageUrl, $width, $height));
+
+        return $imageUrl;
     }
 
     private function downloadImage(string $url): ?string

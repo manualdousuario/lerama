@@ -3,7 +3,7 @@
 @php
     $utm = fn (string $url) => $url.(parse_url($url, PHP_URL_QUERY) ? '&' : '?').'utm_source=lerama';
     $thumbnail = ! empty($item['image_url'])
-        ? app(\App\Services\ThumbnailService::class)->getThumbnail($item['image_url'], 180, 100)
+        ? app(\App\Services\ThumbnailService::class)->getThumbnailDeferred($item['image_url'], 180, 100)
         : null;
 @endphp
 
@@ -40,9 +40,9 @@
                 @endif
             </p>
 
-            @if (! empty($item['content']) && strlen($item['content']) >= 30)
+            @if (! empty($item['excerpt']) && mb_strlen($item['excerpt']) >= 30)
                 <div class="content item-content mt-2">
-                    {{ \App\Support\Excerpt::make($item['content'], 300) }}...
+                    {{ mb_substr($item['excerpt'], 0, 300) }}...
                 </div>
             @endif
         </div>

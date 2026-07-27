@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Feed;
 use App\Models\Tag;
+use App\Services\ItemListingQuery;
 use App\Support\CacheKeys;
 use App\Support\UrlValidator;
 use Illuminate\Http\Request;
@@ -56,9 +57,7 @@ class HomeController extends Controller
             : ($tag !== null ? '/tag/'.$tag.'/page/' : '/page/');
 
         $buildQuery = function () use ($search, $feedId, $categorySlug, $tagSlug, $latestPerFeed) {
-            $query = DB::table('feed_items')
-                ->join('feeds as f', 'feed_items.feed_id', '=', 'f.id')
-                ->where('feed_items.is_visible', 1);
+            $query = ItemListingQuery::base();
 
             if ($latestPerFeed) {
                 $query->whereColumn('feed_items.id', 'f.last_feed_item_id');
@@ -95,10 +94,10 @@ class HomeController extends Controller
 
         $hasFilters = $search !== '' || $feedId || $categorySlug || $tagSlug || $latestPerFeed;
 
-        $totalCount = (int) Cache::remember(
+        $totalCount = (int) Cache::flexible(
             "items:count:{$filterHash}",
-            $hasFilters ? 60 : 300,
-            fn () => $buildQuery()->count()
+            $hasFilters ? CacheKeys::TTL_ITEMS : CacheKeys::TTL_LISTS,
+            fn () => $this->resolveTotalCount($buildQuery, $search, $feedId, $categorySlug, $tagSlug, $latestPerFeed)
         );
 
         $totalPages = (int) ceil($totalCount / $perPage);
@@ -109,17 +108,10 @@ class HomeController extends Controller
             return redirect($paginationBaseUrl.$totalPages.($params ? '?'.http_build_query($params) : ''));
         }
 
-        $items = Cache::remember(
+        $items = Cache::flexible(
             "items:home:{$filterHash}",
-            60,
-            fn () => $buildQuery()
-                ->select('feed_items.*', 'f.title as feed_title', 'f.site_url', 'f.language')
-                ->orderByDesc('feed_items.published_at')
-                ->offset($offset)
-                ->limit($perPage)
-                ->get()
-                ->map(fn ($item) => (array) $item)
-                ->all()
+            CacheKeys::TTL_ITEMS,
+            fn () => ItemListingQuery::page($buildQuery(), $offset, $perPage)
         );
 
         return view('home', [
@@ -143,6 +135,33 @@ class HomeController extends Controller
         ]);
     }
 
+    /**
+     * Total for the current filter set, preferring the denormalised counters
+     * (O(1) lookups) over COUNT(*) scans of feed_items.
+     */
+    private function resolveTotalCount(\Closure $buildQuery, string $search, ?int $feedId, ?string $categorySlug, ?string $tagSlug, bool $latestPerFeed): int
+    {
+        if ($search === '' && ! $latestPerFeed) {
+            if ($feedId) {
+                return (int) Feed::query()->whereKey($feedId)->value('visible_item_count');
+            }
+
+            if ($categorySlug && ! $tagSlug) {
+                return (int) Category::query()->where('slug', $categorySlug)->value('item_count');
+            }
+
+            if ($tagSlug && ! $categorySlug) {
+                return (int) Tag::query()->where('slug', $tagSlug)->value('item_count');
+            }
+
+            if (! $categorySlug && ! $tagSlug) {
+                return (int) DB::table('feeds')->sum('visible_item_count');
+            }
+        }
+
+        return $buildQuery()->count();
+    }
+
     public function categories()
     {
         return view('categories-list', [
@@ -163,7 +182,7 @@ class HomeController extends Controller
     {
         $days = (int) config('lerama.random_post_days', 30);
 
-        $pool = Cache::remember("random:pool:{$days}", 300, function () use ($days) {
+        $pool = Cache::flexible("random:pool:{$days}", CacheKeys::TTL_POOLS, function () use ($days) {
             return DB::table('feed_items')
                 ->where('is_visible', 1)
                 ->where('published_at', '>=', now()->subDays($days))
@@ -206,7 +225,7 @@ class HomeController extends Controller
 
     private function shuffleUrl(): string
     {
-        $pool = Cache::remember('shuffle:pool', 300, fn () => Feed::shuffleable()->pluck('site_url')->all());
+        $pool = Cache::flexible('shuffle:pool', CacheKeys::TTL_POOLS, fn () => Feed::shuffleable()->pluck('site_url')->all());
 
         $url = ! empty($pool) ? ($pool[array_rand($pool)] ?? '') : '';
 
@@ -219,16 +238,16 @@ class HomeController extends Controller
 
     private function cachedCategories(): array
     {
-        return Cache::remember('categories:all', 300, fn () => Category::orderBy('name')->get()->toArray());
+        return Cache::flexible('categories:all', CacheKeys::TTL_LISTS, fn () => Category::orderBy('name')->get()->toArray());
     }
 
     private function cachedTags(): array
     {
-        return Cache::remember('tags:all', 300, fn () => Tag::orderBy('name')->get()->toArray());
+        return Cache::flexible('tags:all', CacheKeys::TTL_LISTS, fn () => Tag::orderBy('name')->get()->toArray());
     }
 
     private function cachedFeedsDropdown(): array
     {
-        return Cache::remember('feeds:dropdown', 300, fn () => Feed::orderBy('title')->get(['id', 'title'])->toArray());
+        return Cache::flexible('feeds:dropdown', CacheKeys::TTL_LISTS, fn () => Feed::orderBy('title')->get(['id', 'title'])->toArray());
     }
 }

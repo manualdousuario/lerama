@@ -8,6 +8,12 @@ namespace App\Support;
  */
 class CacheKeys
 {
+    public const TTL_ITEMS = [60, 600];
+
+    public const TTL_LISTS = [300, 1800];
+
+    public const TTL_POOLS = [300, 900];
+
     public static function hash(array $data): string
     {
         return substr(md5(serialize($data)), 0, 12);

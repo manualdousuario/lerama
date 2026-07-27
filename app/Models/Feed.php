@@ -36,6 +36,7 @@ class Feed extends Model
         'paused_at',
         'last_error',
         'item_count',
+        'visible_item_count',
     ];
 
     protected function casts(): array
@@ -52,6 +53,7 @@ class Feed extends Model
             'next_fetch_at' => 'integer',
             'last_feed_item_id' => 'integer',
             'item_count' => 'integer',
+            'visible_item_count' => 'integer',
             'retry_count' => 'integer',
         ];
     }

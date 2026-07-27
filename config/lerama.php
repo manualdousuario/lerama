@@ -37,8 +37,6 @@ return [
     'content_check_batch_size' => (int) env('CONTENT_CHECK_BATCH_SIZE', 500),
 
     'cache' => [
-        'default_ttl' => (int) env('CACHE_DEFAULT_TTL', 300),
-        'items_ttl' => 60,
         'warm_feeds_limit' => (int) env('CACHE_WARM_FEEDS_LIMIT', 10),
     ],
 

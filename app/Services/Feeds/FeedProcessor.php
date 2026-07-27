@@ -9,6 +9,7 @@ use App\Models\FeedItem;
 use App\Services\CacheWarmer;
 use App\Services\ItemCountService;
 use App\Services\ProxyService;
+use App\Support\Excerpt;
 use App\Support\HttpClient;
 use App\Support\Text;
 use GuzzleHttp\Client;
@@ -52,6 +53,10 @@ class FeedProcessor
     private int $errorThreshold;
 
     private array $itemBuffer = [];
+
+    // Items actually inserted during the current run; drives the conditional
+    // cache flush (runs with no new items leave the cache intact).
+    private int $runInserted = 0;
 
     /** @var null|callable(string): void */
     private $out;
@@ -97,14 +102,20 @@ class FeedProcessor
 
         $this->say("Found {$feeds->count()} feed(s) due for processing");
 
+        $this->runInserted = 0;
+
         foreach ($feeds as $feed) {
             $this->processSingleFeed($feed->toArray());
         }
 
-        $this->say('Flushing cache and warming important entries...');
-        Cache::flush();
-        $summary = app(CacheWarmer::class)->warmImportant();
-        $this->say("✓ Warmed categories ({$summary['categories']}), tags ({$summary['tags']}), feeds ({$summary['feeds_dropdown']}), home items ({$summary['home']['items_count']})");
+        if ($this->runInserted > 0) {
+            $this->say("Inserted {$this->runInserted} new item(s); flushing cache and warming important entries...");
+            Cache::flush();
+            $summary = app(CacheWarmer::class)->warmImportant();
+            $this->say("✓ Warmed categories ({$summary['categories']}), tags ({$summary['tags']}), feeds ({$summary['feeds_dropdown']}), home items ({$summary['home']['items_count']})");
+        } else {
+            $this->say('No new items; cache left intact.');
+        }
 
         gc_collect_cycles();
     }
@@ -180,6 +191,9 @@ class FeedProcessor
             return;
         }
 
+        $this->runInserted = 0;
+        $statusChanges = 0;
+
         foreach ($pausedFeeds as $feedModel) {
             $feed = $feedModel->toArray();
             $pausedAt = $feedModel->paused_at?->timestamp ?? time();
@@ -208,6 +222,7 @@ class FeedProcessor
                     }
 
                     DB::table('feeds')->where('id', $feed['id'])->update($updateData);
+                    $statusChanges++;
 
                     $this->say("✓ Feed {$feed['title']} is working again");
                 } catch (\Throwable $e) {
@@ -216,6 +231,7 @@ class FeedProcessor
                             'last_checked' => now(),
                             'status' => FeedStatus::Offline->value,
                         ]);
+                        $statusChanges++;
 
                         $this->notifyOffline($feedModel->fresh());
                         $this->say("✗ Feed {$feed['title']} marked offline after 72 hours paused");
@@ -227,8 +243,11 @@ class FeedProcessor
             }
         }
 
-        Cache::flush();
-        app(CacheWarmer::class)->warmImportant();
+        if ($statusChanges > 0 || $this->runInserted > 0) {
+            Cache::flush();
+            app(CacheWarmer::class)->warmImportant();
+        }
+
         gc_collect_cycles();
     }
 
@@ -1031,6 +1050,10 @@ class FeedProcessor
 
     private function bufferItem(array $item): void
     {
+        // Bulk inserts bypass the FeedItemObserver, so the excerpt is
+        // pre-computed here (single funnel for rss/csv/json/xml items).
+        $item['excerpt'] = Excerpt::forStorage($item['content'] ?? null);
+
         $this->itemBuffer[] = $item;
     }
 
@@ -1050,6 +1073,7 @@ class FeedProcessor
         $this->itemBuffer = [];
 
         if ($inserted > 0) {
+            $this->runInserted += $inserted;
             $this->counts->recountFeedAndTaxonomy($feedId);
         }
 
@@ -1178,6 +1202,7 @@ class FeedProcessor
 
         if ($markedInvisible > 0) {
             Cache::flush();
+            app(CacheWarmer::class)->warmImportant();
         }
 
         $this->say("✓ Process complete! Total: {$processed}, marked invisible: {$markedInvisible}");

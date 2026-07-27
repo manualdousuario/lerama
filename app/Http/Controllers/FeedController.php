@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Feed;
 use App\Models\Tag;
+use App\Services\FeedListingQuery;
+use App\Services\ItemListingQuery;
 use App\Support\CacheKeys;
 use App\Support\HtmlSanitizer;
 use Illuminate\Http\Request;
@@ -16,90 +18,34 @@ class FeedController extends Controller
     public function index(Request $request, ?int $page = null)
     {
         $page = max(1, (int) ($page ?? 1));
-        $perPage = 50;
+        $perPage = FeedListingQuery::PER_PAGE;
         $offset = ($page - 1) * $perPage;
 
         $categorySlug = $request->query('category');
         $tagSlug = $request->query('tag');
 
-        $buildQuery = function () use ($categorySlug, $tagSlug) {
-            $query = DB::table('feeds as f')->select('f.*')->distinct();
-
-            if ($categorySlug) {
-                $query->join('feed_categories as fc', 'fc.feed_id', '=', 'f.id')
-                    ->join('categories as c', function ($join) use ($categorySlug): void {
-                        $join->on('c.id', '=', 'fc.category_id')
-                            ->where('c.slug', '=', $categorySlug);
-                    });
-            }
-
-            if ($tagSlug) {
-                $query->join('feed_tags as ft', 'ft.feed_id', '=', 'f.id')
-                    ->join('tags as t', function ($join) use ($tagSlug): void {
-                        $join->on('t.id', '=', 'ft.tag_id')
-                            ->where('t.slug', '=', $tagSlug);
-                    });
-            }
-
-            return $query;
-        };
-
         $filterHash = CacheKeys::feedsListHash($categorySlug, $tagSlug, $page, $perPage);
 
-        $totalCount = (int) Cache::remember(
+        $totalCount = (int) Cache::flexible(
             "feeds:count:{$filterHash}",
-            300,
-            fn () => DB::query()->fromSub($buildQuery(), 'f')->count()
+            CacheKeys::TTL_LISTS,
+            fn () => DB::query()->fromSub(FeedListingQuery::base($categorySlug, $tagSlug), 'f')->count()
         );
 
         $totalPages = (int) ceil($totalCount / $perPage);
 
-        $feeds = Cache::remember(
+        $feeds = Cache::flexible(
             "feeds:list:{$filterHash}",
-            300,
-            function () use ($buildQuery, $offset, $perPage) {
-                $feeds = $buildQuery()
+            CacheKeys::TTL_LISTS,
+            fn () => FeedListingQuery::withTaxonomy(
+                FeedListingQuery::base($categorySlug, $tagSlug)
                     ->orderBy('f.title')
                     ->offset($offset)
                     ->limit($perPage)
                     ->get()
                     ->map(fn ($feed) => (array) $feed)
-                    ->all();
-
-                if (empty($feeds)) {
-                    return $feeds;
-                }
-
-                $feedIds = array_column($feeds, 'id');
-
-                $categoryRows = DB::table('feed_categories as fc')
-                    ->join('categories as c', 'c.id', '=', 'fc.category_id')
-                    ->whereIn('fc.feed_id', $feedIds)
-                    ->orderBy('c.name')
-                    ->get(['fc.feed_id', 'c.id', 'c.name', 'c.slug']);
-
-                $tagRows = DB::table('feed_tags as ft')
-                    ->join('tags as t', 't.id', '=', 'ft.tag_id')
-                    ->whereIn('ft.feed_id', $feedIds)
-                    ->orderBy('t.name')
-                    ->get(['ft.feed_id', 't.id', 't.name', 't.slug']);
-
-                $categoriesByFeed = [];
-                foreach ($categoryRows as $row) {
-                    $categoriesByFeed[$row->feed_id][] = (array) $row;
-                }
-                $tagsByFeed = [];
-                foreach ($tagRows as $row) {
-                    $tagsByFeed[$row->feed_id][] = (array) $row;
-                }
-
-                foreach ($feeds as &$feed) {
-                    $feed['categories'] = $categoriesByFeed[$feed['id']] ?? [];
-                    $feed['tags'] = $tagsByFeed[$feed['id']] ?? [];
-                }
-
-                return $feeds;
-            }
+                    ->all()
+            )
         );
 
         return view('feeds', [
@@ -132,10 +78,11 @@ class FeedController extends Controller
 
         $filterHash = CacheKeys::feedItemsHash($feedId, $page, $perPage);
 
-        $totalCount = (int) Cache::remember(
+        // Denormalised counter kept by ItemCountService; no COUNT(*) scan.
+        $totalCount = (int) Cache::flexible(
             "items:feed:count:{$filterHash}",
-            60,
-            fn () => DB::table('feed_items')->where('feed_id', $feedId)->where('is_visible', 1)->count()
+            CacheKeys::TTL_ITEMS,
+            fn () => (int) $feed->visible_item_count
         );
 
         $totalPages = (int) ceil($totalCount / $perPage);
@@ -144,20 +91,14 @@ class FeedController extends Controller
             return redirect('/feeds/'.urlencode($slug).'/page/'.$totalPages);
         }
 
-        $items = Cache::remember(
+        $items = Cache::flexible(
             "items:feed:{$filterHash}",
-            60,
-            fn () => DB::table('feed_items')
-                ->join('feeds as f', 'feed_items.feed_id', '=', 'f.id')
-                ->where('feed_items.feed_id', $feedId)
-                ->where('feed_items.is_visible', 1)
-                ->select('feed_items.*', 'f.title as feed_title', 'f.site_url', 'f.language')
-                ->orderByDesc('feed_items.published_at')
-                ->offset($offset)
-                ->limit($perPage)
-                ->get()
-                ->map(fn ($item) => (array) $item)
-                ->all()
+            CacheKeys::TTL_ITEMS,
+            fn () => ItemListingQuery::page(
+                ItemListingQuery::base()->where('feed_items.feed_id', $feedId),
+                $offset,
+                $perPage
+            )
         );
 
         return view('feed-items', [
@@ -178,15 +119,15 @@ class FeedController extends Controller
     {
         [$query, $page, $perPage, $offset, $filterHash] = $this->feedOutputQuery($request);
 
-        $totalCount = (int) Cache::remember(
+        $totalCount = (int) Cache::flexible(
             "items:json:count:{$filterHash}",
-            60,
+            CacheKeys::TTL_ITEMS,
             fn () => $query()->count()
         );
 
-        $items = Cache::remember(
+        $items = Cache::flexible(
             "items:json:{$filterHash}",
-            60,
+            CacheKeys::TTL_ITEMS,
             fn () => $query()
                 ->select(
                     'feed_items.id', 'feed_items.title', 'feed_items.author', 'feed_items.content',
@@ -240,9 +181,9 @@ class FeedController extends Controller
     {
         [$query, $page, $perPage, $offset, $filterHash] = $this->feedOutputQuery($request);
 
-        $items = Cache::remember(
+        $items = Cache::flexible(
             "items:rss:{$filterHash}",
-            60,
+            CacheKeys::TTL_ITEMS,
             fn () => $query()
                 ->select(
                     'feed_items.id', 'feed_items.title', 'feed_items.author', 'feed_items.content',
@@ -371,11 +312,11 @@ class FeedController extends Controller
 
     private function cachedCategories(): array
     {
-        return Cache::remember('categories:all', 300, fn () => Category::orderBy('name')->get()->toArray());
+        return Cache::flexible('categories:all', CacheKeys::TTL_LISTS, fn () => Category::orderBy('name')->get()->toArray());
     }
 
     private function cachedTags(): array
     {
-        return Cache::remember('tags:all', 300, fn () => Tag::orderBy('name')->get()->toArray());
+        return Cache::flexible('tags:all', CacheKeys::TTL_LISTS, fn () => Tag::orderBy('name')->get()->toArray());
     }
 }

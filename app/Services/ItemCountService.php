@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
  * Maintains the item_count columns, replacing the 12 legacy MySQL triggers.
  *
  * - feeds.item_count: every item of the feed, visible or not
+ * - feeds.visible_item_count: only visible items (powers the public totals)
  * - categories/tags.item_count: DISTINCT visible items across associated feeds
  */
 class ItemCountService
@@ -16,7 +17,10 @@ class ItemCountService
     // AFTER INSERT ON feed_items.
     public function itemCreated(FeedItem $item): void
     {
-        DB::statement('UPDATE feeds SET item_count = item_count + 1 WHERE id = ?', [$item->feed_id]);
+        DB::statement(
+            'UPDATE feeds SET item_count = item_count + 1, visible_item_count = visible_item_count + ? WHERE id = ?',
+            [$item->is_visible ? 1 : 0, $item->feed_id]
+        );
 
         if ($item->is_visible) {
             $this->adjustTaxonomy($item->feed_id, +1);
@@ -26,7 +30,10 @@ class ItemCountService
     // AFTER DELETE ON feed_items.
     public function itemDeleted(FeedItem $item): void
     {
-        DB::statement('UPDATE feeds SET item_count = GREATEST(0, item_count - 1) WHERE id = ?', [$item->feed_id]);
+        DB::statement(
+            'UPDATE feeds SET item_count = GREATEST(0, item_count - 1), visible_item_count = GREATEST(0, visible_item_count - ?) WHERE id = ?',
+            [$item->is_visible ? 1 : 0, $item->feed_id]
+        );
 
         if ($item->is_visible) {
             $this->adjustTaxonomy($item->feed_id, -1);
@@ -36,6 +43,11 @@ class ItemCountService
     // AFTER UPDATE ON feed_items, only when is_visible changed.
     public function itemVisibilityChanged(FeedItem $item): void
     {
+        DB::statement(
+            'UPDATE feeds SET visible_item_count = GREATEST(0, visible_item_count + ?) WHERE id = ?',
+            [$item->is_visible ? 1 : -1, $item->feed_id]
+        );
+
         $this->adjustTaxonomy($item->feed_id, $item->is_visible ? +1 : -1);
     }
 
@@ -52,7 +64,10 @@ class ItemCountService
             return;
         }
 
-        DB::statement('UPDATE feeds SET item_count = item_count + ? WHERE id = ?', [$inserted, $feedId]);
+        DB::statement(
+            'UPDATE feeds SET item_count = item_count + ?, visible_item_count = visible_item_count + ? WHERE id = ?',
+            [$inserted, $visible, $feedId]
+        );
 
         if ($visible > 0) {
             $this->adjustTaxonomy($feedId, $visible);
@@ -97,8 +112,11 @@ class ItemCountService
     public function recountFeedAndTaxonomy(int $feedId): void
     {
         DB::statement(
-            'UPDATE feeds f SET f.item_count = (SELECT COUNT(*) FROM feed_items WHERE feed_id = ?) WHERE f.id = ?',
-            [$feedId, $feedId]
+            'UPDATE feeds f SET
+                f.item_count = (SELECT COUNT(*) FROM feed_items WHERE feed_id = ?),
+                f.visible_item_count = (SELECT COUNT(*) FROM feed_items WHERE feed_id = ? AND is_visible = 1)
+            WHERE f.id = ?',
+            [$feedId, $feedId, $feedId]
         );
 
         $categoryIds = DB::table('feed_categories')->where('feed_id', $feedId)->pluck('category_id')->all();
