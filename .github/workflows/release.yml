@@ -12,80 +12,14 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  php-lint:
-    name: 🔍 PHP syntax check
-    runs-on: ubuntu-24.04
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: 🐘 Install PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
-          tools: none
-
-      - name: 🔍 Validate PHP syntax
-        run: |
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          if [ -z "$PREVIOUS_TAG" ]; then
-            FILES=$(git ls-files | grep '\.php$' || true)
-          else
-            FILES=$(git diff --name-only --diff-filter=d "$PREVIOUS_TAG"..HEAD | grep '\.php$' || true)
-          fi
-          if [ -z "$FILES" ]; then
-            echo "No PHP files changed since last tag."
-            exit 0
-          fi
-          echo "$FILES" | xargs -P4 -I{} php -l {}
-
-  tests:
-    name: 🧪 PHPUnit
-    runs-on: ubuntu-24.04
-
-    services:
-      mariadb:
-        image: mariadb:10.11
-        env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-          MYSQL_DATABASE: lerama_test
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v6
-
-      - name: 🐘 Install PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
-          extensions: dom, curl, libxml, mbstring, mysqlnd, pdo_mysql, gd, intl
-          tools: composer:v2
-
-      - name: 📦 Composer install
-        run: composer install --no-interaction --optimize-autoloader
-
-      - name: ⚙️ Prepare environment
-        run: |
-          cp .env.example .env
-          php artisan key:generate
-
-      - name: 🧪 Run tests
-        run: php artisan test
+  ci:
+    name: CI (obrigatório antes de publicar)
+    uses: ./.github/workflows/ci.yml
 
   setup:
     name: 🔍 Extract version
     runs-on: ubuntu-24.04
-    needs: [php-lint, tests]
+    needs: [ci]
     outputs:
       version: ${{ steps.get_version.outputs.VERSION }}
       prerelease: ${{ steps.get_version.outputs.PRERELEASE }}
@@ -234,13 +168,17 @@ jobs:
 
       - name: 🤖 Generate release notes
         id: ai_notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ needs.setup.outputs.version }}
+          COMMIT_LOG: ${{ steps.commits.outputs.LOG }}
         run: |
           RESPONSE=$(curl -s https://models.inference.ai.azure.com/chat/completions \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: Bearer $GH_TOKEN" \
             -H "Content-Type: application/json" \
             -d "$(jq -n \
-              --arg version "${{ needs.setup.outputs.version }}" \
-              --arg log "${{ steps.commits.outputs.LOG }}" \
+              --arg version "$RELEASE_VERSION" \
+              --arg log "$COMMIT_LOG" \
               '{
                 model: "gpt-4o-mini",
                 messages: [

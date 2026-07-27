@@ -1,0 +1,68 @@
+name: 🧪 CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call: {}
+
+jobs:
+  php-lint:
+    name: 🔍 PHP syntax check
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐘 Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: none
+
+      - name: 🔍 Validate PHP syntax
+        run: git ls-files | grep '\.php$' | xargs -P4 -I{} php -l {}
+
+  tests:
+    name: 🧪 PHPUnit
+    runs-on: ubuntu-24.04
+
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: lerama_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐘 Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, mysqlnd, pdo_mysql, gd, intl
+          tools: composer:v2
+
+      - name: 📦 Composer install
+        run: composer install --no-interaction --optimize-autoloader
+
+      - name: 🛡️ Composer audit
+        run: composer audit
+
+      - name: ⚙️ Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: 🧪 Run tests
+        run: php artisan test
