@@ -7,6 +7,7 @@ use App\Models\FeedItem;
 use App\Services\ThumbnailService;
 use Filament\Actions\Action;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -27,6 +28,18 @@ class FeedItemsTable
             ->defaultPaginationPageOption(20)
             ->emptyStateHeading(__('admin.items.no_items'))
             ->columns([
+                ImageColumn::make('image_url')
+                    ->label(__('admin.items.image'))
+                    ->height(60)
+                    ->width(120)
+                    ->getStateUsing(function (FeedItem $record): ?string {
+                        if (empty($record->image_url)) {
+                            return null;
+                        }
+
+                        return app(ThumbnailService::class)->getThumbnailDeferred($record->image_url, 120, 60);
+                    }),
+
                 TextColumn::make('title')
                     ->label(__('suggest.form.title'))
                     ->weight('medium')

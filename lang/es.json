@@ -46,6 +46,7 @@
     "admin.feeds.title": "Administrar Feeds",
     "admin.items.author": "Autor",
     "admin.items.feed": "Feed",
+    "admin.items.image": "Imagen",
     "admin.items.no_items": "No se encontraron elementos. Intente ajustar su búsqueda o filtro.",
     "admin.items.published": "Publicado",
     "admin.items.refresh_thumbnail": "Actualizar imagen destacada",

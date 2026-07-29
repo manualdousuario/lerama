@@ -44,6 +44,8 @@ class FeedProcessor
 
     private Client $httpClient;
 
+    private ImageExtractor $imageExtractor;
+
     private array $defaultClientConfig;
 
     private bool $subscriberTextShow;
@@ -69,6 +71,7 @@ class FeedProcessor
         $this->out = $out;
         $this->defaultClientConfig = HttpClient::defaultConfig();
         $this->httpClient = new Client($this->defaultClientConfig);
+        $this->imageExtractor = new ImageExtractor($this->proxyService);
         $this->subscriberTextShow = (bool) config('lerama.feeds.subscriber_show_post', false);
         $this->maxFeedsPerRun = (int) config('lerama.feeds.max_per_run', 3);
         $this->errorThreshold = (int) config('lerama.feeds.item_error_threshold', 5);
@@ -395,7 +398,8 @@ class FeedProcessor
             'author' => Text::plain($author),
             'content' => $content,
             'url' => $url,
-            'image_url' => null,
+            'image_url' => $this->imageExtractor->extractImageFromUrl($url),
+            'image_fetched_at' => date('Y-m-d H:i:s'),
             'guid' => $entry->getId(),
             'published_at' => $dateObj ? $dateObj->format('Y-m-d H:i:s') : date('Y-m-d H:i:s'),
             'is_visible' => $isVisible ? 1 : 0,
@@ -606,7 +610,8 @@ class FeedProcessor
                 'author' => Text::plain($authorIndex !== false && isset($data[$authorIndex]) ? $data[$authorIndex] : null),
                 'content' => $itemContent,
                 'url' => $data[$urlIndex],
-                'image_url' => null,
+                'image_url' => $this->imageExtractor->extractImageFromUrl($data[$urlIndex]),
+                'image_fetched_at' => date('Y-m-d H:i:s'),
                 'guid' => $guid,
                 'published_at' => $dateIndex !== false && isset($data[$dateIndex]) ? $data[$dateIndex] : date('Y-m-d H:i:s'),
                 'is_visible' => $isVisible ? 1 : 0,
@@ -714,7 +719,8 @@ class FeedProcessor
                         'author' => Text::plain($authorIndex !== false && isset($data[$authorIndex]) ? $data[$authorIndex] : null),
                         'content' => $itemContent,
                         'url' => $data[$urlIndex],
-                        'image_url' => null,
+                        'image_url' => $this->imageExtractor->extractImageFromUrl($data[$urlIndex]),
+                        'image_fetched_at' => date('Y-m-d H:i:s'),
                         'guid' => $guid,
                         'published_at' => $dateIndex !== false && isset($data[$dateIndex]) ? $data[$dateIndex] : date('Y-m-d H:i:s'),
                         'is_visible' => $isVisible ? 1 : 0,
@@ -824,7 +830,8 @@ class FeedProcessor
             'author' => Text::plain($item['author']['name'] ?? $item['author'] ?? null),
             'content' => $content,
             'url' => $url,
-            'image_url' => null,
+            'image_url' => $this->imageExtractor->extractImageFromUrl($url),
+            'image_fetched_at' => date('Y-m-d H:i:s'),
             'guid' => $item['id'] ?? $item['guid'] ?? $item['url'],
             'published_at' => $item['date_published'] ?? $item['published'] ?? $item['date'] ?? date('Y-m-d H:i:s'),
             'is_visible' => $isVisible ? 1 : 0,
@@ -955,7 +962,8 @@ class FeedProcessor
             'author' => Text::plain((string) ($item->author ?? $item->creator ?? '')),
             'content' => $content,
             'url' => $url,
-            'image_url' => null,
+            'image_url' => $this->imageExtractor->extractImageFromUrl($url),
+            'image_fetched_at' => date('Y-m-d H:i:s'),
             'guid' => (string) ($item->guid ?? $item->id ?? $item->link),
             'published_at' => (string) ($item->pubDate ?? $item->published ?? $item->date ?? date('Y-m-d H:i:s')),
             'is_visible' => $isVisible ? 1 : 0,
