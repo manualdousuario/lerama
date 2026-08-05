@@ -37,7 +37,9 @@ class FeedItemsTable
                             return null;
                         }
 
-                        return app(ThumbnailService::class)->getThumbnailDeferred($record->image_url, 120, 60);
+                        $thumbnail = app(ThumbnailService::class)->getThumbnailDeferred($record->image_url, 120, 60);
+
+                        return str_starts_with($thumbnail, '/') ? url($thumbnail) : $thumbnail;
                     }),
 
                 TextColumn::make('title')

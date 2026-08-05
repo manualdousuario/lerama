@@ -9,6 +9,10 @@ Schedule::command('feed:process')
     ->withoutOverlapping()
     ->runInBackground();
 
+Schedule::command('image:extract 200')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
 Schedule::command('feed:check-status')
     ->daily()
     ->withoutOverlapping();
