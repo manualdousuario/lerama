@@ -7,86 +7,66 @@ use App\Filament\Resources\Tags\Pages\ManageTags;
 use App\Models\Category;
 use App\Models\Feed;
 use App\Models\Tag;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
+use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
-use Tests\TestCase;
+use Tests\Feature\Admin\Concerns\AdminUsers;
 
-class TaxonomyResourceTest extends TestCase
-{
-    protected function setUp(): void
-    {
-        parent::setUp();
+beforeEach(function () {
+    $this->actingAs(AdminUsers::admin());
+});
 
-        $this->actingAs(User::create([
-            'name' => 'admin',
-            'email' => 'admin@lerama.local',
-            'password' => Hash::make('strong-password-123'),
-        ]));
-    }
+it('transliterates the name when creating a category without a slug', function () {
+    Livewire::test(ManageCategories::class)
+        ->callAction('create', ['name' => 'Ciência & Tecnologia', 'slug' => null])
+        ->assertHasNoFormErrors();
 
-    public function test_creating_a_category_without_a_slug_transliterates_the_name(): void
-    {
-        Livewire::test(ManageCategories::class)
-            ->callAction('create', ['name' => 'Ciência & Tecnologia', 'slug' => null])
-            ->assertHasNoActionErrors();
+    expect(Category::where('name', 'Ciência & Tecnologia')->value('slug'))
+        ->toBe('ciencia-tecnologia');
+});
 
-        $this->assertSame(
-            'ciencia-tecnologia',
-            Category::where('name', 'Ciência & Tecnologia')->value('slug')
-        );
-    }
+it('rejects a duplicate category slug', function () {
+    Category::create(['name' => 'Blogs', 'slug' => 'blogs']);
 
-    public function test_a_duplicate_category_slug_is_rejected(): void
-    {
-        Category::create(['name' => 'Blogs', 'slug' => 'blogs']);
+    Livewire::test(ManageCategories::class)
+        ->callAction('create', ['name' => 'Outros Blogs', 'slug' => 'blogs'])
+        ->assertHasFormErrors(['slug']);
 
-        Livewire::test(ManageCategories::class)
-            ->callAction('create', ['name' => 'Outros Blogs', 'slug' => 'blogs'])
-            ->assertHasActionErrors(['slug']);
+    expect(Category::where('slug', 'blogs')->count())->toBe(1);
+});
 
-        $this->assertSame(1, Category::where('slug', 'blogs')->count());
-    }
+it('keeps a category own slug valid when editing', function () {
+    $category = Category::create(['name' => 'Blogs', 'slug' => 'blogs']);
 
-    public function test_editing_a_category_keeps_its_own_slug_valid(): void
-    {
-        $category = Category::create(['name' => 'Blogs', 'slug' => 'blogs']);
+    Livewire::test(ManageCategories::class)
+        ->callAction(TestAction::make('edit')->table($category), ['name' => 'Blogs Pessoais', 'slug' => 'blogs'])
+        ->assertHasNoFormErrors();
 
-        Livewire::test(ManageCategories::class)
-            ->callTableAction('edit', $category, ['name' => 'Blogs Pessoais', 'slug' => 'blogs'])
-            ->assertHasNoTableActionErrors();
+    expect($category->fresh()->name)->toBe('Blogs Pessoais')
+        ->and($category->fresh()->slug)->toBe('blogs');
+});
 
-        $this->assertSame('Blogs Pessoais', $category->fresh()->name);
-        $this->assertSame('blogs', $category->fresh()->slug);
-    }
+it('counts associated feeds on the category listing', function () {
+    [$feed, $category] = $this->seedBasicData();
 
-    public function test_the_category_listing_counts_associated_feeds(): void
-    {
-        [$feed, $category] = $this->seedBasicData();
+    Livewire::test(ManageCategories::class)
+        ->assertCanSeeTableRecords([$category])
+        ->assertTableColumnStateSet('feed_count', 1, $category);
+});
 
-        Livewire::test(ManageCategories::class)
-            ->assertCanSeeTableRecords([$category])
-            ->assertTableColumnStateSet('feed_count', 1, $category);
-    }
+it('transliterates the name when creating a tag without a slug', function () {
+    Livewire::test(ManageTags::class)
+        ->callAction('create', ['name' => 'Programação', 'slug' => null])
+        ->assertHasNoFormErrors();
 
-    public function test_creating_a_tag_without_a_slug_transliterates_the_name(): void
-    {
-        Livewire::test(ManageTags::class)
-            ->callAction('create', ['name' => 'Programação', 'slug' => null])
-            ->assertHasNoActionErrors();
+    expect(Tag::where('name', 'Programação')->value('slug'))->toBe('programacao');
+});
 
-        $this->assertSame('programacao', Tag::where('name', 'Programação')->value('slug'));
-    }
+it('leaves the feeds intact when deleting a tag', function () {
+    [$feed, , $tag] = $this->seedBasicData();
 
-    public function test_deleting_a_tag_leaves_its_feeds_intact(): void
-    {
-        [$feed, , $tag] = $this->seedBasicData();
+    Livewire::test(ManageTags::class)
+        ->callAction(TestAction::make('delete')->table($tag));
 
-        Livewire::test(ManageTags::class)
-            ->callTableAction('delete', $tag);
-
-        $this->assertSame(0, Tag::whereKey($tag->id)->count());
-        // The pivot cascade must not take the feed with it.
-        $this->assertSame(1, Feed::whereKey($feed->id)->count());
-    }
-}
+    expect(Tag::whereKey($tag->id)->count())->toBe(0)
+        ->and(Feed::whereKey($feed->id)->count())->toBe(1);
+});

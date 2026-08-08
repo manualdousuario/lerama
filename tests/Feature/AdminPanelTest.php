@@ -6,117 +6,105 @@ use App\Models\User;
 use Filament\Auth\Pages\Login;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
-use Tests\TestCase;
 
-class AdminPanelTest extends TestCase
-{
-    private function createAdmin(): User
-    {
-        return User::create([
-            'name' => 'admin',
+it('redirects a guest from admin to login', function () {
+    $this->get('/admin')->assertRedirect('/admin/login');
+    $this->get('/admin/feeds')->assertRedirect('/admin/login');
+    $this->get('/admin/categories')->assertRedirect('/admin/login');
+});
+
+it('reaches the login page', function () {
+    $this->get('/admin/login')->assertOk();
+});
+
+it('logs in with valid credentials', function () {
+    adminPanelCreateAdmin();
+
+    Livewire::test(Login::class)
+        ->fillForm([
             'email' => 'admin@lerama.local',
-            'password' => Hash::make('strong-password-123'),
-        ]);
-    }
+            'password' => 'strong-password-123',
+        ])
+        ->call('authenticate')
+        ->assertHasNoFormErrors();
 
-    public function test_admin_redirects_guest_to_login(): void
-    {
-        $this->get('/admin')->assertRedirect('/admin/login');
-        $this->get('/admin/feeds')->assertRedirect('/admin/login');
-        $this->get('/admin/categories')->assertRedirect('/admin/login');
-    }
+    $this->assertAuthenticated();
+});
 
-    public function test_login_page_is_reachable(): void
-    {
-        $this->get('/admin/login')->assertOk();
-    }
+it('rejects a login with the wrong password', function () {
+    adminPanelCreateAdmin();
 
-    public function test_login_with_valid_credentials(): void
-    {
-        $this->createAdmin();
+    Livewire::test(Login::class)
+        ->fillForm([
+            'email' => 'admin@lerama.local',
+            'password' => 'errada',
+        ])
+        ->call('authenticate')
+        ->assertHasFormErrors(['email']);
 
-        Livewire::test(Login::class)
-            ->fillForm([
-                'email' => 'admin@lerama.local',
-                'password' => 'strong-password-123',
-            ])
-            ->call('authenticate')
-            ->assertHasNoFormErrors();
+    $this->assertGuest();
+});
 
-        $this->assertAuthenticated();
-    }
+it('renders the panel pages for an authenticated admin', function () {
+    [$feed] = $this->seedBasicData();
+    $this->actingAs(adminPanelCreateAdmin());
 
-    public function test_login_with_wrong_password(): void
-    {
-        $this->createAdmin();
+    // The panel root has no dashboard; it lands on the first resource.
+    $this->get('/admin')->assertRedirect('/admin/feed-items');
 
-        Livewire::test(Login::class)
-            ->fillForm([
-                'email' => 'admin@lerama.local',
-                'password' => 'errada',
-            ])
-            ->call('authenticate')
-            ->assertHasFormErrors(['email']);
+    $this->get('/admin/feed-items')->assertOk();
+    $this->get('/admin/feeds')->assertOk();
+    $this->get('/admin/feeds/create')->assertOk();
+    $this->get("/admin/feeds/{$feed->id}/edit")->assertOk();
+    $this->get('/admin/categories')->assertOk();
+    $this->get('/admin/tags')->assertOk();
+});
 
-        $this->assertGuest();
-    }
+it('logs out', function () {
+    $this->actingAs(adminPanelCreateAdmin());
 
-    public function test_panel_pages_render_for_an_authenticated_admin(): void
-    {
-        [$feed] = $this->seedBasicData();
-        $this->actingAs($this->createAdmin());
+    $this->post('/admin/logout')->assertRedirect('/admin/login');
+    $this->assertGuest();
+});
 
-        // The panel root has no dashboard; it lands on the first resource.
-        $this->get('/admin')->assertRedirect('/admin/feed-items');
+it('creates and updates the operator with the setup admin command', function () {
+    config([
+        'lerama.admin.username' => 'operador',
+        'lerama.admin.password' => 'senha-bem-forte',
+        'lerama.admin.email' => 'operador@lerama.local',
+    ]);
 
-        $this->get('/admin/feed-items')->assertOk();
-        $this->get('/admin/feeds')->assertOk();
-        $this->get('/admin/feeds/create')->assertOk();
-        $this->get("/admin/feeds/{$feed->id}/edit")->assertOk();
-        $this->get('/admin/categories')->assertOk();
-        $this->get('/admin/tags')->assertOk();
-    }
+    $this->artisan('lerama:setup-admin')->assertSuccessful();
 
-    public function test_logout(): void
-    {
-        $this->actingAs($this->createAdmin());
+    $user = User::where('email', 'operador@lerama.local')->firstOrFail();
 
-        $this->post('/admin/logout')->assertRedirect('/admin/login');
-        $this->assertGuest();
-    }
+    expect($user->name)->toBe('operador')
+        ->and(Hash::check('senha-bem-forte', $user->password))->toBeTrue();
 
-    public function test_setup_admin_command_creates_and_updates_the_operator(): void
-    {
-        config([
-            'lerama.admin.username' => 'operador',
-            'lerama.admin.password' => 'senha-bem-forte',
-            'lerama.admin.email' => 'operador@lerama.local',
-        ]);
+    config(['lerama.admin.password' => 'outra-senha-forte']);
+    $this->artisan('lerama:setup-admin')->assertSuccessful();
 
-        $this->artisan('lerama:setup-admin')->assertSuccessful();
+    expect(User::where('email', 'operador@lerama.local')->count())->toBe(1)
+        ->and(Hash::check('outra-senha-forte', $user->fresh()->password))->toBeTrue();
+});
 
-        $user = User::where('email', 'operador@lerama.local')->firstOrFail();
-        $this->assertSame('operador', $user->name);
-        $this->assertTrue(Hash::check('senha-bem-forte', $user->password));
+it('rejects a weak password on the setup admin command', function () {
+    config([
+        'lerama.admin.username' => 'operador',
+        'lerama.admin.password' => 'curta',
+        'lerama.admin.email' => 'operador@lerama.local',
+    ]);
 
-        // Re-running rotates the password instead of failing on the unique email.
-        config(['lerama.admin.password' => 'outra-senha-forte']);
-        $this->artisan('lerama:setup-admin')->assertSuccessful();
+    $this->artisan('lerama:setup-admin')->assertFailed();
 
-        $this->assertSame(1, User::where('email', 'operador@lerama.local')->count());
-        $this->assertTrue(Hash::check('outra-senha-forte', $user->fresh()->password));
-    }
+    expect(User::where('email', 'operador@lerama.local')->count())->toBe(0);
+});
 
-    public function test_setup_admin_command_rejects_a_weak_password(): void
-    {
-        config([
-            'lerama.admin.username' => 'operador',
-            'lerama.admin.password' => 'curta',
-            'lerama.admin.email' => 'operador@lerama.local',
-        ]);
-
-        $this->artisan('lerama:setup-admin')->assertFailed();
-
-        $this->assertSame(0, User::where('email', 'operador@lerama.local')->count());
-    }
+function adminPanelCreateAdmin(): User
+{
+    return User::create([
+        'name' => 'admin',
+        'email' => 'admin@lerama.local',
+        'password' => Hash::make('strong-password-123'),
+    ]);
 }

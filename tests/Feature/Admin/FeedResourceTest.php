@@ -9,173 +9,154 @@ use App\Filament\Resources\Feeds\Pages\ListFeeds;
 use App\Models\Category;
 use App\Models\Feed;
 use App\Models\Tag;
-use App\Models\User;
 use App\Services\ItemCountService;
-use Illuminate\Support\Facades\Hash;
+use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
-use Tests\TestCase;
+use Tests\Feature\Admin\Concerns\AdminUsers;
 
-class FeedResourceTest extends TestCase
-{
-    protected function setUp(): void
-    {
-        parent::setUp();
+beforeEach(function () {
+    $this->actingAs(AdminUsers::admin());
+});
 
-        $this->actingAs(User::create([
-            'name' => 'admin',
-            'email' => 'admin@lerama.local',
-            'password' => Hash::make('strong-password-123'),
-        ]));
-    }
+it('generates a slug and forces online when creating a feed', function () {
+    $category = Category::create(['name' => 'Blogs', 'slug' => 'blogs']);
 
-    public function test_creating_a_feed_generates_a_slug_and_forces_online(): void
-    {
-        $category = Category::create(['name' => 'Blogs', 'slug' => 'blogs']);
-
-        Livewire::test(CreateFeed::class)
-            ->fillForm([
-                'title' => 'Blog Novo',
-                'site_url' => 'https://novo.example.com/secao',
-                'feed_url' => 'https://novo.example.com/feed.xml',
-                'language' => 'pt_BR',
-                // Set explicitly so FeedTypeDetector does not hit the network.
-                'feed_type' => 'rss2',
-                'shuffle' => true,
-                'categories' => [$category->id],
-            ])
-            ->call('create')
-            ->assertHasNoFormErrors();
-
-        $feed = Feed::where('feed_url', 'https://novo.example.com/feed.xml')->firstOrFail();
-
-        $this->assertSame('novo-example-com-secao', $feed->slug);
-        $this->assertSame(FeedStatus::Online, $feed->status);
-        $this->assertEqualsCanonicalizing([$category->id], $feed->categories()->pluck('categories.id')->all());
-    }
-
-    public function test_creating_a_feed_rejects_a_private_url(): void
-    {
-        Livewire::test(CreateFeed::class)
-            ->fillForm([
-                'title' => 'Interno',
-                'site_url' => 'http://127.0.0.1/painel',
-                'feed_url' => 'http://127.0.0.1/feed.xml',
-                'language' => 'pt_BR',
-                'feed_type' => 'rss2',
-            ])
-            ->call('create')
-            ->assertHasFormErrors(['site_url', 'feed_url']);
-
-        $this->assertSame(0, Feed::where('title', 'Interno')->count());
-    }
-
-    public function test_editing_only_regenerates_the_slug_when_site_url_changes(): void
-    {
-        [$feed] = $this->seedBasicData();
-        $originalSlug = $feed->slug;
-
-        Livewire::test(EditFeed::class, ['record' => $feed->getKey()])
-            ->fillForm(['title' => 'Título Novo'])
-            ->call('save')
-            ->assertHasNoFormErrors();
-
-        $this->assertSame($originalSlug, $feed->fresh()->slug);
-
-        Livewire::test(EditFeed::class, ['record' => $feed->getKey()])
-            ->fillForm(['site_url' => 'https://outro.example.org'])
-            ->call('save')
-            ->assertHasNoFormErrors();
-
-        $this->assertSame('outro-example-org', $feed->fresh()->slug);
-    }
-
-    public function test_editing_keeps_the_feed_type_when_the_select_is_cleared(): void
-    {
-        [$feed] = $this->seedBasicData();
-
-        Livewire::test(EditFeed::class, ['record' => $feed->getKey()])
-            ->fillForm(['feed_type' => null])
-            ->call('save')
-            ->assertHasNoFormErrors();
-
-        $this->assertSame('rss2', $feed->fresh()->feed_type->value);
-    }
-
-    public function test_table_searches_across_title_and_urls(): void
-    {
-        [$feed] = $this->seedBasicData();
-        $other = Feed::create([
-            'title' => 'Outro Blog',
-            'feed_url' => 'https://outro.test/feed',
-            'site_url' => 'https://outro.test',
-            'slug' => 'outro-test',
+    Livewire::test(CreateFeed::class)
+        ->fillForm([
+            'title' => 'Blog Novo',
+            'site_url' => 'https://novo.example.com/secao',
+            'feed_url' => 'https://novo.example.com/feed.xml',
+            'language' => 'pt_BR',
             'feed_type' => 'rss2',
-            'status' => 'online',
-        ]);
+            'shuffle' => true,
+            'categories' => [$category->id],
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
 
-        Livewire::test(ListFeeds::class)
-            ->searchTable('outro.test')
-            ->assertCanSeeTableRecords([$other])
-            ->assertCanNotSeeTableRecords([$feed]);
-    }
+    $feed = Feed::where('feed_url', 'https://novo.example.com/feed.xml')->firstOrFail();
 
-    public function test_bulk_status_updates_every_selected_feed(): void
-    {
-        [$feed] = $this->seedBasicData();
+    expect($feed->slug)->toBe('novo-example-com-secao')
+        ->and($feed->status)->toBe(FeedStatus::Online);
 
-        Livewire::test(ListFeeds::class)
-            ->callTableBulkAction('bulkStatus', [$feed], ['status' => FeedStatus::Paused->value]);
+    $this->assertEqualsCanonicalizing([$category->id], $feed->categories()->pluck('categories.id')->all());
+});
 
-        $this->assertSame(FeedStatus::Paused, $feed->fresh()->status);
-    }
+it('rejects a private url when creating a feed', function () {
+    Livewire::test(CreateFeed::class)
+        ->fillForm([
+            'title' => 'Interno',
+            'site_url' => 'http://127.0.0.1/painel',
+            'feed_url' => 'http://127.0.0.1/feed.xml',
+            'language' => 'pt_BR',
+            'feed_type' => 'rss2',
+        ])
+        ->call('create')
+        ->assertHasFormErrors(['site_url', 'feed_url']);
 
-    public function test_bulk_categories_replace_the_existing_assignment_and_recount(): void
-    {
-        [$feed, $category] = $this->seedBasicData();
-        $replacement = Category::create(['name' => 'Notícias', 'slug' => 'noticias']);
+    expect(Feed::where('title', 'Interno')->count())->toBe(0);
+});
 
-        Livewire::test(ListFeeds::class)
-            ->callTableBulkAction('bulkCategories', [$feed], ['categories' => [$replacement->id]]);
+it('only regenerates the slug on edit when the site url changes', function () {
+    [$feed] = $this->seedBasicData();
+    $originalSlug = $feed->slug;
 
-        $this->assertEqualsCanonicalizing(
-            [$replacement->id],
-            $feed->fresh()->categories()->pluck('categories.id')->all()
-        );
+    Livewire::test(EditFeed::class, ['record' => $feed->getKey()])
+        ->fillForm(['title' => 'Título Novo'])
+        ->call('save')
+        ->assertHasNoFormErrors();
 
-        // The feed has one visible item, so the new category inherits it and
-        // the detached one drops back to zero.
-        $this->assertSame(1, $replacement->fresh()->item_count);
-        $this->assertSame(0, $category->fresh()->item_count);
-    }
+    expect($feed->fresh()->slug)->toBe($originalSlug);
 
-    public function test_bulk_tags_replace_the_existing_assignment_and_recount(): void
-    {
-        [$feed, , $tag] = $this->seedBasicData();
-        $replacement = Tag::create(['name' => 'Cultura', 'slug' => 'cultura']);
+    Livewire::test(EditFeed::class, ['record' => $feed->getKey()])
+        ->fillForm(['site_url' => 'https://outro.example.org'])
+        ->call('save')
+        ->assertHasNoFormErrors();
 
-        Livewire::test(ListFeeds::class)
-            ->callTableBulkAction('bulkTags', [$feed], ['tags' => [$replacement->id]]);
+    expect($feed->fresh()->slug)->toBe('outro-example-org');
+});
 
-        $this->assertEqualsCanonicalizing(
-            [$replacement->id],
-            $feed->fresh()->tags()->pluck('tags.id')->all()
-        );
+it('keeps the feed type on edit when the select is cleared', function () {
+    [$feed] = $this->seedBasicData();
 
-        $this->assertSame(1, $replacement->fresh()->item_count);
-        $this->assertSame(0, $tag->fresh()->item_count);
-    }
+    Livewire::test(EditFeed::class, ['record' => $feed->getKey()])
+        ->fillForm(['feed_type' => null])
+        ->call('save')
+        ->assertHasNoFormErrors();
 
-    public function test_deleting_a_feed_recounts_the_taxonomy_it_left_behind(): void
-    {
-        [$feed, $category, $tag] = $this->seedBasicData();
+    expect($feed->fresh()->feed_type->value)->toBe('rss2');
+});
 
-        // Give the counters a non-zero starting point.
-        app(ItemCountService::class)->recountTaxonomy([$category->id], [$tag->id]);
-        $this->assertSame(1, $category->fresh()->item_count);
+it('searches across title and urls in the table', function () {
+    [$feed] = $this->seedBasicData();
+    $other = Feed::create([
+        'title' => 'Outro Blog',
+        'feed_url' => 'https://outro.test/feed',
+        'site_url' => 'https://outro.test',
+        'slug' => 'outro-test',
+        'feed_type' => 'rss2',
+        'status' => 'online',
+    ]);
 
-        $feed->delete();
+    Livewire::test(ListFeeds::class)
+        ->searchTable('outro.test')
+        ->assertCanSeeTableRecords([$other])
+        ->assertCanNotSeeTableRecords([$feed]);
+});
 
-        $this->assertSame(0, $category->fresh()->item_count);
-        $this->assertSame(0, $tag->fresh()->item_count);
-    }
-}
+it('updates every selected feed on bulk status', function () {
+    [$feed] = $this->seedBasicData();
+
+    Livewire::test(ListFeeds::class)
+        ->selectTableRecords([$feed])
+        ->callAction(TestAction::make('bulkStatus')->table()->bulk(), ['status' => FeedStatus::Paused->value]);
+
+    expect($feed->fresh()->status)->toBe(FeedStatus::Paused);
+});
+
+it('replaces the existing assignment and recounts on bulk categories', function () {
+    [$feed, $category] = $this->seedBasicData();
+    $replacement = Category::create(['name' => 'Notícias', 'slug' => 'noticias']);
+
+    Livewire::test(ListFeeds::class)
+        ->selectTableRecords([$feed])
+        ->callAction(TestAction::make('bulkCategories')->table()->bulk(), ['categories' => [$replacement->id]]);
+
+    $this->assertEqualsCanonicalizing(
+        [$replacement->id],
+        $feed->fresh()->categories()->pluck('categories.id')->all()
+    );
+
+    expect($replacement->fresh()->item_count)->toBe(1)
+        ->and($category->fresh()->item_count)->toBe(0);
+});
+
+it('replaces the existing assignment and recounts on bulk tags', function () {
+    [$feed, , $tag] = $this->seedBasicData();
+    $replacement = Tag::create(['name' => 'Cultura', 'slug' => 'cultura']);
+
+    Livewire::test(ListFeeds::class)
+        ->selectTableRecords([$feed])
+        ->callAction(TestAction::make('bulkTags')->table()->bulk(), ['tags' => [$replacement->id]]);
+
+    $this->assertEqualsCanonicalizing(
+        [$replacement->id],
+        $feed->fresh()->tags()->pluck('tags.id')->all()
+    );
+
+    expect($replacement->fresh()->item_count)->toBe(1)
+        ->and($tag->fresh()->item_count)->toBe(0);
+});
+
+it('recounts the taxonomy left behind when deleting a feed', function () {
+    [$feed, $category, $tag] = $this->seedBasicData();
+
+    app(ItemCountService::class)->recountTaxonomy([$category->id], [$tag->id]);
+
+    expect($category->fresh()->item_count)->toBe(1);
+
+    $feed->delete();
+
+    expect($category->fresh()->item_count)->toBe(0)
+        ->and($tag->fresh()->item_count)->toBe(0);
+});

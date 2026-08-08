@@ -5,94 +5,83 @@ namespace Tests\Feature;
 use App\Models\FeedItem;
 use App\Services\ItemCountService;
 use Illuminate\Support\Facades\DB;
-use Tests\TestCase;
 
-class ItemCountObserverTest extends TestCase
-{
-    public function test_counters_follow_item_lifecycle(): void
-    {
-        [$feed, $category, $tag] = $this->seedBasicData();
+it('follows the item lifecycle on the counters', function () {
+    [$feed, $category, $tag] = $this->seedBasicData();
 
-        // seedBasicData created 1 visible item
-        $this->assertSame(1, $feed->fresh()->item_count);
-        $this->assertSame(1, $feed->fresh()->visible_item_count);
-        $this->assertSame(1, $category->fresh()->item_count);
-        $this->assertSame(1, $tag->fresh()->item_count);
+    // seedBasicData created 1 visible item
+    expect($feed->fresh()->item_count)->toBe(1)
+        ->and($feed->fresh()->visible_item_count)->toBe(1)
+        ->and($category->fresh()->item_count)->toBe(1)
+        ->and($tag->fresh()->item_count)->toBe(1);
 
-        $item = FeedItem::create([
-            'feed_id' => $feed->id,
-            'title' => 'Hidden',
-            'url' => 'https://example.com/2',
-            'guid' => 'guid-2',
-            'is_visible' => false,
-        ]);
+    $item = FeedItem::create([
+        'feed_id' => $feed->id,
+        'title' => 'Hidden',
+        'url' => 'https://example.com/2',
+        'guid' => 'guid-2',
+        'is_visible' => false,
+    ]);
 
-        // Invisible: counted on the feed totals, not on the visible counter
-        // nor on the taxonomy
-        $this->assertSame(2, $feed->fresh()->item_count);
-        $this->assertSame(1, $feed->fresh()->visible_item_count);
-        $this->assertSame(1, $category->fresh()->item_count);
+    expect($feed->fresh()->item_count)->toBe(2)
+        ->and($feed->fresh()->visible_item_count)->toBe(1)
+        ->and($category->fresh()->item_count)->toBe(1);
 
-        // Toggle to visible
-        $item->is_visible = true;
-        $item->save();
-        $this->assertSame(2, $feed->fresh()->visible_item_count);
-        $this->assertSame(2, $category->fresh()->item_count);
-        $this->assertSame(2, $tag->fresh()->item_count);
+    $item->is_visible = true;
+    $item->save();
 
-        // Toggle back to invisible
-        $item->is_visible = false;
-        $item->save();
-        $this->assertSame(1, $feed->fresh()->visible_item_count);
-        $this->assertSame(1, $category->fresh()->item_count);
+    expect($feed->fresh()->visible_item_count)->toBe(2)
+        ->and($category->fresh()->item_count)->toBe(2)
+        ->and($tag->fresh()->item_count)->toBe(2);
 
-        // Toggle visible again and delete the item
-        $item->is_visible = true;
-        $item->save();
-        $item->delete();
-        $this->assertSame(1, $feed->fresh()->item_count);
-        $this->assertSame(1, $feed->fresh()->visible_item_count);
-        $this->assertSame(1, $category->fresh()->item_count);
-    }
+    $item->is_visible = false;
+    $item->save();
 
-    public function test_recount_feed_and_taxonomy_rebuilds_visible_counter(): void
-    {
-        [$feed] = $this->seedBasicData();
+    expect($feed->fresh()->visible_item_count)->toBe(1)
+        ->and($category->fresh()->item_count)->toBe(1);
 
-        // Simulate a bulk insert bypassing events, like the feed processor.
-        DB::table('feed_items')->insert([
-            'feed_id' => $feed->id,
-            'title' => 'Bulk visible',
-            'url' => 'https://example.com/3',
-            'guid' => 'guid-3',
-            'is_visible' => 1,
-        ]);
-        DB::table('feed_items')->insert([
-            'feed_id' => $feed->id,
-            'title' => 'Bulk hidden',
-            'url' => 'https://example.com/4',
-            'guid' => 'guid-4',
-            'is_visible' => 0,
-        ]);
+    $item->is_visible = true;
+    $item->save();
+    $item->delete();
 
-        app(ItemCountService::class)->recountFeedAndTaxonomy($feed->id);
+    expect($feed->fresh()->item_count)->toBe(1)
+        ->and($feed->fresh()->visible_item_count)->toBe(1)
+        ->and($category->fresh()->item_count)->toBe(1);
+});
 
-        $this->assertSame(3, $feed->fresh()->item_count);
-        $this->assertSame(2, $feed->fresh()->visible_item_count);
-    }
+it('rebuilds the visible counter on recount feed and taxonomy', function () {
+    [$feed] = $this->seedBasicData();
 
-    public function test_feed_delete_cascade_with_manual_recount(): void
-    {
-        [$feed, $category, $tag] = $this->seedBasicData();
+    DB::table('feed_items')->insert([
+        'feed_id' => $feed->id,
+        'title' => 'Bulk visible',
+        'url' => 'https://example.com/3',
+        'guid' => 'guid-3',
+        'is_visible' => 1,
+    ]);
+    DB::table('feed_items')->insert([
+        'feed_id' => $feed->id,
+        'title' => 'Bulk hidden',
+        'url' => 'https://example.com/4',
+        'guid' => 'guid-4',
+        'is_visible' => 0,
+    ]);
 
-        $categoryIds = [$category->id];
-        $feed->delete();
+    app(ItemCountService::class)->recountFeedAndTaxonomy($feed->id);
 
-        // Cascade removes items/pivots without firing events
-        app(ItemCountService::class)->recountTaxonomy($categoryIds, [$tag->id]);
+    expect($feed->fresh()->item_count)->toBe(3)
+        ->and($feed->fresh()->visible_item_count)->toBe(2);
+});
 
-        $this->assertSame(0, $category->fresh()->item_count);
-        $this->assertSame(0, $tag->fresh()->item_count);
-        $this->assertSame(0, FeedItem::count());
-    }
-}
+it('cascades the feed delete with a manual recount', function () {
+    [$feed, $category, $tag] = $this->seedBasicData();
+
+    $categoryIds = [$category->id];
+    $feed->delete();
+
+    app(ItemCountService::class)->recountTaxonomy($categoryIds, [$tag->id]);
+
+    expect($category->fresh()->item_count)->toBe(0)
+        ->and($tag->fresh()->item_count)->toBe(0)
+        ->and(FeedItem::count())->toBe(0);
+});
