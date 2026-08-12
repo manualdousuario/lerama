@@ -16,7 +16,8 @@
         "laminas/laminas-feed": "^2.26",
         "laravel/framework": "^13.0",
         "laravel/tinker": "^3.0",
-        "livewire/livewire": "4.3"
+        "livewire/livewire": "4.3",
+        "sentry/sentry-laravel": "^4.27"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
