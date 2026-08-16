@@ -121,6 +121,10 @@ class ThumbnailService
         [$sourceWidth, $sourceHeight] = $imageInfo;
         $mimeType = $imageInfo['mime'];
 
+        if (! self::fitsInMemory($sourceWidth, $sourceHeight)) {
+            return false;
+        }
+
         $sourceImage = $this->createImageFromFile($sourcePath, $mimeType);
         if (! $sourceImage) {
             return false;
@@ -162,6 +166,35 @@ class ThumbnailService
         );
 
         return imagejpeg($targetImage, $destPath, 90);
+    }
+
+    public static function fitsInMemory(int $width, int $height, ?int $limitBytes = null, ?int $usedBytes = null): bool
+    {
+        $limit = $limitBytes ?? self::memoryLimitBytes();
+        if ($limit <= 0) {
+            return true;
+        }
+
+        $needed = (int) ($width * $height * 4 * 1.5);
+
+        return $needed < $limit - ($usedBytes ?? memory_get_usage(true));
+    }
+
+    private static function memoryLimitBytes(): int
+    {
+        $raw = trim((string) ini_get('memory_limit'));
+        if ($raw === '' || $raw === '-1') {
+            return -1;
+        }
+
+        $value = (int) $raw;
+
+        return match (strtolower(substr($raw, -1))) {
+            'g' => $value * 1024 ** 3,
+            'm' => $value * 1024 ** 2,
+            'k' => $value * 1024,
+            default => $value,
+        };
     }
 
     private function createImageFromFile(string $filePath, string $mimeType): GdImage|false
