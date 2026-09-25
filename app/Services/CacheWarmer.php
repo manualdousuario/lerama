@@ -121,7 +121,7 @@ class CacheWarmer
             }
 
             foreach ([[180, 100], [360, 200]] as [$width, $height]) {
-                if (! $service->hasThumbnail($url, $width, $height)) {
+                if (! $service->hasThumbnail($url, $width, $height) && ! $service->recentlyFailed($url, $width, $height)) {
                     $service->getThumbnail($url, $width, $height);
                     $generated++;
                 }

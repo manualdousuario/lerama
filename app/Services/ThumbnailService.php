@@ -11,9 +11,15 @@ use Illuminate\Support\Facades\Storage;
  * Generates local thumbnails from remote images (center crop + GD resize),
  * written to storage/app/public/thumbnails and served through storage:link at
  * /storage/thumbnails/{md5}.jpg. Falls back to the original URL on any failure.
+ *
+ * Failures leave a {md5}.fail marker so the same broken, oversized or
+ * unsupported image isn't downloaded again on every page view and cache warm.
+ * It lives on disk rather than in the cache, which is flushed on every write.
  */
 class ThumbnailService
 {
+    public const FAILURE_TTL_SECONDS = 86400;
+
     public function getThumbnail(string $imageUrl, int $width = 120, int $height = 60): string
     {
         if (empty($imageUrl)) {
@@ -27,13 +33,17 @@ class ThumbnailService
             return $this->thumbnailUrl($imageUrl, $width, $height);
         }
 
+        if ($this->recentlyFailed($imageUrl, $width, $height)) {
+            return $imageUrl;
+        }
+
         $tempFile = null;
 
         try {
             $tempFile = $this->downloadImage($imageUrl);
 
             if (! $tempFile) {
-                return $imageUrl;
+                return $this->markFailed($imageUrl, $width, $height);
             }
 
             $targetPath = $disk->path($relative);
@@ -43,12 +53,14 @@ class ThumbnailService
             }
 
             if (! $this->createThumbnail($tempFile, $targetPath, $width, $height)) {
-                return $imageUrl;
+                return $this->markFailed($imageUrl, $width, $height);
             }
+
+            $disk->delete($this->failureMarker($imageUrl, $width, $height));
 
             return $this->thumbnailUrl($imageUrl, $width, $height);
         } catch (\Throwable) {
-            return $imageUrl;
+            return $this->markFailed($imageUrl, $width, $height);
         } finally {
             if ($tempFile !== null && file_exists($tempFile)) {
                 @unlink($tempFile);
@@ -59,6 +71,30 @@ class ThumbnailService
     public function hasThumbnail(string $imageUrl, int $width, int $height): bool
     {
         return Storage::disk('public')->exists('thumbnails/'.md5($imageUrl.$width.$height).'.jpg');
+    }
+
+    public function recentlyFailed(string $imageUrl, int $width, int $height): bool
+    {
+        $path = Storage::disk('public')->path($this->failureMarker($imageUrl, $width, $height));
+        $mtime = @filemtime($path);
+
+        return $mtime !== false && time() - $mtime < self::FAILURE_TTL_SECONDS;
+    }
+
+    private function markFailed(string $imageUrl, int $width, int $height): string
+    {
+        try {
+            Storage::disk('public')->put($this->failureMarker($imageUrl, $width, $height), '');
+        } catch (\Throwable) {
+            // Best effort: without the marker we just retry sooner.
+        }
+
+        return $imageUrl;
+    }
+
+    private function failureMarker(string $imageUrl, int $width, int $height): string
+    {
+        return 'thumbnails/'.md5($imageUrl.$width.$height).'.fail';
     }
 
     public function thumbnailUrl(string $imageUrl, int $width, int $height): string
@@ -74,6 +110,10 @@ class ThumbnailService
 
         if ($this->hasThumbnail($imageUrl, $width, $height)) {
             return $this->thumbnailUrl($imageUrl, $width, $height);
+        }
+
+        if ($this->recentlyFailed($imageUrl, $width, $height)) {
+            return $imageUrl;
         }
 
         defer(fn () => $this->getThumbnail($imageUrl, $width, $height));

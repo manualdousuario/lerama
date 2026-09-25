@@ -43,11 +43,16 @@ COPY --from=vendor --chown=www-data:www-data /var/www/html/vendor ./vendor
 COPY --from=assets --chown=www-data:www-data /build/public/assets ./public/assets
 COPY --chmod=755 docker/entrypoint.d/ /etc/entrypoint.d/
 COPY --chmod=755 docker/s6-rc.d/ /etc/s6-overlay/s6-rc.d/
+COPY docker/php/zz-lerama-cli.ini /usr/local/etc/php/conf.d/zz-lerama-cli.ini
 
 RUN composer dump-autoload --no-dev --optimize --classmap-authoritative && \
     php artisan filament:assets && \
-    chown -R www-data:www-data /var/www/html
+    chown -R www-data:www-data /var/www/html && \
+    install -d -o www-data -g www-data /tmp/opcache
 
 USER www-data
 
 EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD curl --insecure --silent --location --show-error --fail http://localhost:${NGINX_HTTP_PORT}${HEALTHCHECK_PATH} || exit 1

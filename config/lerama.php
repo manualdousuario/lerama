@@ -20,7 +20,7 @@ return [
     ],
 
     'feeds' => [
-        'max_per_run' => (int) env('FEED_MAX_PER_RUN', 3),
+        'max_per_run' => (int) env('FEED_MAX_PER_RUN', 15),
         'item_error_threshold' => (int) env('FEED_ITEM_ERROR_THRESHOLD', 5),
         'subscriber_show_post' => env('SUBSCRIBER_SHOW_POST', false),
         'fetch_interval_success' => 86400,

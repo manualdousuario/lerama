@@ -71,7 +71,7 @@ Agregador de feeds leve e eficiente, desenvolvido como alternativa ao [OpenOrb](
 ## 🛠️ Comandos
 
 ```bash
-php artisan feed:process              # Processa feeds agendados (roda a cada minuto)
+php artisan feed:process              # Processa feeds agendados (roda a cada 5 minutos)
 php artisan feed:id {ID}              # Processa um feed específico
 php artisan feed:check-status         # Verifica feeds pausados (roda 1x/dia)
 php artisan feed:check-real-content   # Reclassifica visibilidade dos itens

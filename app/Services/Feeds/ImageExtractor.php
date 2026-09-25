@@ -86,13 +86,11 @@ class ImageExtractor
     {
         return DB::table('feed_items as fi')
             ->join('feeds as f', 'fi.feed_id', '=', 'f.id')
+            ->where('fi.created_at', '>', now()->subHours(self::RETRY_WINDOW_HOURS))
             ->whereNull('fi.image_url')
             ->where(function ($query): void {
                 $query->whereNull('fi.image_fetched_at')
-                    ->orWhere(function ($query): void {
-                        $query->where('fi.image_fetched_at', '<', now()->subHours(self::RETRY_AFTER_HOURS))
-                            ->where('fi.created_at', '>', now()->subHours(self::RETRY_WINDOW_HOURS));
-                    });
+                    ->orWhere('fi.image_fetched_at', '<', now()->subHours(self::RETRY_AFTER_HOURS));
             })
             ->orderByDesc('fi.id')
             ->limit($limit)
@@ -105,7 +103,10 @@ class ImageExtractor
             return null;
         }
 
-        $attempts = $this->proxyService->buildAttemptConfigs(HttpClient::defaultConfig());
+        $attempts = $this->proxyService->buildAttemptConfigs([
+            'timeout' => 10,
+            'connect_timeout' => 5,
+        ] + HttpClient::defaultConfig());
 
         foreach ($attempts as $attempt) {
             try {

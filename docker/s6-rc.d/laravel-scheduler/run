@@ -7,4 +7,10 @@ fi
 
 cd /var/www/html || exit 1
 
-exec php artisan schedule:work
+trap 'exit 0' TERM INT
+
+while :; do
+    php artisan schedule:run --no-interaction
+    sleep $((60 - $(date +%S | sed 's/^0//'))) &
+    wait $!
+done
