@@ -42,4 +42,10 @@ return [
         'warm_feeds_limit' => (int) env('CACHE_WARM_FEEDS_LIMIT', 10),
     ],
 
+    'favicon' => [
+        'cache_store' => env('FAVICON_CACHE_STORE', 'favicons'),
+        'ttl' => (int) env('FAVICON_CACHE_TTL', 604800),
+        'error_ttl' => 3600,
+    ],
+
 ];

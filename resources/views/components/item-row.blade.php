@@ -24,7 +24,7 @@
                 <div class="block text-sm">
                     <span>{{ __('common.in') }}</span>
                     <a href="{{ $utm($item['site_url']) }}" target="_blank" class="truncate">
-                        {{ $item['feed_title'] }}
+                        <x-favicon :url="$item['site_url']" />{{ $item['feed_title'] }}
                     </a>
                 </div>
             </div>

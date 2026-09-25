@@ -5,7 +5,7 @@
                 <div class="md:w-2/3">
                     <h1 class="m-0 py-1 text-lg">
                         <i class="ti ti-rss me-1" aria-hidden="true"></i>
-                        {{ $feed['title'] }}
+                        <x-favicon :url="$feed['site_url']" />{{ $feed['title'] }}
                     </h1>
                     <p class="mb-0 text-sm text-ink-soft dark:text-night-soft">
                         {{ __('feeds.items') }}: {{ $feed['item_count'] ?? 0 }}

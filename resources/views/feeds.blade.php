@@ -60,7 +60,7 @@
                                 <td>
                                     <div class="font-medium">
                                         <a href="{{ $utm($feed['site_url']) }}" target="_blank" class="text-ink-strong no-underline hover:text-brand dark:text-night-strong dark:hover:text-night-brand">
-                                            {{ $feed['title'] }}
+                                            <x-favicon :url="$feed['site_url']" />{{ $feed['title'] }}
                                             <i class="ti ti-external-link ms-1" aria-hidden="true"></i>
                                         </a>
                                         <a href="/feeds/{{ $feed['slug'] }}" class="badge ms-1 bg-stone-warm/15 text-stone-warm no-underline dark:bg-night-soft/15 dark:text-night-soft" title="{{ __('feeds.items') }}">

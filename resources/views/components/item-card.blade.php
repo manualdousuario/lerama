@@ -27,8 +27,9 @@
     </div>
     <div class="shrink-0 border-t border-line px-4 py-3 text-sm dark:border-night-line">
         <div class="mb-1">
-            <a href="{{ $utm($item['site_url']) }}" target="_blank" class="block truncate">
-                {{ $item['feed_title'] }}
+            <a href="{{ $utm($item['site_url']) }}" target="_blank" class="flex items-center">
+                <x-favicon :url="$item['site_url']" />
+                <span class="truncate">{{ $item['feed_title'] }}</span>
             </a>
         </div>
         <div class="flex items-center text-ink-soft dark:text-night-soft">

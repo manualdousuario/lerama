@@ -10,4 +10,5 @@ pest()->extend(UnitTestCase::class)->in(
     'Unit/FeedSlugServiceTest.php',
     'Unit/ProxyServiceTest.php',
     'Unit/ThumbnailFailureMarkerTest.php',
+    'Unit/FaviconServiceTest.php',
 );
