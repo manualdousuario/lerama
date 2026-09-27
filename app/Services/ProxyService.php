@@ -34,8 +34,6 @@ class ProxyService
         $attempts = [];
 
         if (! empty($this->proxies)) {
-            $verifyProxyCert = (bool) config('lerama.proxy.ssl_verify', true);
-
             for ($i = 0; $i < self::PROXY_ATTEMPTS; $i++) {
                 $proxy = $this->getRandomProxy();
                 if ($proxy === null) {
@@ -44,13 +42,6 @@ class ProxyService
 
                 $config = $baseConfig;
                 $config['proxy'] = $this->buildProxyUrl($proxy);
-
-                if (($proxy['scheme'] ?? 'http') === 'https' && ! $verifyProxyCert) {
-                    $config['curl'] = ($config['curl'] ?? []) + [
-                        CURLOPT_PROXY_SSL_VERIFYPEER => false,
-                        CURLOPT_PROXY_SSL_VERIFYHOST => 0,
-                    ];
-                }
 
                 $attempts[] = [
                     'config' => $config,

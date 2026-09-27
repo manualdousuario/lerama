@@ -34,14 +34,9 @@ class HttpClient
             ],
             'curl' => [
                 CURLOPT_ENCODING => '',
-                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_2_0,
-                CURLOPT_SSL_VERIFYPEER => true,
-                CURLOPT_SSL_VERIFYHOST => 2,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_AUTOREFERER => true,
-                CURLOPT_COOKIEFILE => '',
-                CURLOPT_COOKIEJAR => '',
             ],
+            'version' => '2.0',
+            'cookies' => true,
             'verify' => true,
             'decode_content' => 'gzip',
         ];

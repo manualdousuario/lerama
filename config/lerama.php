@@ -16,7 +16,6 @@ return [
 
     'proxy' => [
         'urls' => env('PROXY_URL', ''),
-        'ssl_verify' => env('PROXY_SSL_VERIFY', true),
     ],
 
     'feeds' => [
