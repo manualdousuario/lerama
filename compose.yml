@@ -35,7 +35,8 @@ services:
     networks:
       - lerama
     depends_on:
-      - db
+      db:
+        condition: service_healthy
   db:
     image: mariadb:10.11
     container_name: db
@@ -45,6 +46,12 @@ services:
       MYSQL_DATABASE: lerama
     volumes:
       - ./mariadb/data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     networks:
       - lerama
 networks:

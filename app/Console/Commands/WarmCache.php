@@ -4,9 +4,14 @@ namespace App\Console\Commands;
 
 use App\Services\CacheWarmer;
 use Illuminate\Console\Command;
+use Illuminate\Database\DetectsLostConnections;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
 
 class WarmCache extends Command
 {
+    use DetectsLostConnections;
+
     protected $signature = 'cache:warm';
 
     protected $description = 'Warm the hottest cache keys (home, feeds list, categories, tags, thumbnails)';
@@ -15,7 +20,18 @@ class WarmCache extends Command
     {
         $this->info('Warming cache...');
 
-        $summary = $warmer->warmImportant();
+        try {
+            $summary = $warmer->warmImportant();
+        } catch (QueryException $e) {
+            if (! $this->causedByLostConnection($e->getPrevious() ?? $e)) {
+                throw $e;
+            }
+
+            $this->warn('Database unavailable, skipping cache warm');
+            Log::warning('cache:warm skipped, database unavailable', ['error' => $e->getMessage()]);
+
+            return self::FAILURE;
+        }
 
         $this->info("  ✓ {$summary['categories']} categories");
         $this->info("  ✓ {$summary['tags']} tags");
