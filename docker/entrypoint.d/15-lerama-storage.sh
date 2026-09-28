@@ -10,3 +10,7 @@ mkdir -p \
     "$base/storage/framework/sessions" \
     "$base/storage/framework/views" \
     "$base/storage/logs"
+
+if [ "$(id -u)" = "0" ]; then
+    chown -R www-data:www-data "$base/storage" "$base/bootstrap/cache"
+fi

@@ -26,6 +26,7 @@ WORKDIR /var/www/html
 ENV APP_ENV=production \
     APP_DEBUG=false \
     LOG_CHANNEL=stack \
+    LOG_STACK=stderr \
     LOG_LEVEL=error \
     DB_CONNECTION=mariadb \
     CACHE_STORE=file \

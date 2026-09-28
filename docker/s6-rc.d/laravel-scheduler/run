@@ -7,10 +7,15 @@ fi
 
 cd /var/www/html || exit 1
 
+run_as=""
+if [ "$(id -u)" = "0" ]; then
+    run_as="s6-setuidgid www-data"
+fi
+
 trap 'exit 0' TERM INT
 
 while :; do
-    php artisan schedule:run --no-interaction
+    $run_as php artisan schedule:run --no-interaction
     sleep $((60 - $(date +%S | sed 's/^0//'))) &
     wait $!
 done

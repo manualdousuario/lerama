@@ -39,6 +39,7 @@ services:
   db:
     image: mariadb:10.11
     container_name: db
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${LERAMA_DB_PASS:?defina LERAMA_DB_PASS}
       MYSQL_DATABASE: lerama
