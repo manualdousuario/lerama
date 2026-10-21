@@ -44,6 +44,7 @@ COPY --from=vendor --chown=www-data:www-data /var/www/html/vendor ./vendor
 COPY --from=assets --chown=www-data:www-data /build/public/assets ./public/assets
 COPY --chmod=755 docker/entrypoint.d/ /etc/entrypoint.d/
 COPY --chmod=755 docker/s6-rc.d/ /etc/s6-overlay/s6-rc.d/
+COPY --chmod=755 docker/user-bundles.d/ /etc/s6-overlay/user-bundles.d/
 COPY docker/php/zz-lerama-cli.ini /usr/local/etc/php/conf.d/zz-lerama-cli.ini
 
 RUN composer dump-autoload --no-dev --optimize --classmap-authoritative && \
