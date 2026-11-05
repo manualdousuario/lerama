@@ -52,6 +52,8 @@ class ThumbnailService
                 @mkdir($dir, 0755, true);
             }
 
+            $this->markFailed($imageUrl, $width, $height);
+
             if (! $this->createThumbnail($tempFile, $targetPath, $width, $height)) {
                 return $this->markFailed($imageUrl, $width, $height);
             }
@@ -161,7 +163,7 @@ class ThumbnailService
         [$sourceWidth, $sourceHeight] = $imageInfo;
         $mimeType = $imageInfo['mime'];
 
-        if (! self::fitsInMemory($sourceWidth, $sourceHeight)) {
+        if (! self::fitsInMemory($sourceWidth, $sourceHeight, bytesPerPixel: self::decodeBytesPerPixel($imageInfo))) {
             return false;
         }
 
@@ -208,16 +210,34 @@ class ThumbnailService
         return imagejpeg($targetImage, $destPath, 90);
     }
 
-    public static function fitsInMemory(int $width, int $height, ?int $limitBytes = null, ?int $usedBytes = null): bool
-    {
+    public static function fitsInMemory(
+        int $width,
+        int $height,
+        ?int $limitBytes = null,
+        ?int $usedBytes = null,
+        float $bytesPerPixel = 6.0,
+    ): bool {
         $limit = $limitBytes ?? self::memoryLimitBytes();
         if ($limit <= 0) {
             return true;
         }
 
-        $needed = (int) ($width * $height * 4 * 1.5);
+        $needed = (int) ($width * $height * $bytesPerPixel);
 
         return $needed < $limit - ($usedBytes ?? memory_get_usage(true));
+    }
+
+    public static function decodeBytesPerPixel(array $imageInfo): float
+    {
+        $gdImage = 4;
+
+        if (($imageInfo['mime'] ?? null) === 'image/png') {
+            $bits = max(8, (int) ($imageInfo['bits'] ?? 8));
+
+            return ($gdImage + 4 * $bits / 8) * 1.5;
+        }
+
+        return $gdImage * 1.5;
     }
 
     private static function memoryLimitBytes(): int
